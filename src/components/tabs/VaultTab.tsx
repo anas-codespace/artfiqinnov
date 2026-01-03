@@ -1,11 +1,17 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Download, Trash2, AlertCircle, User } from 'lucide-react';
+import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, X, File } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface UploadedFile {
   id: string;
@@ -20,10 +26,38 @@ interface UploadedFile {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+const ALLOWED_TYPES = {
+  'application/pdf': { ext: 'pdf', icon: 'pdf', color: 'text-destructive' },
+  'text/plain': { ext: 'txt', icon: 'txt', color: 'text-primary' },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { ext: 'docx', icon: 'docx', color: 'text-blue-500' },
+  'application/msword': { ext: 'doc', icon: 'doc', color: 'text-blue-500' },
+};
+
+const ALLOWED_EXTENSIONS = ['.pdf', '.txt', '.docx', '.doc'];
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
   return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function getFileExtension(filename: string): string {
+  return filename.split('.').pop()?.toLowerCase() || '';
+}
+
+function getFileIcon(filename: string) {
+  const ext = getFileExtension(filename);
+  switch (ext) {
+    case 'pdf':
+      return { color: 'text-destructive', bg: 'bg-destructive/10' };
+    case 'txt':
+      return { color: 'text-primary', bg: 'bg-primary/10' };
+    case 'docx':
+    case 'doc':
+      return { color: 'text-blue-500', bg: 'bg-blue-500/10' };
+    default:
+      return { color: 'text-muted-foreground', bg: 'bg-muted' };
+  }
 }
 
 export function VaultTab() {
@@ -33,6 +67,9 @@ export function VaultTab() {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
+  const [textContent, setTextContent] = useState<string>('');
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   // Fetch files from database
   const fetchFiles = async () => {
@@ -83,6 +120,11 @@ export function VaultTab() {
     }
   }, [user, profile]);
 
+  const isValidFileType = (file: File): boolean => {
+    const ext = '.' + getFileExtension(file.name);
+    return ALLOWED_EXTENSIONS.includes(ext) || Object.keys(ALLOWED_TYPES).includes(file.type);
+  };
+
   const processFiles = async (fileList: File[]) => {
     if (!user) {
       toast({
@@ -94,11 +136,11 @@ export function VaultTab() {
     }
 
     for (const file of fileList) {
-      // Check if PDF
-      if (file.type !== 'application/pdf') {
+      // Check file type
+      if (!isValidFileType(file)) {
         toast({
           title: 'Invalid file type',
-          description: 'Only PDF files are allowed.',
+          description: 'Only PDF, TXT, and DOCX files are allowed.',
           variant: 'destructive',
         });
         continue;
@@ -200,6 +242,83 @@ export function VaultTab() {
     window.open(file.url, '_blank');
   };
 
+  const handlePreview = async (file: UploadedFile) => {
+    const ext = getFileExtension(file.name);
+    setPreviewFile(file);
+    setTextContent('');
+
+    if (ext === 'txt') {
+      setIsLoadingPreview(true);
+      try {
+        const response = await fetch(file.url);
+        const text = await response.text();
+        setTextContent(text);
+      } catch (error) {
+        console.error('Error loading text file:', error);
+        toast({
+          title: 'Preview failed',
+          description: 'Could not load file content.',
+          variant: 'destructive',
+        });
+      }
+      setIsLoadingPreview(false);
+    }
+  };
+
+  const closePreview = () => {
+    setPreviewFile(null);
+    setTextContent('');
+  };
+
+  const renderPreviewContent = () => {
+    if (!previewFile) return null;
+
+    const ext = getFileExtension(previewFile.name);
+
+    if (ext === 'pdf') {
+      return (
+        <iframe
+          src={`${previewFile.url}#toolbar=1`}
+          className="w-full h-[70vh] rounded-lg border border-border"
+          title={previewFile.name}
+        />
+      );
+    }
+
+    if (ext === 'txt') {
+      if (isLoadingPreview) {
+        return (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        );
+      }
+      return (
+        <pre className="w-full h-[70vh] overflow-auto p-4 bg-secondary rounded-lg border border-border text-sm font-mono whitespace-pre-wrap">
+          {textContent}
+        </pre>
+      );
+    }
+
+    if (ext === 'docx' || ext === 'doc') {
+      // Use Google Docs viewer for DOCX files
+      const encodedUrl = encodeURIComponent(previewFile.url);
+      return (
+        <iframe
+          src={`https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`}
+          className="w-full h-[70vh] rounded-lg border border-border"
+          title={previewFile.name}
+        />
+      );
+    }
+
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Preview not available for this file type.</p>
+      </div>
+    );
+  };
+
   return (
     <div className="p-6 lg:p-8 space-y-8 max-w-5xl mx-auto">
       {/* Header */}
@@ -210,7 +329,7 @@ export function VaultTab() {
       >
         <h1 className="text-3xl font-bold">Document Vault</h1>
         <p className="text-muted-foreground">
-          Securely store and share PDF documents with your team.
+          Securely store and share documents with your team. Supports PDF, TXT, and DOCX files.
         </p>
       </motion.div>
 
@@ -234,7 +353,7 @@ export function VaultTab() {
         >
           <input
             type="file"
-            accept=".pdf"
+            accept=".pdf,.txt,.docx,.doc"
             multiple
             onChange={handleFileInput}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -255,10 +374,10 @@ export function VaultTab() {
               )} />
             </div>
             <h3 className="text-lg font-medium mb-1">
-              {isUploading ? 'Uploading...' : isDragging ? 'Drop your files here' : 'Drag & drop PDF files'}
+              {isUploading ? 'Uploading...' : isDragging ? 'Drop your files here' : 'Drag & drop files'}
             </h3>
             <p className="text-sm text-muted-foreground mb-3">
-              or click to browse
+              PDF, TXT, DOCX • or click to browse
             </p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <AlertCircle className="w-3 h-3" />
@@ -301,58 +420,85 @@ export function VaultTab() {
               </motion.div>
             ) : (
               <div className="space-y-2">
-                {files.map((file, index) => (
-                  <motion.div
-                    key={file.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20, height: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    layout
-                    className="glass-card rounded-xl p-4 flex items-center gap-4 group"
-                  >
-                    <div className="w-12 h-12 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
-                      <FileText className="w-6 h-6 text-destructive" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{file.name}</p>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <span>{formatFileSize(file.size)}</span>
-                        <span className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          {file.uploader_name}
-                        </span>
+                {files.map((file, index) => {
+                  const fileStyle = getFileIcon(file.name);
+                  return (
+                    <motion.div
+                      key={file.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20, height: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      layout
+                      className="glass-card rounded-xl p-4 flex items-center gap-4 group"
+                    >
+                      <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0", fileStyle.bg)}>
+                        <File className={cn("w-6 h-6", fileStyle.color)} />
                       </div>
-                    </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{file.name}</p>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <span>{formatFileSize(file.size)}</span>
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {file.uploader_name}
+                          </span>
+                        </div>
+                      </div>
 
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDownload(file)}
-                        className="h-9 w-9"
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      {file.uploaded_by === user?.id && (
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete(file)}
-                          className="h-9 w-9 hover:text-destructive"
+                          onClick={() => handlePreview(file)}
+                          className="h-9 w-9"
+                          title="Preview"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Eye className="w-4 h-4" />
                         </Button>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDownload(file)}
+                          className="h-9 w-9"
+                          title="Download"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        {file.uploaded_by === user?.id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(file)}
+                            className="h-9 w-9 hover:text-destructive"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </AnimatePresence>
         )}
       </motion.div>
+
+      {/* Preview Modal */}
+      <Dialog open={!!previewFile} onOpenChange={() => closePreview()}>
+        <DialogContent className="max-w-4xl w-full bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              {previewFile?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {renderPreviewContent()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
