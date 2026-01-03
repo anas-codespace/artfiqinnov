@@ -1,17 +1,19 @@
 import { motion } from 'framer-motion';
 import { Target, Users, Zap, Globe } from 'lucide-react';
+import ceoImage from '@/assets/ceo-sulaiman.jpeg';
+import ctoImage from '@/assets/cto-anas.jpeg';
 
 const founders = [
   {
     name: 'Mohammed Sulaiman',
     role: 'CEO',
-    avatar: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Leo&backgroundColor=0a0a0a&skinColor=f2d3b1',
+    avatar: ceoImage,
     description: 'Visionary leader driving digital innovation',
   },
   {
     name: 'Mohammed Anas',
     role: 'CTO',
-    avatar: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Ryan&backgroundColor=0a0a0a&skinColor=f2d3b1',
+    avatar: ctoImage,
     description: 'Technical architect building the future',
   },
 ];
@@ -122,7 +124,7 @@ export function HomeTab() {
                 <img
                   src={founder.avatar}
                   alt={founder.name}
-                  className="w-20 h-20 rounded-2xl border-2 border-primary/30"
+                  className="w-20 h-20 rounded-2xl border-2 border-primary/30 object-cover"
                 />
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                   <span className="text-xs font-bold text-primary-foreground">
