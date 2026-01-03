@@ -5,13 +5,13 @@ const founders = [
   {
     name: 'Mohammed Sulaiman',
     role: 'CEO',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sulaiman&backgroundColor=0a0a0a',
+    avatar: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Leo&backgroundColor=0a0a0a&skinColor=f2d3b1',
     description: 'Visionary leader driving digital innovation',
   },
   {
     name: 'Mohammed Anas',
     role: 'CTO',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Anas&backgroundColor=0a0a0a',
+    avatar: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Ryan&backgroundColor=0a0a0a&skinColor=f2d3b1',
     description: 'Technical architect building the future',
   },
 ];
