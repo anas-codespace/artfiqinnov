@@ -1,17 +1,21 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Download, Trash2, AlertCircle, CheckCircle, User } from 'lucide-react';
+import { Upload, FileText, Download, Trash2, AlertCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 interface UploadedFile {
   id: string;
   name: string;
   size: number;
-  uploadedBy: string;
-  uploadedAt: Date;
+  url: string;
+  storage_path: string;
+  uploaded_by: string;
+  uploader_name: string;
+  created_at: string;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -23,25 +27,36 @@ function formatFileSize(bytes: number): string {
 }
 
 export function VaultTab() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
-  const [files, setFiles] = useState<UploadedFile[]>([
-    {
-      id: '1',
-      name: 'Project_Proposal.pdf',
-      size: 2.5 * 1024 * 1024,
-      uploadedBy: 'Mohammed Sulaiman',
-      uploadedAt: new Date(Date.now() - 86400000),
-    },
-    {
-      id: '2',
-      name: 'Technical_Specs.pdf',
-      size: 1.2 * 1024 * 1024,
-      uploadedBy: 'Mohammed Anas',
-      uploadedAt: new Date(Date.now() - 172800000),
-    },
-  ]);
+  const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Fetch files from database
+  const fetchFiles = async () => {
+    const { data, error } = await supabase
+      .from('files')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching files:', error);
+      toast({
+        title: 'Error loading files',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      setFiles(data || []);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchFiles();
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -59,17 +74,26 @@ export function VaultTab() {
     
     const droppedFiles = Array.from(e.dataTransfer.files);
     processFiles(droppedFiles);
-  }, [user]);
+  }, [user, profile]);
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
       processFiles(selectedFiles);
     }
-  }, [user]);
+  }, [user, profile]);
 
-  const processFiles = (fileList: File[]) => {
-    fileList.forEach((file) => {
+  const processFiles = async (fileList: File[]) => {
+    if (!user) {
+      toast({
+        title: 'Not authenticated',
+        description: 'Please sign in to upload files.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    for (const file of fileList) {
       // Check if PDF
       if (file.type !== 'application/pdf') {
         toast({
@@ -77,7 +101,7 @@ export function VaultTab() {
           description: 'Only PDF files are allowed.',
           variant: 'destructive',
         });
-        return;
+        continue;
       }
 
       // Check file size
@@ -87,39 +111,93 @@ export function VaultTab() {
           description: 'Max limit 10MB.',
           variant: 'destructive',
         });
-        return;
+        continue;
       }
 
-      // Add file to list
-      const newFile: UploadedFile = {
-        id: Date.now().toString(),
-        name: file.name,
-        size: file.size,
-        uploadedBy: user?.name || 'Unknown',
-        uploadedAt: new Date(),
-      };
+      setIsUploading(true);
 
-      setFiles((prev) => [newFile, ...prev]);
-      toast({
-        title: 'File uploaded!',
-        description: `${file.name} has been added to the vault.`,
-      });
-    });
+      try {
+        // Upload to storage
+        const fileName = `${user.id}/${Date.now()}_${file.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('files')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('files')
+          .getPublicUrl(fileName);
+
+        // Save metadata to database
+        const { error: dbError } = await supabase
+          .from('files')
+          .insert({
+            name: file.name,
+            size: file.size,
+            url: urlData.publicUrl,
+            storage_path: fileName,
+            uploaded_by: user.id,
+            uploader_name: profile?.display_name || user.email?.split('@')[0] || 'Unknown',
+          });
+
+        if (dbError) throw dbError;
+
+        toast({
+          title: 'File uploaded!',
+          description: `${file.name} has been added to the vault.`,
+        });
+
+        // Refresh file list
+        fetchFiles();
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        toast({
+          title: 'Upload failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+
+      setIsUploading(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setFiles((prev) => prev.filter((f) => f.id !== id));
-    toast({
-      title: 'File deleted',
-      description: 'The file has been removed from the vault.',
-    });
+  const handleDelete = async (file: UploadedFile) => {
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('files')
+        .remove([file.storage_path]);
+
+      if (storageError) throw storageError;
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('files')
+        .delete()
+        .eq('id', file.id);
+
+      if (dbError) throw dbError;
+
+      toast({
+        title: 'File deleted',
+        description: 'The file has been removed from the vault.',
+      });
+
+      fetchFiles();
+    } catch (error: any) {
+      toast({
+        title: 'Delete failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleDownload = (file: UploadedFile) => {
-    toast({
-      title: 'Download started',
-      description: `Downloading ${file.name}...`,
-    });
+    window.open(file.url, '_blank');
   };
 
   return (
@@ -150,7 +228,8 @@ export function VaultTab() {
             "relative flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300",
             isDragging
               ? "border-primary bg-primary/5 scale-[1.02]"
-              : "border-border hover:border-primary/50 hover:bg-card/50"
+              : "border-border hover:border-primary/50 hover:bg-card/50",
+            isUploading && "opacity-50 pointer-events-none"
           )}
         >
           <input
@@ -159,6 +238,7 @@ export function VaultTab() {
             multiple
             onChange={handleFileInput}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            disabled={isUploading}
           />
           
           <motion.div
@@ -175,7 +255,7 @@ export function VaultTab() {
               )} />
             </div>
             <h3 className="text-lg font-medium mb-1">
-              {isDragging ? 'Drop your files here' : 'Drag & drop PDF files'}
+              {isUploading ? 'Uploading...' : isDragging ? 'Drop your files here' : 'Drag & drop PDF files'}
             </h3>
             <p className="text-sm text-muted-foreground mb-3">
               or click to browse
@@ -203,67 +283,75 @@ export function VaultTab() {
           </span>
         </h2>
 
-        <AnimatePresence mode="popLayout">
-          {files.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="glass-card rounded-xl p-8 text-center"
-            >
-              <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">No files uploaded yet</p>
-            </motion.div>
-          ) : (
-            <div className="space-y-2">
-              {files.map((file, index) => (
-                <motion.div
-                  key={file.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20, height: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  layout
-                  className="glass-card rounded-xl p-4 flex items-center gap-4 group"
-                >
-                  <div className="w-12 h-12 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-6 h-6 text-destructive" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{file.name}</p>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span>{formatFileSize(file.size)}</span>
-                      <span className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        {file.uploadedBy}
-                      </span>
+        {isLoading ? (
+          <div className="glass-card rounded-xl p-8 text-center">
+            <p className="text-muted-foreground">Loading files...</p>
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {files.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="glass-card rounded-xl p-8 text-center"
+              >
+                <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No files uploaded yet</p>
+              </motion.div>
+            ) : (
+              <div className="space-y-2">
+                {files.map((file, index) => (
+                  <motion.div
+                    key={file.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20, height: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    layout
+                    className="glass-card rounded-xl p-4 flex items-center gap-4 group"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-6 h-6 text-destructive" />
                     </div>
-                  </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{file.name}</p>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <span>{formatFileSize(file.size)}</span>
+                        <span className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {file.uploader_name}
+                        </span>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDownload(file)}
-                      className="h-9 w-9"
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(file.id)}
-                      className="h-9 w-9 hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </AnimatePresence>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDownload(file)}
+                        className="h-9 w-9"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      {file.uploaded_by === user?.id && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(file)}
+                          className="h-9 w-9 hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </AnimatePresence>
+        )}
       </motion.div>
     </div>
   );
