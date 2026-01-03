@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Target, Users, Zap, Globe } from 'lucide-react';
+import { Target, Users, Zap, Globe, Mail } from 'lucide-react';
 import ceoImage from '@/assets/ceo-sulaiman.jpeg';
 import ctoImage from '@/assets/cto-anas.jpeg';
 
@@ -15,6 +15,34 @@ const founders = [
     role: 'CTO',
     avatar: ctoImage,
     description: 'Technical architect building the future',
+  },
+];
+
+// Team members - update with real info and photos
+const teamMembers = [
+  {
+    name: 'Team Member 1',
+    role: 'Developer',
+    avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=member1',
+    email: 'member1@artfiq.com',
+  },
+  {
+    name: 'Team Member 2',
+    role: 'Designer',
+    avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=member2',
+    email: 'member2@artfiq.com',
+  },
+  {
+    name: 'Team Member 3',
+    role: 'Marketing',
+    avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=member3',
+    email: 'member3@artfiq.com',
+  },
+  {
+    name: 'Team Member 4',
+    role: 'Operations',
+    avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=member4',
+    email: 'member4@artfiq.com',
   },
 ];
 
@@ -137,6 +165,43 @@ export function HomeTab() {
                 <p className="text-primary font-medium text-sm mb-1">{founder.role}</p>
                 <p className="text-sm text-muted-foreground">{founder.description}</p>
               </div>
+            </motion.div>
+          ))}
+        </div>
+      </motion.section>
+
+      {/* Team Members Section */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8, duration: 0.6 }}
+        className="space-y-6"
+      >
+        <h2 className="text-2xl font-semibold text-center">Our Team</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {teamMembers.map((member, index) => (
+            <motion.div
+              key={member.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 + index * 0.1, duration: 0.5 }}
+              whileHover={{ y: -4 }}
+              className="glass-card rounded-xl p-4 text-center group"
+            >
+              <img
+                src={member.avatar}
+                alt={member.name}
+                className="w-16 h-16 rounded-full border-2 border-primary/30 mx-auto mb-3 object-cover"
+              />
+              <h3 className="font-medium text-sm">{member.name}</h3>
+              <p className="text-xs text-primary mb-2">{member.role}</p>
+              <a
+                href={`mailto:${member.email}`}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                <Mail className="w-3 h-3" />
+                <span className="truncate max-w-[100px]">{member.email}</span>
+              </a>
             </motion.div>
           ))}
         </div>
