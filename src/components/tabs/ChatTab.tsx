@@ -4,76 +4,111 @@ import { Send, Smile, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 interface Message {
   id: string;
-  userId: string;
-  userName: string;
-  userAvatar: string;
+  user_id: string;
+  user_name: string;
+  user_avatar: string | null;
   text: string;
-  timestamp: Date;
+  created_at: string;
 }
 
-const initialMessages: Message[] = [
-  {
-    id: '1',
-    userId: 'user_ceo',
-    userName: 'Mohammed Sulaiman',
-    userAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sulaiman',
-    text: 'Welcome to the ARTFIQ team chat! 🚀',
-    timestamp: new Date(Date.now() - 3600000),
-  },
-  {
-    id: '2',
-    userId: 'user_cto',
-    userName: 'Mohammed Anas',
-    userAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Anas',
-    text: 'Great to have everyone here. Let\'s build something amazing together!',
-    timestamp: new Date(Date.now() - 3000000),
-  },
-  {
-    id: '3',
-    userId: 'user_ceo',
-    userName: 'Mohammed Sulaiman',
-    userAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sulaiman',
-    text: 'The new workspace is looking incredible. Anas, great work on the UI!',
-    timestamp: new Date(Date.now() - 1800000),
-  },
-];
-
-function formatTime(date: Date): string {
+function formatTime(dateStr: string): string {
+  const date = new Date(dateStr);
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 export function ChatTab() {
-  const { user } = useAuth();
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const { user, profile } = useAuth();
+  const { toast } = useToast();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Fetch initial messages
+  useEffect(() => {
+    const fetchMessages = async () => {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .limit(100);
+
+      if (error) {
+        console.error('Error fetching messages:', error);
+      } else {
+        setMessages(data || []);
+      }
+      setIsLoading(false);
+    };
+
+    fetchMessages();
+  }, []);
+
+  // Set up real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('messages-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        (payload) => {
+          const newMsg = payload.new as Message;
+          setMessages((prev) => [...prev, newMsg]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!newMessage.trim() || !user) return;
 
-    const message: Message = {
-      id: Date.now().toString(),
-      userId: user.id,
-      userName: user.name,
-      userAvatar: user.avatar,
-      text: newMessage.trim(),
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, message]);
+    setIsSending(true);
+    const messageText = newMessage.trim();
     setNewMessage('');
+
+    try {
+      const { error } = await supabase.from('messages').insert({
+        user_id: user.id,
+        user_name: profile?.display_name || user.email?.split('@')[0] || 'Unknown',
+        user_avatar: profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
+        text: messageText,
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      toast({
+        title: 'Failed to send message',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setNewMessage(messageText); // Restore message on error
+    }
+
+    setIsSending(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -93,70 +128,80 @@ export function ChatTab() {
       >
         <h1 className="text-2xl font-bold">Team Chat</h1>
         <p className="text-sm text-muted-foreground">
-          {messages.length} messages • {3} members online
+          {messages.length} messages • Real-time sync enabled
         </p>
       </motion.div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 scrollbar-cyber">
-        <AnimatePresence initial={false}>
-          {messages.map((message, index) => {
-            const isOwnMessage = message.userId === user?.id;
-            const showAvatar = index === 0 || messages[index - 1].userId !== message.userId;
+        {isLoading ? (
+          <div className="text-center text-muted-foreground py-8">
+            Loading messages...
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8">
+            No messages yet. Start the conversation!
+          </div>
+        ) : (
+          <AnimatePresence initial={false}>
+            {messages.map((message, index) => {
+              const isOwnMessage = message.user_id === user?.id;
+              const showAvatar = index === 0 || messages[index - 1].user_id !== message.user_id;
 
-            return (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-                className={cn(
-                  "flex gap-3",
-                  isOwnMessage && "flex-row-reverse"
-                )}
-              >
-                {/* Avatar */}
-                <div className="flex-shrink-0 w-10">
-                  {showAvatar && (
-                    <motion.img
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      src={message.userAvatar}
-                      alt={message.userName}
-                      className="w-10 h-10 rounded-full border border-border"
-                    />
+              return (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className={cn(
+                    "flex gap-3",
+                    isOwnMessage && "flex-row-reverse"
                   )}
-                </div>
-
-                {/* Message Content */}
-                <div className={cn(
-                  "max-w-[70%] space-y-1",
-                  isOwnMessage && "items-end"
-                )}>
-                  {showAvatar && (
-                    <div className={cn(
-                      "flex items-center gap-2 text-sm",
-                      isOwnMessage && "flex-row-reverse"
-                    )}>
-                      <span className="font-medium">{message.userName}</span>
-                      <span className="text-muted-foreground text-xs">
-                        {formatTime(message.timestamp)}
-                      </span>
-                    </div>
-                  )}
-                  <div className={cn(
-                    "px-4 py-2.5 rounded-2xl",
-                    isOwnMessage
-                      ? "bg-primary text-primary-foreground rounded-tr-md"
-                      : "glass-card rounded-tl-md"
-                  )}>
-                    <p className="text-sm leading-relaxed">{message.text}</p>
+                >
+                  {/* Avatar */}
+                  <div className="flex-shrink-0 w-10">
+                    {showAvatar && (
+                      <motion.img
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        src={message.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${message.user_id}`}
+                        alt={message.user_name}
+                        className="w-10 h-10 rounded-full border border-border"
+                      />
+                    )}
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+
+                  {/* Message Content */}
+                  <div className={cn(
+                    "max-w-[70%] space-y-1",
+                    isOwnMessage && "items-end"
+                  )}>
+                    {showAvatar && (
+                      <div className={cn(
+                        "flex items-center gap-2 text-sm",
+                        isOwnMessage && "flex-row-reverse"
+                      )}>
+                        <span className="font-medium">{message.user_name}</span>
+                        <span className="text-muted-foreground text-xs">
+                          {formatTime(message.created_at)}
+                        </span>
+                      </div>
+                    )}
+                    <div className={cn(
+                      "px-4 py-2.5 rounded-2xl",
+                      isOwnMessage
+                        ? "bg-primary text-primary-foreground rounded-tr-md"
+                        : "glass-card rounded-tl-md"
+                    )}>
+                      <p className="text-sm leading-relaxed">{message.text}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -182,6 +227,7 @@ export function ChatTab() {
               onKeyDown={handleKeyPress}
               placeholder="Type a message..."
               className="pr-10 bg-secondary border-0 focus-visible:ring-1 focus-visible:ring-primary"
+              disabled={isSending}
             />
             <Button
               variant="ghost"
@@ -196,7 +242,7 @@ export function ChatTab() {
             variant="cyber"
             size="icon"
             onClick={handleSend}
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() || isSending}
             className="flex-shrink-0"
           >
             <Send className="w-5 h-5" />

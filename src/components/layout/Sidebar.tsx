@@ -17,8 +17,11 @@ const navItems = [
 ];
 
 export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  const displayName = profile?.display_name || user?.email?.split('@')[0] || 'User';
+  const avatarUrl = profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
 
   return (
     <>
@@ -28,8 +31,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         <div className="flex items-center gap-3">
           {user && (
             <img
-              src={user.avatar}
-              alt={user.name}
+              src={avatarUrl}
+              alt={displayName}
               className="w-8 h-8 rounded-full border border-primary/50"
             />
           )}
@@ -109,12 +112,12 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           <div className="p-4 border-t border-sidebar-border">
             <div className="flex items-center gap-3 mb-3">
               <img
-                src={user.avatar}
-                alt={user.name}
+                src={avatarUrl}
+                alt={displayName}
                 className="w-10 h-10 rounded-full border-2 border-primary/30"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{user.name}</p>
+                <p className="text-sm font-medium truncate">{displayName}</p>
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
               </div>
             </div>

@@ -6,10 +6,22 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { HomeTab } from '@/components/tabs/HomeTab';
 import { VaultTab } from '@/components/tabs/VaultTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
+import { Loader2 } from 'lucide-react';
 
 function WorkspaceContent() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return <LoginScreen />;
