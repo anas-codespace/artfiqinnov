@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion';
-import { Home, FolderLock, MessageSquare, LogOut, Menu, X } from 'lucide-react';
+import { Home, FolderLock, MessageSquare, LogOut, Menu, X, Settings } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { NotificationBell } from '@/components/NotificationBell';
+import { ProfileSettings } from '@/components/ProfileSettings';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -19,6 +21,7 @@ const navItems = [
 export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const { user, profile, signOut } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
 
   const displayName = profile?.display_name || user?.email?.split('@')[0] || 'User';
   const avatarUrl = profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
@@ -28,12 +31,14 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border h-16 flex items-center justify-between px-4">
         <h1 className="text-xl font-bold text-gradient-cyber">ARTFIQ</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <NotificationBell onNavigate={onTabChange} />
           {user && (
             <img
               src={avatarUrl}
               alt={displayName}
-              className="w-8 h-8 rounded-full border border-primary/50"
+              className="w-8 h-8 rounded-full border border-primary/50 cursor-pointer"
+              onClick={() => setShowProfileSettings(true)}
             />
           )}
           <Button
@@ -67,9 +72,12 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
+        {/* Logo + Notifications */}
+        <div className="h-16 flex items-center justify-between px-6 border-b border-sidebar-border">
           <h1 className="text-2xl font-bold text-gradient-cyber">ARTFIQ</h1>
+          <div className="hidden lg:block">
+            <NotificationBell onNavigate={onTabChange} />
+          </div>
         </div>
 
         {/* Navigation */}
@@ -110,7 +118,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         {/* User Profile */}
         {user && (
           <div className="p-4 border-t border-sidebar-border">
-            <div className="flex items-center gap-3 mb-3">
+            <div 
+              className="flex items-center gap-3 mb-3 cursor-pointer hover:bg-secondary/50 rounded-lg p-2 -m-2 transition-colors"
+              onClick={() => setShowProfileSettings(true)}
+            >
               <img
                 src={avatarUrl}
                 alt={displayName}
@@ -120,6 +131,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 <p className="text-sm font-medium truncate">{displayName}</p>
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
               </div>
+              <Settings className="w-4 h-4 text-muted-foreground" />
             </div>
             <Button
               variant="ghost"
@@ -155,6 +167,12 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           );
         })}
       </div>
+
+      {/* Profile Settings Modal */}
+      <ProfileSettings 
+        open={showProfileSettings} 
+        onOpenChange={setShowProfileSettings} 
+      />
     </>
   );
 }
