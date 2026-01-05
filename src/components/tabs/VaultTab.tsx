@@ -167,18 +167,13 @@ export function VaultTab() {
 
         if (uploadError) throw uploadError;
 
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from('files')
-          .getPublicUrl(fileName);
-
-        // Save metadata to database
+        // Save metadata to database (no public URL stored)
         const { error: dbError } = await supabase
           .from('files')
           .insert({
             name: file.name,
             size: file.size,
-            url: urlData.publicUrl,
+            url: '', // No longer storing public URLs
             storage_path: fileName,
             uploaded_by: user.id,
             uploader_name: profile?.display_name || user.email?.split('@')[0] || 'Unknown',
@@ -204,6 +199,19 @@ export function VaultTab() {
 
       setIsUploading(false);
     }
+  };
+
+  // Generate signed URL for secure file access (1 hour expiry)
+  const getSignedUrl = async (storagePath: string): Promise<string | null> => {
+    const { data, error } = await supabase.storage
+      .from('files')
+      .createSignedUrl(storagePath, 3600); // 1 hour expiry
+
+    if (error) {
+      console.error('Error creating signed URL:', error);
+      return null;
+    }
+    return data.signedUrl;
   };
 
   const handleDelete = async (file: UploadedFile) => {
@@ -238,19 +246,42 @@ export function VaultTab() {
     }
   };
 
-  const handleDownload = (file: UploadedFile) => {
-    window.open(file.url, '_blank');
+  const handleDownload = async (file: UploadedFile) => {
+    const signedUrl = await getSignedUrl(file.storage_path);
+    if (signedUrl) {
+      window.open(signedUrl, '_blank');
+    } else {
+      toast({
+        title: 'Download failed',
+        description: 'Could not generate download link.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handlePreview = async (file: UploadedFile) => {
     const ext = getFileExtension(file.name);
-    setPreviewFile(file);
+    setIsLoadingPreview(true);
     setTextContent('');
+    
+    // Get signed URL for preview
+    const signedUrl = await getSignedUrl(file.storage_path);
+    if (!signedUrl) {
+      toast({
+        title: 'Preview failed',
+        description: 'Could not generate preview link.',
+        variant: 'destructive',
+      });
+      setIsLoadingPreview(false);
+      return;
+    }
+
+    // Store signed URL in previewFile for rendering
+    setPreviewFile({ ...file, url: signedUrl });
 
     if (ext === 'txt') {
-      setIsLoadingPreview(true);
       try {
-        const response = await fetch(file.url);
+        const response = await fetch(signedUrl);
         const text = await response.text();
         setTextContent(text);
       } catch (error) {
@@ -261,8 +292,8 @@ export function VaultTab() {
           variant: 'destructive',
         });
       }
-      setIsLoadingPreview(false);
     }
+    setIsLoadingPreview(false);
   };
 
   const closePreview = () => {
