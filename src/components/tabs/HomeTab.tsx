@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import { Target, Users, Zap, Globe, Mail } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import ceoImage from '@/assets/ceo-sulaiman.jpeg';
 import ctoImage from '@/assets/cto-anas.jpeg';
 
@@ -18,34 +20,6 @@ const founders = [
   },
 ];
 
-// Team members - update with real info and photos
-const teamMembers = [
-  {
-    name: 'Team Member 1',
-    role: 'Developer',
-    avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=member1',
-    email: 'member1@artfiq.com',
-  },
-  {
-    name: 'Team Member 2',
-    role: 'Designer',
-    avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=member2',
-    email: 'member2@artfiq.com',
-  },
-  {
-    name: 'Team Member 3',
-    role: 'Marketing',
-    avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=member3',
-    email: 'member3@artfiq.com',
-  },
-  {
-    name: 'Team Member 4',
-    role: 'Operations',
-    avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=member4',
-    email: 'member4@artfiq.com',
-  },
-];
-
 const features = [
   { icon: Target, title: 'Mission-Driven', description: 'Focused on meaningful impact' },
   { icon: Zap, title: 'Lightning Fast', description: 'Optimized for performance' },
@@ -53,7 +27,31 @@ const features = [
   { icon: Users, title: 'Team First', description: 'Collaboration at our core' },
 ];
 
+interface TeamMember {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  email: string | null;
+}
+
 export function HomeTab() {
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, display_name, avatar_url, email')
+        .order('created_at', { ascending: true });
+      
+      if (data) {
+        setTeamMembers(data);
+      }
+    };
+
+    fetchTeamMembers();
+  }, []);
+
   return (
     <div className="p-6 lg:p-8 space-y-12 max-w-5xl mx-auto">
       {/* Hero Section */}
@@ -181,7 +179,7 @@ export function HomeTab() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {teamMembers.map((member, index) => (
             <motion.div
-              key={member.name}
+              key={member.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 + index * 0.1, duration: 0.5 }}
@@ -189,19 +187,20 @@ export function HomeTab() {
               className="glass-card rounded-xl p-4 text-center group"
             >
               <img
-                src={member.avatar}
-                alt={member.name}
+                src={member.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${member.id}`}
+                alt={member.display_name || 'Team member'}
                 className="w-16 h-16 rounded-full border-2 border-primary/30 mx-auto mb-3 object-cover"
               />
-              <h3 className="font-medium text-sm">{member.name}</h3>
-              <p className="text-xs text-primary mb-2">{member.role}</p>
-              <a
-                href={`mailto:${member.email}`}
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-              >
-                <Mail className="w-3 h-3" />
-                <span className="truncate max-w-[100px]">{member.email}</span>
-              </a>
+              <h3 className="font-medium text-sm">{member.display_name || 'Team Member'}</h3>
+              {member.email && (
+                <a
+                  href={`mailto:${member.email}`}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors mt-2"
+                >
+                  <Mail className="w-3 h-3" />
+                  <span className="truncate max-w-[100px]">{member.email}</span>
+                </a>
+              )}
             </motion.div>
           ))}
         </div>
