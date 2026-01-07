@@ -7,6 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { AnimatedBackground } from '@/components/ui/animated-background';
+import { LiquidLogo } from '@/components/ui/liquid-logo';
+import { SoftFloat } from '@/components/ui/soft-float';
 
 const emailSchema = z.string().email('Please enter a valid email');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -118,40 +121,30 @@ export function LoginScreen() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background grid */}
+      {/* Animated gradient orbs background */}
+      <AnimatedBackground />
+      
+      {/* Subtle grid overlay */}
       <div 
-        className="absolute inset-0 opacity-20"
+        className="absolute inset-0 opacity-10 pointer-events-none"
         style={{
           backgroundImage: 'linear-gradient(hsl(var(--border)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)',
           backgroundSize: '50px 50px',
         }}
       />
-      
-      {/* Gradient orbs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[128px] animate-float" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[128px] animate-float" style={{ animationDelay: '3s' }} />
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="relative z-10 w-full max-w-md"
-      >
+      <SoftFloat delay={0} duration={1} y={60} className="relative z-10 w-full max-w-md">
         <div className="glass-card rounded-2xl p-8 space-y-6">
-          {/* Logo */}
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="text-center"
-          >
-            <h1 className="text-4xl font-bold text-gradient-cyber mb-2">
+          {/* Liquid Logo */}
+          <SoftFloat delay={0.2} className="flex flex-col items-center">
+            <LiquidLogo size={100} className="mb-4" />
+            <h1 className="text-3xl font-bold text-gradient-cyber">
               ARTFIQ
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {view === 'forgot-password' ? 'Reset Password' : 'Workspace'}
             </p>
-          </motion.div>
+          </SoftFloat>
 
           <AnimatePresence mode="wait">
             {view === 'login' ? (
@@ -319,7 +312,7 @@ export function LoginScreen() {
             )}
           </AnimatePresence>
         </div>
-      </motion.div>
+      </SoftFloat>
     </div>
   );
 }
