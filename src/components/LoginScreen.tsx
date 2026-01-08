@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { AnimatedBackground } from '@/components/ui/animated-background';
 import { LiquidLogo } from '@/components/ui/liquid-logo';
 import { SoftFloat } from '@/components/ui/soft-float';
+import { sanitizeAuthError } from '@/lib/auth-errors';
 
 const emailSchema = z.string().email('Please enter a valid email');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -57,7 +58,7 @@ export function LoginScreen() {
         if (error) {
           toast({
             title: 'Sign up failed',
-            description: error.message,
+            description: sanitizeAuthError(error),
             variant: 'destructive',
           });
         } else {
@@ -71,7 +72,7 @@ export function LoginScreen() {
         if (error) {
           toast({
             title: 'Sign in failed',
-            description: error.message,
+            description: sanitizeAuthError(error),
             variant: 'destructive',
           });
         }
@@ -104,7 +105,7 @@ export function LoginScreen() {
       if (error) {
         toast({
           title: 'Reset failed',
-          description: error.message,
+          description: sanitizeAuthError(error),
           variant: 'destructive',
         });
       } else {

@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { sanitizeAuthError } from '@/lib/auth-errors';
 
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
 
@@ -62,7 +63,7 @@ function ResetPasswordContent() {
       if (error) {
         toast({
           title: 'Password update failed',
-          description: error.message,
+          description: sanitizeAuthError(error),
           variant: 'destructive',
         });
       } else {
