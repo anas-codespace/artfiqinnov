@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { LoginScreen } from '@/components/LoginScreen';
-import { Sidebar } from '@/components/layout/Sidebar';
+import { BottomDock } from '@/components/layout/BottomDock';
+import { TopHeader } from '@/components/layout/TopHeader';
 import { HomeTab } from '@/components/tabs/HomeTab';
 import { VaultTab } from '@/components/tabs/VaultTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
@@ -41,23 +42,25 @@ function WorkspaceContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+    <div className="min-h-screen bg-background">
+      <TopHeader onNavigate={setActiveTab} />
       
-      <main className="flex-1 lg:ml-0 pt-16 pb-16 lg:pt-0 lg:pb-0 overflow-hidden">
+      <main className="pt-16 pb-28">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="h-full"
           >
             {renderTab()}
           </motion.div>
         </AnimatePresence>
       </main>
+
+      <BottomDock activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 }
