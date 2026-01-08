@@ -372,13 +372,26 @@ export function ChatTab() {
     }, 2000);
   };
 
+  const MAX_MESSAGE_LENGTH = 5000;
+
   const handleSend = async () => {
     if (!newMessage.trim() || !user) return;
+
+    const messageText = newMessage.trim();
+
+    // Validate message length
+    if (messageText.length > MAX_MESSAGE_LENGTH) {
+      toast({
+        title: 'Message too long',
+        description: `Please keep messages under ${MAX_MESSAGE_LENGTH} characters.`,
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsSending(true);
     updatePresence(false);
     
-    const messageText = newMessage.trim();
     setNewMessage('');
     const replyToId = replyTo?.id || null;
     setReplyTo(null);
@@ -386,7 +399,7 @@ export function ChatTab() {
     try {
       const { error } = await supabase.from('messages').insert({
         user_id: user.id,
-        user_name: profile?.display_name || user.email?.split('@')[0] || 'Unknown',
+        user_name: (profile?.display_name || user.email?.split('@')[0] || 'Unknown').slice(0, 100),
         user_avatar: profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
         text: messageText,
         reply_to: replyToId,
@@ -394,10 +407,9 @@ export function ChatTab() {
 
       if (error) throw error;
     } catch (error: any) {
-      console.error('Error sending message:', error);
       toast({
         title: 'Failed to send message',
-        description: error.message,
+        description: 'Unable to send your message. Please try again.',
         variant: 'destructive',
       });
       setNewMessage(messageText);
