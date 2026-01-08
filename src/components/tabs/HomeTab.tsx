@@ -1,7 +1,8 @@
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { Target, Users, Zap, Globe, Mail } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { FluidButton } from '@/components/ui/fluid-button';
 import ceoImage from '@/assets/ceo-sulaiman.jpeg';
 import ctoImage from '@/assets/cto-anas.jpeg';
 
@@ -36,6 +37,18 @@ interface TeamMember {
 
 export function HomeTab() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"]
+  });
+
+  // Parallax transforms for different layers
+  const heroY = useTransform(scrollYProgress, [0, 1], [0, 150]);
+  const featuresY = useTransform(scrollYProgress, [0, 1], [0, 80]);
+  const foundersY = useTransform(scrollYProgress, [0, 1], [0, 50]);
+  const bgScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
 
   useEffect(() => {
     const fetchTeamMembers = async () => {
@@ -53,13 +66,23 @@ export function HomeTab() {
   }, []);
 
   return (
-    <div className="p-6 lg:p-8 space-y-12 max-w-5xl mx-auto">
-      {/* Hero Section */}
+    <div ref={containerRef} className="p-6 lg:p-8 space-y-12 max-w-5xl mx-auto relative">
+      {/* Deep parallax background layer */}
+      <motion.div 
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{ scale: bgScale }}
+      >
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-destructive/5 rounded-full blur-3xl" />
+      </motion.div>
+
+      {/* Hero Section with parallax */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-center space-y-6"
+        style={{ y: heroY }}
+        className="text-center space-y-6 relative z-10"
       >
         <motion.div
           initial={{ scale: 0.9 }}
@@ -67,7 +90,7 @@ export function HomeTab() {
           transition={{ delay: 0.2, duration: 0.5 }}
         >
           <h1 className="text-4xl lg:text-6xl font-bold mb-4">
-            About <span className="text-gradient-cyber">ARTFIQ</span>
+            About <span className="text-primary">ARTFIQ</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Bridging human needs with digital efficiency.
@@ -75,19 +98,25 @@ export function HomeTab() {
         </motion.div>
       </motion.section>
 
-      {/* Mission Card */}
+      {/* Mission Card with parallax */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.6 }}
+        style={{ y: featuresY }}
+        className="relative z-10"
       >
         <div className="glass-card rounded-2xl p-8 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <motion.div 
+                className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: 'spring', stiffness: 400 }}
+              >
                 <Target className="w-6 h-6 text-primary" />
-              </div>
+              </motion.div>
               <h2 className="text-2xl font-semibold">Our Mission</h2>
             </div>
             <p className="text-lg text-muted-foreground leading-relaxed">
@@ -100,12 +129,13 @@ export function HomeTab() {
         </div>
       </motion.section>
 
-      {/* Features Grid */}
+      {/* Features Grid with staggered parallax */}
       <motion.section
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.6 }}
-        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+        style={{ y: featuresY }}
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 relative z-10"
       >
         {features.map((feature, index) => {
           const Icon = feature.icon;
@@ -115,25 +145,41 @@ export function HomeTab() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
-              whileHover={{ y: -4 }}
-              className="glass-card rounded-xl p-5 text-center group cursor-default"
+              whileHover={{ 
+                y: -8, 
+                scale: 1.02,
+                boxShadow: '0 20px 40px -10px hsl(var(--primary) / 0.2)',
+              }}
+              className="glass-card rounded-xl p-5 text-center group cursor-default relative overflow-hidden"
             >
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-primary/20 transition-colors">
-                <Icon className="w-5 h-5 text-primary" />
+              {/* Ripple effect background */}
+              <motion.div
+                className="absolute inset-0 bg-primary/0 rounded-xl"
+                whileHover={{ backgroundColor: 'hsl(var(--primary) / 0.05)' }}
+                transition={{ duration: 0.3 }}
+              />
+              <div className="relative z-10">
+                <motion.div 
+                  className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-primary/20 transition-colors"
+                  whileHover={{ rotate: 10, scale: 1.1 }}
+                >
+                  <Icon className="w-5 h-5 text-primary" />
+                </motion.div>
+                <h3 className="font-medium mb-1">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground">{feature.description}</p>
               </div>
-              <h3 className="font-medium mb-1">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground">{feature.description}</p>
             </motion.div>
           );
         })}
       </motion.section>
 
-      {/* Founders Section */}
+      {/* Founders Section with deep parallax */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 0.6 }}
-        className="space-y-6"
+        style={{ y: foundersY }}
+        className="space-y-6 relative z-10"
       >
         <h2 className="text-2xl font-semibold text-center">Meet the Founders</h2>
         <div className="grid md:grid-cols-2 gap-6">
@@ -143,25 +189,45 @@ export function HomeTab() {
               initial={{ opacity: 0, x: index === 0 ? -20 : 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
-              whileHover={{ scale: 1.02 }}
-              className="glass-card rounded-2xl p-6 flex items-center gap-5"
+              whileHover={{ 
+                scale: 1.02,
+                boxShadow: '0 25px 50px -12px hsl(var(--primary) / 0.15)',
+              }}
+              className="glass-card rounded-2xl p-6 flex items-center gap-5 relative overflow-hidden"
             >
-              <div className="relative">
-                <img
-                  src={founder.avatar}
-                  alt={founder.name}
-                  className="w-20 h-20 rounded-2xl border-2 border-primary/30 object-cover"
-                />
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                  <span className="text-xs font-bold text-primary-foreground">
-                    {founder.role === 'CEO' ? '👑' : '⚡'}
-                  </span>
+              {/* Hover glow effect */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-primary/0 to-primary/0 rounded-2xl"
+                whileHover={{ 
+                  background: 'linear-gradient(135deg, hsl(var(--primary) / 0.05), transparent)',
+                }}
+                transition={{ duration: 0.4 }}
+              />
+              <div className="relative z-10 flex items-center gap-5">
+                <motion.div 
+                  className="relative"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <motion.img
+                    src={founder.avatar}
+                    alt={founder.name}
+                    className="w-20 h-20 rounded-2xl border-2 border-primary/30 object-cover"
+                    whileHover={{ borderColor: 'hsl(var(--primary))' }}
+                    style={{ 
+                      transform: 'translateZ(20px)',
+                    }}
+                  />
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                    <span className="text-xs font-bold text-primary-foreground">
+                      {founder.role === 'CEO' ? '👑' : '⚡'}
+                    </span>
+                  </div>
+                </motion.div>
+                <div>
+                  <h3 className="text-lg font-semibold">{founder.name}</h3>
+                  <p className="text-primary font-medium text-sm mb-1">{founder.role}</p>
+                  <p className="text-sm text-muted-foreground">{founder.description}</p>
                 </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">{founder.name}</h3>
-                <p className="text-primary font-medium text-sm mb-1">{founder.role}</p>
-                <p className="text-sm text-muted-foreground">{founder.description}</p>
               </div>
             </motion.div>
           ))}
@@ -173,7 +239,7 @@ export function HomeTab() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8, duration: 0.6 }}
-        className="space-y-6"
+        className="space-y-6 relative z-10"
       >
         <h2 className="text-2xl font-semibold text-center">Our Team</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -183,24 +249,37 @@ export function HomeTab() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 + index * 0.1, duration: 0.5 }}
-              whileHover={{ y: -4 }}
-              className="glass-card rounded-xl p-4 text-center group"
+              whileHover={{ 
+                y: -8,
+                boxShadow: '0 20px 40px -10px hsl(var(--primary) / 0.2)',
+              }}
+              className="glass-card rounded-xl p-4 text-center group relative overflow-hidden"
             >
-              <img
-                src={member.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${member.id}`}
-                alt={member.display_name || 'Team member'}
-                className="w-16 h-16 rounded-full border-2 border-primary/30 mx-auto mb-3 object-cover"
+              <motion.div
+                className="absolute inset-0 rounded-xl border-2 border-transparent"
+                whileHover={{ borderColor: 'hsl(var(--primary) / 0.3)' }}
+                transition={{ duration: 0.3 }}
               />
-              <h3 className="font-medium text-sm">{member.display_name || 'Team Member'}</h3>
-              {member.email && (
-                <a
-                  href={`mailto:${member.email}`}
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors mt-2"
-                >
-                  <Mail className="w-3 h-3" />
-                  <span className="truncate max-w-[100px]">{member.email}</span>
-                </a>
-              )}
+              <div className="relative z-10">
+                <motion.img
+                  src={member.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${member.id}`}
+                  alt={member.display_name || 'Team member'}
+                  className="w-16 h-16 rounded-full border-2 border-primary/30 mx-auto mb-3 object-cover"
+                  whileHover={{ scale: 1.1, borderColor: 'hsl(var(--primary))' }}
+                />
+                <h3 className="font-medium text-sm">{member.display_name || 'Team Member'}</h3>
+                {member.email && (
+                  <FluidButton
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 text-xs text-muted-foreground hover:text-primary"
+                    onClick={() => window.location.href = `mailto:${member.email}`}
+                  >
+                    <Mail className="w-3 h-3 mr-1" />
+                    <span className="truncate max-w-[80px]">{member.email}</span>
+                  </FluidButton>
+                )}
+              </div>
             </motion.div>
           ))}
         </div>
