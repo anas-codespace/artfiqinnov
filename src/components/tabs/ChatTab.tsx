@@ -72,6 +72,7 @@ export function ChatTab() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [presenceData, setPresenceData] = useState<Record<string, UserPresence>>({});
+  const [cleanupCount, setCleanupCount] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -79,6 +80,28 @@ export function ChatTab() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Auto-delete messages older than 72 hours
+  const cleanupOldMessages = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc('cleanup_old_messages');
+      if (error) {
+        console.error('Error cleaning up old messages:', error);
+      } else if (data && data > 0) {
+        setCleanupCount(data);
+        // Remove old messages from local state
+        const cutoffTime = new Date(Date.now() - 72 * 60 * 60 * 1000);
+        setMessages(prev => prev.filter(m => new Date(m.created_at) > cutoffTime));
+      }
+    } catch (error) {
+      console.error('Cleanup error:', error);
+    }
+  }, []);
+
+  // Run cleanup on mount
+  useEffect(() => {
+    cleanupOldMessages();
+  }, [cleanupOldMessages]);
 
   // Mark message as read
   const markMessageAsRead = useCallback(async (messageId: string) => {
@@ -484,7 +507,7 @@ export function ChatTab() {
   const onlineParticipants = participants.filter(p => p.isOnline || presenceData[p.user_id]?.is_online);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] lg:h-screen relative overflow-hidden">
+    <div className="flex h-[calc(100vh-11rem)] relative overflow-hidden max-w-5xl mx-auto">
       {/* Watermark Background */}
       <div 
         className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
@@ -498,90 +521,52 @@ export function ChatTab() {
         }}
       />
 
-      {/* Participants Sidebar */}
-      <SoftFloat delay={0.1} className="hidden md:flex flex-col w-64 border-r border-border bg-background/80 backdrop-blur-xl z-10">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-            Participants ({onlineParticipants.length}/{participants.length})
-          </h2>
-        </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-cyber">
-          {participants.map((participant, index) => {
-            const isOnline = participant.isOnline || presenceData[participant.user_id]?.is_online;
-            const isTyping = participant.isTyping || presenceData[participant.user_id]?.is_typing;
-            
-            return (
-              <motion.div
-                key={participant.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 + index * 0.05, ease: [0.22, 1, 0.36, 1] }}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors"
-              >
-                <div className="relative">
-                  <img
-                    src={participant.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${participant.user_id}`}
-                    alt={participant.display_name || 'User'}
-                    className="w-9 h-9 rounded-full border border-border"
-                  />
-                  {/* Online indicator with glow */}
-                  <motion.span
-                    className={cn(
-                      "absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background",
-                      isOnline 
-                        ? "bg-green-500" 
-                        : "bg-muted-foreground/50"
-                    )}
-                    animate={isOnline ? {
-                      boxShadow: [
-                        '0 0 0px rgba(34,197,94,0.4)',
-                        '0 0 8px rgba(34,197,94,0.6)',
-                        '0 0 0px rgba(34,197,94,0.4)',
-                      ],
-                    } : {}}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {participant.display_name || 'Unknown'}
-                  </p>
-                  {isTyping ? (
-                    <motion.p 
-                      className="text-xs text-primary flex items-center gap-1"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <span>typing</span>
-                      <motion.span
-                        animate={{ opacity: [0, 1, 0] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                      >...</motion.span>
-                    </motion.p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      {isOnline ? (
-                        <span className="text-green-400">Online</span>
-                      ) : (
-                        'Offline'
-                      )}
-                    </p>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </SoftFloat>
-
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col z-10">
-        {/* Header */}
-        <SoftFloat delay={0} className="flex-shrink-0 p-4 lg:p-6 border-b border-border bg-background/80 backdrop-blur-xl">
-          <h1 className="text-2xl font-bold">Team Chat</h1>
-          <p className="text-sm text-muted-foreground">
-            {messages.length} messages • {onlineParticipants.length} online
-          </p>
+        {/* Header with privacy notice */}
+        <SoftFloat delay={0} className="flex-shrink-0 p-4 lg:p-6 border-b border-border bg-background/80 backdrop-blur-xl rounded-t-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Team Chat</h1>
+              <p className="text-sm text-muted-foreground">
+                {messages.length} messages • {onlineParticipants.length} online
+              </p>
+            </div>
+            {/* Online participants avatars */}
+            <div className="flex items-center gap-2">
+              <div className="flex -space-x-2">
+                {onlineParticipants.slice(0, 5).map((p) => (
+                  <motion.img
+                    key={p.id}
+                    src={p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`}
+                    alt={p.display_name || 'User'}
+                    className="w-8 h-8 rounded-full border-2 border-background"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                  />
+                ))}
+              </div>
+              {onlineParticipants.length > 5 && (
+                <span className="text-xs text-muted-foreground">
+                  +{onlineParticipants.length - 5} more
+                </span>
+              )}
+            </div>
+          </div>
+          
+          {/* Privacy Notice */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mt-3 flex items-center gap-2 text-xs text-muted-foreground bg-secondary/50 rounded-full px-3 py-1.5 w-fit"
+          >
+            <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <span>Messages are auto-deleted after 3 days for security</span>
+          </motion.div>
         </SoftFloat>
 
         {/* Messages */}

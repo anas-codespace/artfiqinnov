@@ -1,0 +1,113 @@
+import { motion } from 'framer-motion';
+import { LogOut, Settings } from 'lucide-react';
+import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { NotificationBell } from '@/components/NotificationBell';
+import { ProfileSettings } from '@/components/ProfileSettings';
+
+interface TopHeaderProps {
+  onNavigate: (tab: string) => void;
+}
+
+export function TopHeader({ onNavigate }: TopHeaderProps) {
+  const { user, profile, signOut } = useAuth();
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
+
+  const displayName = profile?.display_name || user?.email?.split('@')[0] || 'User';
+  const avatarUrl = profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
+
+  return (
+    <>
+      <motion.header
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className="fixed top-0 left-0 right-0 z-40 h-16 flex items-center justify-between px-6 bg-background/60 backdrop-blur-xl border-b border-border/30"
+      >
+        {/* Logo - Left Side */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+          className="flex items-center gap-3"
+        >
+          {/* Pill Badge Container */}
+          <div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-card/60 backdrop-blur-md border border-border/50 shadow-lg">
+            <span className="text-lg font-bold text-primary">A</span>
+            <motion.div
+              className="absolute inset-0 rounded-full"
+              animate={{
+                boxShadow: [
+                  '0 0 0px hsl(var(--primary) / 0)',
+                  '0 0 15px hsl(var(--primary) / 0.3)',
+                  '0 0 0px hsl(var(--primary) / 0)',
+                ],
+              }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </div>
+          
+          {/* Brand Text */}
+          <h1 
+            className="text-lg font-bold tracking-wider hidden sm:block"
+            style={{
+              fontFamily: "'Orbitron', 'Syncopate', sans-serif",
+              color: '#092a50',
+              textShadow: `
+                -1px -1px 0 rgba(255,255,255,0.8),
+                1px -1px 0 rgba(255,255,255,0.8),
+                -1px 1px 0 rgba(255,255,255,0.8),
+                1px 1px 0 rgba(255,255,255,0.8),
+                0 0 20px rgba(255,255,255,0.6),
+                0 0 30px rgba(255,255,255,0.4)
+              `,
+            }}
+          >
+            ARTFIQ INNOVATIONS
+          </h1>
+        </motion.div>
+
+        {/* Right Side - Profile & Actions */}
+        {user && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="flex items-center gap-3"
+          >
+            <NotificationBell onNavigate={onNavigate} />
+            
+            <div 
+              className="flex items-center gap-3 cursor-pointer hover:bg-secondary/50 rounded-full pl-3 pr-1 py-1 transition-all"
+              onClick={() => setShowProfileSettings(true)}
+            >
+              <span className="text-sm font-medium hidden sm:block">{displayName}</span>
+              <motion.img
+                src={avatarUrl}
+                alt={displayName}
+                className="w-9 h-9 rounded-full border-2 border-primary/30"
+                whileHover={{ scale: 1.05, borderColor: 'hsl(var(--primary))' }}
+              />
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={signOut}
+              className="text-muted-foreground hover:text-destructive rounded-full"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </motion.div>
+        )}
+      </motion.header>
+
+      {/* Profile Settings Modal */}
+      <ProfileSettings 
+        open={showProfileSettings} 
+        onOpenChange={setShowProfileSettings} 
+      />
+    </>
+  );
+}
