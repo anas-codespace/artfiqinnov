@@ -7,8 +7,8 @@ import { TopHeader } from '@/components/layout/TopHeader';
 import { HomeTab } from '@/components/tabs/HomeTab';
 import { VaultTab } from '@/components/tabs/VaultTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
+import { AnimatedBackground } from '@/components/ui/animated-background';
 import { Loader2 } from 'lucide-react';
-
 function WorkspaceContent() {
   const { user, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
@@ -42,7 +42,10 @@ function WorkspaceContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {/* Animated gradient orbs background */}
+      <AnimatedBackground />
+      
       <TopHeader onNavigate={setActiveTab} />
       
       <main className="pt-16 pb-28">

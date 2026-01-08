@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { NotificationBell } from '@/components/NotificationBell';
 import { ProfileSettings } from '@/components/ProfileSettings';
+import artfiqLogo from '@/assets/artfiq-logo.jpeg';
 
 interface TopHeaderProps {
   onNavigate: (tab: string) => void;
@@ -32,16 +33,23 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
           transition={{ delay: 0.1, duration: 0.5 }}
           className="flex items-center gap-3"
         >
-          {/* Pill Badge Container */}
-          <div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-card/60 backdrop-blur-md border border-border/50 shadow-lg">
-            <span className="text-lg font-bold text-primary">A</span>
+          {/* Logo Badge Container with Navy Blue styling and white glow */}
+          <div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-card/60 backdrop-blur-md border border-border/50 shadow-lg overflow-hidden drop-shadow-[0_0_3px_rgba(255,255,255,0.8)]">
+            <img 
+              src={artfiqLogo} 
+              alt="ARTFIQ Logo" 
+              className="w-full h-full object-cover"
+              style={{
+                filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.9))',
+              }}
+            />
             <motion.div
               className="absolute inset-0 rounded-full"
               animate={{
                 boxShadow: [
-                  '0 0 0px hsl(var(--primary) / 0)',
-                  '0 0 15px hsl(var(--primary) / 0.3)',
-                  '0 0 0px hsl(var(--primary) / 0)',
+                  '0 0 0px rgba(255,255,255,0)',
+                  '0 0 12px rgba(255,255,255,0.5)',
+                  '0 0 0px rgba(255,255,255,0)',
                 ],
               }}
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
