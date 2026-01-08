@@ -55,21 +55,11 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             />
           </div>
-          
-          {/* Brand Text */}
+          {/* Brand Text - Using theme colors */}
           <h1 
-            className="text-lg font-bold tracking-wider hidden sm:block"
+            className="text-lg font-bold tracking-wider hidden sm:block text-primary"
             style={{
               fontFamily: "'Orbitron', 'Syncopate', sans-serif",
-              color: '#092a50',
-              textShadow: `
-                -1px -1px 0 rgba(255,255,255,0.8),
-                1px -1px 0 rgba(255,255,255,0.8),
-                -1px 1px 0 rgba(255,255,255,0.8),
-                1px 1px 0 rgba(255,255,255,0.8),
-                0 0 20px rgba(255,255,255,0.6),
-                0 0 30px rgba(255,255,255,0.4)
-              `,
             }}
           >
             ARTFIQ INNOVATIONS
