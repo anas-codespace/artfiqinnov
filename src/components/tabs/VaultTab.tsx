@@ -1,11 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, X, File } from 'lucide-react';
+import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, X, File, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { FileViewersModal } from '@/components/ui/file-viewers-modal';
+import { springPresets } from '@/components/ui/spring-config';
 import {
   Dialog,
   DialogContent,
@@ -24,16 +27,21 @@ interface UploadedFile {
   created_at: string;
 }
 
+interface FileView {
+  id: string;
+  file_id: string;
+  user_id: string;
+  user_name: string;
+  viewed_at: string;
+}
+
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const ALLOWED_TYPES = {
   'application/pdf': { ext: 'pdf', icon: 'pdf', color: 'text-destructive' },
-  'text/plain': { ext: 'txt', icon: 'txt', color: 'text-primary' },
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { ext: 'docx', icon: 'docx', color: 'text-blue-500' },
-  'application/msword': { ext: 'doc', icon: 'doc', color: 'text-blue-500' },
 };
 
-const ALLOWED_EXTENSIONS = ['.pdf', '.txt', '.docx', '.doc'];
+const ALLOWED_EXTENSIONS = ['.pdf'];
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B';
@@ -50,11 +58,6 @@ function getFileIcon(filename: string) {
   switch (ext) {
     case 'pdf':
       return { color: 'text-destructive', bg: 'bg-destructive/10' };
-    case 'txt':
-      return { color: 'text-primary', bg: 'bg-primary/10' };
-    case 'docx':
-    case 'doc':
-      return { color: 'text-blue-500', bg: 'bg-blue-500/10' };
     default:
       return { color: 'text-muted-foreground', bg: 'bg-muted' };
   }
@@ -62,14 +65,15 @@ function getFileIcon(filename: string) {
 
 export function VaultTab() {
   const { user, profile } = useAuth();
+  const { role, isFounder } = useUserRole();
   const { toast } = useToast();
   const [files, setFiles] = useState<UploadedFile[]>([]);
+  const [fileViews, setFileViews] = useState<Record<string, FileView[]>>({});
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
-  const [textContent, setTextContent] = useState<string>('');
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [viewersModalFile, setViewersModalFile] = useState<UploadedFile | null>(null);
 
   // Fetch files from database
   const fetchFiles = async () => {
@@ -91,9 +95,49 @@ export function VaultTab() {
     setIsLoading(false);
   };
 
+  // Fetch file views
+  const fetchFileViews = async () => {
+    const { data, error } = await supabase
+      .from('file_views')
+      .select('*')
+      .order('viewed_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching file views:', error);
+    } else if (data) {
+      const grouped: Record<string, FileView[]> = {};
+      data.forEach((view) => {
+        if (!grouped[view.file_id]) {
+          grouped[view.file_id] = [];
+        }
+        grouped[view.file_id].push(view);
+      });
+      setFileViews(grouped);
+    }
+  };
+
   useEffect(() => {
     fetchFiles();
+    fetchFileViews();
   }, []);
+
+  // Track file view
+  const trackFileView = async (fileId: string) => {
+    if (!user || !profile) return;
+    
+    try {
+      await supabase.from('file_views').upsert({
+        file_id: fileId,
+        user_id: user.id,
+        user_name: profile.display_name || user.email?.split('@')[0] || 'Unknown',
+      }, { onConflict: 'file_id,user_id' });
+      
+      // Refresh views
+      fetchFileViews();
+    } catch (error) {
+      console.error('Error tracking file view:', error);
+    }
+  };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -136,11 +180,11 @@ export function VaultTab() {
     }
 
     for (const file of fileList) {
-      // Check file type
+      // Check file type - Only PDF allowed
       if (!isValidFileType(file)) {
         toast({
           title: 'Invalid file type',
-          description: 'Only PDF, TXT, and DOCX files are allowed.',
+          description: 'Only PDF files are allowed.',
           variant: 'destructive',
         });
         continue;
@@ -247,6 +291,9 @@ export function VaultTab() {
   };
 
   const handleDownload = async (file: UploadedFile) => {
+    // Track the view
+    await trackFileView(file.id);
+    
     const signedUrl = await getSignedUrl(file.storage_path);
     if (signedUrl) {
       window.open(signedUrl, '_blank');
@@ -260,9 +307,8 @@ export function VaultTab() {
   };
 
   const handlePreview = async (file: UploadedFile) => {
-    const ext = getFileExtension(file.name);
-    setIsLoadingPreview(true);
-    setTextContent('');
+    // Track the view
+    await trackFileView(file.id);
     
     // Get signed URL for preview
     const signedUrl = await getSignedUrl(file.storage_path);
@@ -272,82 +318,32 @@ export function VaultTab() {
         description: 'Could not generate preview link.',
         variant: 'destructive',
       });
-      setIsLoadingPreview(false);
       return;
     }
 
     // Store signed URL in previewFile for rendering
     setPreviewFile({ ...file, url: signedUrl });
-
-    if (ext === 'txt') {
-      try {
-        const response = await fetch(signedUrl);
-        const text = await response.text();
-        setTextContent(text);
-      } catch (error) {
-        console.error('Error loading text file:', error);
-        toast({
-          title: 'Preview failed',
-          description: 'Could not load file content.',
-          variant: 'destructive',
-        });
-      }
-    }
-    setIsLoadingPreview(false);
   };
 
   const closePreview = () => {
     setPreviewFile(null);
-    setTextContent('');
   };
 
   const renderPreviewContent = () => {
     if (!previewFile) return null;
 
-    const ext = getFileExtension(previewFile.name);
-
-    if (ext === 'pdf') {
-      return (
-        <iframe
-          src={`${previewFile.url}#toolbar=1`}
-          className="w-full h-[70vh] rounded-lg border border-border"
-          title={previewFile.name}
-        />
-      );
-    }
-
-    if (ext === 'txt') {
-      if (isLoadingPreview) {
-        return (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Loading...</p>
-          </div>
-        );
-      }
-      return (
-        <pre className="w-full h-[70vh] overflow-auto p-4 bg-secondary rounded-lg border border-border text-sm font-mono whitespace-pre-wrap">
-          {textContent}
-        </pre>
-      );
-    }
-
-    if (ext === 'docx' || ext === 'doc') {
-      // Use Google Docs viewer for DOCX files
-      const encodedUrl = encodeURIComponent(previewFile.url);
-      return (
-        <iframe
-          src={`https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`}
-          className="w-full h-[70vh] rounded-lg border border-border"
-          title={previewFile.name}
-        />
-      );
-    }
-
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Preview not available for this file type.</p>
-      </div>
+      <iframe
+        src={`${previewFile.url}#toolbar=1`}
+        className="w-full h-[70vh] rounded-lg border border-border"
+        title={previewFile.name}
+      />
     );
+  };
+
+  // Check if user can see viewers (CEO, CTO, or uploader)
+  const canSeeViewers = (file: UploadedFile) => {
+    return isFounder || file.uploaded_by === user?.id;
   };
 
   return (
@@ -356,11 +352,12 @@ export function VaultTab() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={springPresets.snappy}
         className="space-y-2"
       >
         <h1 className="text-3xl font-bold">Document Vault</h1>
         <p className="text-muted-foreground">
-          Securely store and share documents with your team. Supports PDF, TXT, and DOCX files.
+          Securely store and share PDF documents with your team. Max file size: 10MB.
         </p>
       </motion.div>
 
@@ -368,7 +365,7 @@ export function VaultTab() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        transition={{ ...springPresets.snappy, delay: 0.1 }}
       >
         <label
           onDragOver={handleDragOver}
@@ -384,7 +381,7 @@ export function VaultTab() {
         >
           <input
             type="file"
-            accept=".pdf,.txt,.docx,.doc"
+            accept=".pdf"
             multiple
             onChange={handleFileInput}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -393,22 +390,27 @@ export function VaultTab() {
           
           <motion.div
             animate={{ y: isDragging ? -5 : 0 }}
+            transition={springPresets.bouncy}
             className="flex flex-col items-center text-center"
           >
-            <div className={cn(
-              "w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-colors",
-              isDragging ? "bg-primary/20" : "bg-secondary"
-            )}>
+            <motion.div 
+              className={cn(
+                "w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-colors",
+                isDragging ? "bg-primary/20" : "bg-secondary"
+              )}
+              whileHover={{ scale: 1.05 }}
+              transition={springPresets.button}
+            >
               <Upload className={cn(
                 "w-8 h-8 transition-colors",
                 isDragging ? "text-primary" : "text-muted-foreground"
               )} />
-            </div>
+            </motion.div>
             <h3 className="text-lg font-medium mb-1">
               {isUploading ? 'Uploading...' : isDragging ? 'Drop your files here' : 'Drag & drop files'}
             </h3>
             <p className="text-sm text-muted-foreground mb-3">
-              PDF, TXT, DOCX • or click to browse
+              PDF only • or click to browse
             </p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <AlertCircle className="w-3 h-3" />
@@ -422,7 +424,7 @@ export function VaultTab() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
+        transition={{ ...springPresets.snappy, delay: 0.2 }}
         className="space-y-3"
       >
         <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -444,6 +446,7 @@ export function VaultTab() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
+                transition={springPresets.snappy}
                 className="glass-card rounded-xl p-8 text-center"
               >
                 <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
@@ -453,19 +456,26 @@ export function VaultTab() {
               <div className="space-y-2">
                 {files.map((file, index) => {
                   const fileStyle = getFileIcon(file.name);
+                  const viewCount = fileViews[file.id]?.length || 0;
+                  const showViewers = canSeeViewers(file);
+                  
                   return (
                     <motion.div
                       key={file.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20, height: 0 }}
-                      transition={{ delay: index * 0.05 }}
+                      transition={{ ...springPresets.snappy, delay: index * 0.05 }}
                       layout
                       className="glass-card rounded-xl p-4 flex items-center gap-4 group"
                     >
-                      <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0", fileStyle.bg)}>
+                      <motion.div 
+                        className={cn("w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0", fileStyle.bg)}
+                        whileHover={{ scale: 1.05 }}
+                        transition={springPresets.button}
+                      >
                         <File className={cn("w-6 h-6", fileStyle.color)} />
-                      </div>
+                      </motion.div>
                       
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{file.name}</p>
@@ -475,10 +485,27 @@ export function VaultTab() {
                             <User className="w-3 h-3" />
                             {file.uploader_name}
                           </span>
+                          {showViewers && viewCount > 0 && (
+                            <span className="flex items-center gap-1 text-primary">
+                              <Eye className="w-3 h-3" />
+                              {viewCount} view{viewCount !== 1 ? 's' : ''}
+                            </span>
+                          )}
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {showViewers && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setViewersModalFile(file)}
+                            className="h-9 w-9"
+                            title="View who accessed this file"
+                          >
+                            <Users className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -530,6 +557,14 @@ export function VaultTab() {
           {renderPreviewContent()}
         </DialogContent>
       </Dialog>
+
+      {/* File Viewers Modal */}
+      <FileViewersModal
+        isOpen={!!viewersModalFile}
+        onClose={() => setViewersModalFile(null)}
+        fileName={viewersModalFile?.name || ''}
+        viewers={viewersModalFile ? (fileViews[viewersModalFile.id] || []) : []}
+      />
     </div>
   );
 }

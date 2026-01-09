@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Smile, Reply, X, CheckCheck, Check } from 'lucide-react';
+import { Send, Smile, Reply, X, CheckCheck, Check, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { SoftFloat } from '@/components/ui/soft-float';
+import { RoleBadge } from '@/components/ui/role-badge';
+import { MessageInfoModal } from '@/components/ui/message-info-modal';
+import { springPresets } from '@/components/ui/spring-config';
 import artfiqLogo from '@/assets/artfiq-logo.jpeg';
 
 interface Message {
@@ -42,6 +45,7 @@ interface Participant {
   avatar_url: string | null;
   isOnline: boolean;
   isTyping: boolean;
+  role?: 'ceo' | 'cto' | 'team' | null;
 }
 
 interface UserPresence {
@@ -73,6 +77,8 @@ export function ChatTab() {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [presenceData, setPresenceData] = useState<Record<string, UserPresence>>({});
   const [cleanupCount, setCleanupCount] = useState<number | null>(null);
+  const [selectedMessageForInfo, setSelectedMessageForInfo] = useState<Message | null>(null);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -159,7 +165,7 @@ export function ChatTab() {
     };
   }, [markMessageAsRead]);
 
-  // Fetch participants and presence
+  // Fetch participants and presence with roles
   useEffect(() => {
     const fetchParticipants = async () => {
       const { data: profiles } = await supabase
@@ -171,17 +177,27 @@ export function ChatTab() {
         .from('user_presence')
         .select('*');
 
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
       const presenceMap: Record<string, UserPresence> = {};
       presence?.forEach(p => {
         presenceMap[p.user_id] = p;
       });
       setPresenceData(presenceMap);
 
+      const rolesMap: Record<string, 'ceo' | 'cto' | 'team'> = {};
+      roles?.forEach(r => {
+        rolesMap[r.user_id] = r.role as 'ceo' | 'cto' | 'team';
+      });
+
       if (profiles) {
         setParticipants(profiles.map(p => ({
           ...p,
           isOnline: presenceMap[p.user_id]?.is_online ?? false,
           isTyping: presenceMap[p.user_id]?.is_typing ?? false,
+          role: rolesMap[p.user_id] || 'team',
         })));
       }
     };
@@ -277,6 +293,14 @@ export function ChatTab() {
               : null;
             return [...prev, { ...newMsg, reply_message: replyMessage }];
           });
+          
+          // Show toast for new messages from others
+          if (newMsg.user_id !== user?.id) {
+            toast({
+              title: newMsg.user_name,
+              description: newMsg.text.slice(0, 50) + (newMsg.text.length > 50 ? '...' : ''),
+            });
+          }
         }
       )
       .subscribe();
@@ -376,7 +400,7 @@ export function ChatTab() {
       supabase.removeChannel(readsChannel);
       supabase.removeChannel(presenceChannel);
     };
-  }, [user?.id, participants]);
+  }, [user?.id, participants, toast]);
 
   useEffect(() => {
     scrollToBottom();
@@ -504,6 +528,29 @@ export function ChatTab() {
     }
   };
 
+  // Long press handlers for message info
+  const handleMessageLongPressStart = (message: Message) => {
+    if (message.user_id !== user?.id) return; // Only for own messages
+    
+    const timer = setTimeout(() => {
+      setSelectedMessageForInfo(message);
+    }, 500);
+    setLongPressTimer(timer);
+  };
+
+  const handleMessageLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  // Get participant role
+  const getParticipantRole = (userId: string): 'ceo' | 'cto' | 'team' | null => {
+    const participant = participants.find(p => p.user_id === userId);
+    return participant?.role || null;
+  };
+
   const onlineParticipants = participants.filter(p => p.isOnline || presenceData[p.user_id]?.is_online);
 
   return (
@@ -532,19 +579,25 @@ export function ChatTab() {
                 {messages.length} messages • {onlineParticipants.length} online
               </p>
             </div>
-            {/* Online participants avatars */}
+            {/* Online participants avatars with status dot */}
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2">
                 {onlineParticipants.slice(0, 5).map((p) => (
-                  <motion.img
+                  <motion.div
                     key={p.id}
-                    src={p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`}
-                    alt={p.display_name || 'User'}
-                    className="w-8 h-8 rounded-full border-2 border-background"
+                    className="relative"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                  />
+                    transition={springPresets.bouncy}
+                  >
+                    <img
+                      src={p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`}
+                      alt={p.display_name || 'User'}
+                      className="w-8 h-8 rounded-full border-2 border-background"
+                    />
+                    {/* Green online dot */}
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
+                  </motion.div>
                 ))}
               </div>
               {onlineParticipants.length > 5 && (
@@ -559,7 +612,7 @@ export function ChatTab() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ ...springPresets.snappy, delay: 0.5 }}
             className="mt-3 flex items-center gap-2 text-xs text-muted-foreground bg-secondary/50 rounded-full px-3 py-1.5 w-fit"
           >
             <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -586,6 +639,7 @@ export function ChatTab() {
                 const showAvatar = index === 0 || messages[index - 1].user_id !== message.user_id;
                 const reactionCounts = getReactionCounts(message.id);
                 const readStatus = getReadStatus(message);
+                const senderRole = getParticipantRole(message.user_id);
 
                 return (
                   <motion.div
@@ -598,7 +652,12 @@ export function ChatTab() {
                     }}
                     initial={{ opacity: 0, y: 30, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    transition={springPresets.snappy}
+                    onMouseDown={() => handleMessageLongPressStart(message)}
+                    onMouseUp={handleMessageLongPressEnd}
+                    onMouseLeave={handleMessageLongPressEnd}
+                    onTouchStart={() => handleMessageLongPressStart(message)}
+                    onTouchEnd={handleMessageLongPressEnd}
                     className={cn("flex gap-3 group", isOwnMessage && "flex-row-reverse")}
                   >
                     {/* Avatar */}
@@ -607,7 +666,7 @@ export function ChatTab() {
                         <motion.img
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                          transition={springPresets.bouncy}
                           src={message.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${message.user_id}`}
                           alt={message.user_name}
                           className="w-10 h-10 rounded-full border border-border"
@@ -620,6 +679,9 @@ export function ChatTab() {
                       {showAvatar && (
                         <div className={cn("flex items-center gap-2 text-sm", isOwnMessage && "flex-row-reverse")}>
                           <span className="font-medium">{message.user_name}</span>
+                          {senderRole && senderRole !== 'team' && (
+                            <RoleBadge role={senderRole} size="sm" showIcon={false} />
+                          )}
                           <span className="text-muted-foreground text-xs">
                             {formatTime(message.created_at)}
                           </span>
@@ -650,7 +712,7 @@ export function ChatTab() {
                               : "glass-card rounded-tl-md"
                           )}
                           whileHover={{ scale: 1.01 }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                          transition={springPresets.button}
                         >
                           <p className="text-sm leading-relaxed">{message.text}</p>
                           
@@ -660,6 +722,7 @@ export function ChatTab() {
                               className="flex items-center justify-end gap-1 mt-1"
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
+                              transition={springPresets.snappy}
                             >
                               {readStatus.status === 'sent' ? (
                                 <Check className="w-4 h-4 text-primary-foreground/50" />
@@ -683,7 +746,7 @@ export function ChatTab() {
                         {/* Action buttons */}
                         <div className={cn(
                           "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1",
-                          isOwnMessage ? "-left-16" : "-right-16"
+                          isOwnMessage ? "-left-20" : "-right-20"
                         )}>
                           <Button
                             variant="ghost"
@@ -701,6 +764,17 @@ export function ChatTab() {
                           >
                             <Reply className="w-4 h-4" />
                           </Button>
+                          {isOwnMessage && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => setSelectedMessageForInfo(message)}
+                              title="Message info"
+                            >
+                              <Info className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
 
                         {/* Emoji Picker */}
@@ -710,7 +784,7 @@ export function ChatTab() {
                               initial={{ opacity: 0, scale: 0.9, y: 10 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                              transition={springPresets.bouncy}
                               className={cn(
                                 "absolute top-full mt-2 z-50 glass-card rounded-lg p-2 flex gap-1",
                                 isOwnMessage ? "right-0" : "left-0"
@@ -723,6 +797,7 @@ export function ChatTab() {
                                   className="w-8 h-8 hover:bg-secondary rounded transition-colors text-lg"
                                   whileHover={{ scale: 1.2 }}
                                   whileTap={{ scale: 0.9 }}
+                                  transition={springPresets.button}
                                 >
                                   {emoji}
                                 </motion.button>
@@ -747,6 +822,7 @@ export function ChatTab() {
                               )}
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
+                              transition={springPresets.button}
                             >
                               <span>{emoji}</span>
                               <span className="text-muted-foreground">{count}</span>
@@ -770,6 +846,7 @@ export function ChatTab() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
+              transition={springPresets.snappy}
               className="px-4 lg:px-6 pb-2"
             >
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -808,6 +885,7 @@ export function ChatTab() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
+              transition={springPresets.snappy}
               className="border-t border-border bg-secondary/50 px-4 py-2"
             >
               <div className="flex items-center justify-between">
@@ -854,6 +932,7 @@ export function ChatTab() {
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              transition={springPresets.button}
             >
               <Button
                 variant="cyber"
@@ -868,6 +947,17 @@ export function ChatTab() {
           </div>
         </SoftFloat>
       </div>
+
+      {/* Message Info Modal */}
+      <MessageInfoModal
+        isOpen={!!selectedMessageForInfo}
+        onClose={() => setSelectedMessageForInfo(null)}
+        messageText={selectedMessageForInfo?.text || ''}
+        sentAt={selectedMessageForInfo?.created_at || ''}
+        reads={selectedMessageForInfo ? (messageReads[selectedMessageForInfo.id] || []) : []}
+        participants={participants}
+        senderId={selectedMessageForInfo?.user_id || ''}
+      />
     </div>
   );
 }

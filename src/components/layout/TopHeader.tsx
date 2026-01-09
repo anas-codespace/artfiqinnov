@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { NotificationBell } from '@/components/NotificationBell';
 import { ProfileSettings } from '@/components/ProfileSettings';
+import { RoleBadge } from '@/components/ui/role-badge';
+import { useUserRole } from '@/hooks/useUserRole';
 import artfiqLogo from '@/assets/artfiq-logo.jpeg';
 
 interface TopHeaderProps {
@@ -13,6 +15,7 @@ interface TopHeaderProps {
 
 export function TopHeader({ onNavigate }: TopHeaderProps) {
   const { user, profile, signOut } = useAuth();
+  const { role } = useUserRole();
   const [showProfileSettings, setShowProfileSettings] = useState(false);
 
   const displayName = profile?.display_name || user?.email?.split('@')[0] || 'User';
@@ -75,6 +78,9 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
             className="flex items-center gap-3"
           >
             <NotificationBell onNavigate={onNavigate} />
+            
+            {/* Role Badge */}
+            <RoleBadge role={role} size="sm" />
             
             <div 
               className="flex items-center gap-3 cursor-pointer hover:bg-secondary/50 rounded-full pl-3 pr-1 py-1 transition-all"
