@@ -32,6 +32,45 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          created_at: string
+          created_by: string
+          created_by_name: string
+          description: string | null
+          end_date: string
+          id: string
+          is_urgent: boolean | null
+          start_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          created_by_name: string
+          description?: string | null
+          end_date: string
+          id?: string
+          is_urgent?: boolean | null
+          start_date: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          created_by_name?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          is_urgent?: boolean | null
+          start_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       file_views: {
         Row: {
           file_id: string
@@ -94,6 +133,42 @@ export type Database = {
           uploaded_by?: string
           uploader_name?: string
           url?: string
+        }
+        Relationships: []
+      }
+      founder_alerts: {
+        Row: {
+          created_at: string
+          file_id: string | null
+          id: string
+          message: string
+          read_by_ceo: boolean | null
+          read_by_cto: boolean | null
+          triggered_by: string
+          triggered_by_name: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          message: string
+          read_by_ceo?: boolean | null
+          read_by_cto?: boolean | null
+          triggered_by: string
+          triggered_by_name: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          message?: string
+          read_by_ceo?: boolean | null
+          read_by_cto?: boolean | null
+          triggered_by?: string
+          triggered_by_name?: string
+          type?: string
         }
         Relationships: []
       }
@@ -256,6 +331,45 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string
+          created_by_name: string
+          description: string | null
+          id: string
+          priority: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by: string
+          created_by_name: string
+          description?: string | null
+          id?: string
+          priority?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string
+          created_by_name?: string
+          description?: string | null
+          id?: string
+          priority?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }

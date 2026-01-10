@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Home, FolderLock, MessageSquare } from 'lucide-react';
+import { Home, LayoutGrid, Calendar, FolderLock, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -10,6 +10,8 @@ interface BottomDockProps {
 
 const navItems = [
   { id: 'home', label: 'Home', icon: Home },
+  { id: 'tasks', label: 'Tasks', icon: LayoutGrid },
+  { id: 'timeline', label: 'Timeline', icon: Calendar },
   { id: 'vault', label: 'Vault', icon: FolderLock },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
 ];

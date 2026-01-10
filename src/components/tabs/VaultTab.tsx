@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, X, File, Users } from 'lucide-react';
+import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, X, File, Users, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -306,6 +306,32 @@ export function VaultTab() {
     }
   };
 
+  // Request founder review
+  const handleRequestReview = async (file: UploadedFile) => {
+    if (!user || !profile) return;
+
+    const { error } = await supabase.from('founder_alerts').insert({
+      type: 'vault',
+      message: `Review requested for document: ${file.name}`,
+      triggered_by: user.id,
+      triggered_by_name: profile.display_name || user.email?.split('@')[0] || 'Unknown',
+      file_id: file.id,
+    });
+
+    if (error) {
+      toast({
+        title: 'Failed to request review',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: '🔔 Review requested!',
+        description: 'CEO and CTO have been notified.',
+      });
+    }
+  };
+
   const handlePreview = async (file: UploadedFile) => {
     // Track the view
     await trackFileView(file.id);
@@ -523,6 +549,16 @@ export function VaultTab() {
                           title="Download"
                         >
                           <Download className="w-4 h-4" />
+                        </Button>
+                        {/* Request Review Button */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRequestReview(file)}
+                          className="h-9 w-9 hover:text-amber-500"
+                          title="Request founder review"
+                        >
+                          <Bell className="w-4 h-4" />
                         </Button>
                         {file.uploaded_by === user?.id && (
                           <Button
