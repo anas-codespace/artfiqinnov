@@ -7,8 +7,11 @@ import { TopHeader } from '@/components/layout/TopHeader';
 import { HomeTab } from '@/components/tabs/HomeTab';
 import { VaultTab } from '@/components/tabs/VaultTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
+import { TaskMatrixTab } from '@/components/tabs/TaskMatrixTab';
+import { TimelineTab } from '@/components/tabs/TimelineTab';
 import { AnimatedBackground } from '@/components/ui/animated-background';
 import { Loader2 } from 'lucide-react';
+
 function WorkspaceContent() {
   const { user, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
@@ -32,6 +35,10 @@ function WorkspaceContent() {
     switch (activeTab) {
       case 'home':
         return <HomeTab />;
+      case 'tasks':
+        return <TaskMatrixTab />;
+      case 'timeline':
+        return <TimelineTab />;
       case 'vault':
         return <VaultTab />;
       case 'chat':

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Smile, Reply, X, CheckCheck, Check, Info } from 'lucide-react';
+import { Send, Smile, Reply, X, CheckCheck, Check, Info, Bell, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +11,7 @@ import { SoftFloat } from '@/components/ui/soft-float';
 import { RoleBadge } from '@/components/ui/role-badge';
 import { MessageInfoModal } from '@/components/ui/message-info-modal';
 import { springPresets } from '@/components/ui/spring-config';
+import { useUserRole } from '@/hooks/useUserRole';
 import artfiqLogo from '@/assets/artfiq-logo.jpeg';
 
 interface Message {
@@ -64,6 +65,7 @@ function formatTime(dateStr: string): string {
 
 export function ChatTab() {
   const { user, profile } = useAuth();
+  const { role, isFounder } = useUserRole();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
@@ -496,6 +498,50 @@ export function ChatTab() {
     setShowEmojiPicker(null);
   };
 
+  // Delete message (only sender can delete their own message)
+  const handleDeleteMessage = async (messageId: string) => {
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId);
+
+    if (error) {
+      toast({
+        title: 'Failed to delete message',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      toast({ title: 'Message deleted' });
+    }
+  };
+
+  // Notify Founders
+  const handleNotifyFounders = async () => {
+    if (!user || !profile) return;
+
+    const { error } = await supabase.from('founder_alerts').insert({
+      type: 'chat',
+      message: 'Urgent attention needed in team chat!',
+      triggered_by: user.id,
+      triggered_by_name: profile.display_name || user.email?.split('@')[0] || 'Unknown',
+    });
+
+    if (error) {
+      toast({
+        title: 'Failed to notify founders',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: '🔔 Founders notified!',
+        description: 'CEO and CTO have been alerted.',
+      });
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -587,7 +633,24 @@ export function ChatTab() {
                 {messages.length} messages • {onlineParticipants.length} online
               </p>
             </div>
-            {/* Online participants avatars with status dot */}
+            <div className="flex items-center gap-3">
+              {/* Notify Founders Button */}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={springPresets.button}
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNotifyFounders}
+                  className="gap-2 border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Bell className="w-4 h-4" />
+                  <span className="hidden sm:inline">Notify Founders</span>
+                </Button>
+              </motion.div>
+              {/* Online participants avatars with status dot */}
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2">
                 {onlineParticipants.slice(0, 5).map((p) => (
@@ -613,9 +676,9 @@ export function ChatTab() {
                   +{onlineParticipants.length - 5} more
                 </span>
               )}
+              </div>
             </div>
           </div>
-          
           {/* Privacy Notice */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -773,15 +836,26 @@ export function ChatTab() {
                             <Reply className="w-4 h-4" />
                           </Button>
                           {isOwnMessage && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => setSelectedMessageForInfo(message)}
-                              title="Message info"
-                            >
-                              <Info className="w-4 h-4" />
-                            </Button>
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => setSelectedMessageForInfo(message)}
+                                title="Message info"
+                              >
+                                <Info className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 hover:text-destructive"
+                                onClick={() => handleDeleteMessage(message.id)}
+                                title="Delete message"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
                           )}
                         </div>
 
