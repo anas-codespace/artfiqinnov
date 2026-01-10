@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      cleanup_log: {
+        Row: {
+          executed_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          executed_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          executed_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       file_views: {
         Row: {
           file_id: string

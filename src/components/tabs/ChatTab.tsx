@@ -87,14 +87,22 @@ export function ChatTab() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Auto-delete messages older than 72 hours
+  // Auto-delete messages older than 72 hours (only founders can trigger)
   const cleanupOldMessages = useCallback(async () => {
     try {
       const { data, error } = await supabase.rpc('cleanup_old_messages');
       if (error) {
-        console.error('Error cleaning up old messages:', error);
+        // Silently ignore access denied errors for non-founders
+        // The function now requires CEO/CTO role
+        if (!error.message?.includes('Access denied')) {
+          console.error('Error cleaning up old messages:', error);
+        }
       } else if (data && data > 0) {
         setCleanupCount(data);
+        toast({
+          title: 'Old messages cleaned up',
+          description: `${data} message(s) older than 72 hours were removed.`,
+        });
         // Remove old messages from local state
         const cutoffTime = new Date(Date.now() - 72 * 60 * 60 * 1000);
         setMessages(prev => prev.filter(m => new Date(m.created_at) > cutoffTime));
@@ -102,7 +110,7 @@ export function ChatTab() {
     } catch (error) {
       console.error('Cleanup error:', error);
     }
-  }, []);
+  }, [toast]);
 
   // Run cleanup on mount
   useEffect(() => {
