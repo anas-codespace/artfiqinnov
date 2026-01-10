@@ -37,7 +37,7 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.2 }}
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
+      className="fixed bottom-6 left-0 right-0 z-50 flex justify-center items-center"
     >
       <div className="flex items-center gap-2 px-4 py-3 rounded-full bg-card/60 backdrop-blur-xl border border-border/50 shadow-2xl shadow-black/50">
         {navItems.map((item, index) => {
