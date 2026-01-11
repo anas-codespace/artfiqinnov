@@ -47,6 +47,10 @@ export function TimelineTab() {
     endDate: '',
     isUrgent: false,
   });
+  
+  // Validation constants
+  const MAX_TITLE_LENGTH = 200;
+  const MAX_DESCRIPTION_LENGTH = 2000;
 
   // Fetch events
   useEffect(() => {
@@ -149,9 +153,31 @@ export function TimelineTab() {
   const handleAddEvent = async () => {
     if (!newEvent.title.trim() || !newEvent.startDate || !newEvent.endDate || !user) return;
 
+    // Input validation
+    const trimmedTitle = newEvent.title.trim();
+    const trimmedDescription = newEvent.description.trim();
+    
+    if (trimmedTitle.length > MAX_TITLE_LENGTH) {
+      toast({
+        title: 'Title too long',
+        description: `Maximum ${MAX_TITLE_LENGTH} characters allowed`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (trimmedDescription.length > MAX_DESCRIPTION_LENGTH) {
+      toast({
+        title: 'Description too long',
+        description: `Maximum ${MAX_DESCRIPTION_LENGTH} characters allowed`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const { error } = await supabase.from('events').insert({
-      title: newEvent.title.trim(),
-      description: newEvent.description.trim() || null,
+      title: trimmedTitle,
+      description: trimmedDescription || null,
       start_date: newEvent.startDate,
       end_date: newEvent.endDate,
       is_urgent: newEvent.isUrgent,
@@ -376,7 +402,9 @@ export function TimelineTab() {
                 onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Event title..."
                 className="bg-background/50"
+                maxLength={MAX_TITLE_LENGTH}
               />
+              <span className="text-xs text-muted-foreground">{newEvent.title.length}/{MAX_TITLE_LENGTH}</span>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Description</label>
@@ -385,7 +413,9 @@ export function TimelineTab() {
                 onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Event description..."
                 className="bg-background/50 min-h-[80px]"
+                maxLength={MAX_DESCRIPTION_LENGTH}
               />
+              <span className="text-xs text-muted-foreground">{newEvent.description.length}/{MAX_DESCRIPTION_LENGTH}</span>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
