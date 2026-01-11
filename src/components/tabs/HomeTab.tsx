@@ -6,18 +6,24 @@ import { FluidButton } from '@/components/ui/fluid-button';
 import ceoImage from '@/assets/ceo-sulaiman.jpeg';
 import ctoImage from '@/assets/cto-anas.jpeg';
 
+// Founder emails to filter from team list
+const FOUNDER_EMAILS = [
+  'mohammedsulaimanofficial@gmail.com',
+  'anas.m77581@gmail.com',
+];
+
 const founders = [
   {
     name: 'Mohammed Sulaiman',
     role: 'CEO',
     avatar: ceoImage,
-    description: 'Visionary leader driving digital innovation',
+    email: 'mohammedsulaimanofficial@gmail.com',
   },
   {
     name: 'Mohammed Anas',
     role: 'CTO',
     avatar: ctoImage,
-    description: 'Technical architect building the future',
+    email: 'anas.m77581@gmail.com',
   },
 ];
 
@@ -58,7 +64,11 @@ export function HomeTab() {
         .order('created_at', { ascending: true });
       
       if (data) {
-        setTeamMembers(data);
+        // Filter out founders from team members list
+        const filteredMembers = data.filter(
+          member => !FOUNDER_EMAILS.includes(member.email?.toLowerCase() || '')
+        );
+        setTeamMembers(filteredMembers);
       }
     };
 
@@ -173,7 +183,7 @@ export function HomeTab() {
         })}
       </motion.section>
 
-      {/* Founders Section with deep parallax */}
+      {/* Founders Section - Profile Photos Only */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -181,54 +191,51 @@ export function HomeTab() {
         style={{ y: foundersY }}
         className="space-y-6 relative z-10"
       >
-        <h2 className="text-2xl font-semibold text-center">Meet the Founders</h2>
-        <div className="grid md:grid-cols-2 gap-6">
+        <h2 className="text-2xl font-semibold text-center">Founders</h2>
+        <div className="flex justify-center gap-8">
           {founders.map((founder, index) => (
             <motion.div
               key={founder.name}
-              initial={{ opacity: 0, x: index === 0 ? -20 : 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
               whileHover={{ 
-                scale: 1.02,
-                boxShadow: '0 25px 50px -12px hsl(var(--primary) / 0.15)',
+                scale: 1.1,
+                boxShadow: '0 0 30px hsl(var(--primary) / 0.4)',
               }}
-              className="glass-card rounded-2xl p-6 flex items-center gap-5 relative overflow-hidden"
+              className="relative group cursor-default"
             >
-              {/* Hover glow effect */}
+              {/* Glow ring on hover */}
               <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-primary/0 to-primary/0 rounded-2xl"
+                className="absolute inset-0 rounded-full bg-primary/0"
                 whileHover={{ 
-                  background: 'linear-gradient(135deg, hsl(var(--primary) / 0.05), transparent)',
+                  boxShadow: '0 0 40px hsl(var(--primary) / 0.5)',
                 }}
-                transition={{ duration: 0.4 }}
+                transition={{ duration: 0.3 }}
               />
-              <div className="relative z-10 flex items-center gap-5">
-                <motion.div 
-                  className="relative"
+              <motion.img
+                src={founder.avatar}
+                alt={founder.name}
+                className="w-24 h-24 lg:w-32 lg:h-32 rounded-full border-4 border-primary/50 object-cover relative z-10"
+                whileHover={{ borderColor: 'hsl(var(--primary))' }}
+              />
+              {/* Role badge */}
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20">
+                <motion.div
+                  className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg"
                   whileHover={{ scale: 1.05 }}
                 >
-                  <motion.img
-                    src={founder.avatar}
-                    alt={founder.name}
-                    className="w-20 h-20 rounded-2xl border-2 border-primary/30 object-cover"
-                    whileHover={{ borderColor: 'hsl(var(--primary))' }}
-                    style={{ 
-                      transform: 'translateZ(20px)',
-                    }}
-                  />
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                    <span className="text-xs font-bold text-primary-foreground">
-                      {founder.role === 'CEO' ? '👑' : '⚡'}
-                    </span>
-                  </div>
+                  {founder.role}
                 </motion.div>
-                <div>
-                  <h3 className="text-lg font-semibold">{founder.name}</h3>
-                  <p className="text-primary font-medium text-sm mb-1">{founder.role}</p>
-                  <p className="text-sm text-muted-foreground">{founder.description}</p>
-                </div>
               </div>
+              {/* Name tooltip on hover */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileHover={{ opacity: 1, y: 0 }}
+                className="absolute -bottom-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-sm font-medium text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                {founder.name}
+              </motion.div>
             </motion.div>
           ))}
         </div>
