@@ -50,6 +50,10 @@ const priorityColors = {
   urgent: 'border-l-destructive',
 };
 
+// Validation constants
+const MAX_TITLE_LENGTH = 200;
+const MAX_DESCRIPTION_LENGTH = 2000;
+
 export function TaskMatrixTab() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
@@ -57,10 +61,6 @@ export function TaskMatrixTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', description: '', priority: 'normal' as Task['priority'] });
-  
-  // Validation constants
-  const MAX_TITLE_LENGTH = 200;
-  const MAX_DESCRIPTION_LENGTH = 2000;
   const [showConfetti, setShowConfetti] = useState(false);
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
 

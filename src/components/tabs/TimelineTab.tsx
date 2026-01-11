@@ -32,6 +32,10 @@ interface CalendarEvent {
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+// Validation constants
+const MAX_TITLE_LENGTH = 200;
+const MAX_DESCRIPTION_LENGTH = 2000;
+
 export function TimelineTab() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
@@ -47,10 +51,6 @@ export function TimelineTab() {
     endDate: '',
     isUrgent: false,
   });
-  
-  // Validation constants
-  const MAX_TITLE_LENGTH = 200;
-  const MAX_DESCRIPTION_LENGTH = 2000;
 
   // Fetch events
   useEffect(() => {
