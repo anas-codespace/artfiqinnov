@@ -1,10 +1,18 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { Target, Users, Zap, Globe, Mail } from 'lucide-react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { Target, Users, Zap, Globe, Mail, Linkedin, Twitter, X } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { FluidButton } from '@/components/ui/fluid-button';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import ceoImage from '@/assets/ceo-sulaiman.jpeg';
 import ctoImage from '@/assets/cto-anas.jpeg';
+import { springPresets } from '@/components/ui/spring-config';
 
 // Founder emails to filter from team list
 const FOUNDER_EMAILS = [
@@ -12,18 +20,37 @@ const FOUNDER_EMAILS = [
   'anas.m77581@gmail.com',
 ];
 
-const founders = [
+interface Founder {
+  name: string;
+  role: string;
+  avatar: string;
+  email: string;
+  description: string;
+  bio: string;
+  linkedin?: string;
+  twitter?: string;
+}
+
+const founders: Founder[] = [
   {
     name: 'Mohammed Sulaiman',
     role: 'CEO',
     avatar: ceoImage,
     email: 'mohammedsulaimanofficial@gmail.com',
+    description: 'Visionary leader driving digital innovation',
+    bio: 'Mohammed Sulaiman is the CEO and co-founder of ARTFIQ Innovations. With a passion for bridging technology and human experiences, he leads the company\'s strategic vision and growth initiatives. His leadership focuses on creating meaningful digital solutions that empower teams worldwide.',
+    linkedin: 'https://linkedin.com/in/mohammedsulaiman',
+    twitter: 'https://twitter.com/msulaiman',
   },
   {
     name: 'Mohammed Anas',
     role: 'CTO',
     avatar: ctoImage,
     email: 'anas.m77581@gmail.com',
+    description: 'Technical architect building the future',
+    bio: 'Mohammed Anas serves as the CTO and co-founder of ARTFIQ Innovations. He oversees all technical aspects of the company, from architecture design to implementation. His expertise in modern technologies ensures that ARTFIQ delivers cutting-edge, performant, and scalable solutions.',
+    linkedin: 'https://linkedin.com/in/mohammedanas',
+    twitter: 'https://twitter.com/anasm',
   },
 ];
 
@@ -43,6 +70,7 @@ interface TeamMember {
 
 export function HomeTab() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [selectedFounder, setSelectedFounder] = useState<Founder | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   const { scrollYProgress } = useScroll({
@@ -183,7 +211,7 @@ export function HomeTab() {
         })}
       </motion.section>
 
-      {/* Founders Section - Profile Photos Only */}
+      {/* Founders Section - Profile Photos with Social Links */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -192,54 +220,171 @@ export function HomeTab() {
         className="space-y-6 relative z-10"
       >
         <h2 className="text-2xl font-semibold text-center">Founders</h2>
-        <div className="flex justify-center gap-8">
+        <div className="flex justify-center gap-12 lg:gap-16">
           {founders.map((founder, index) => (
             <motion.div
               key={founder.name}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
-              whileHover={{ 
-                scale: 1.1,
-                boxShadow: '0 0 30px hsl(var(--primary) / 0.4)',
-              }}
-              className="relative group cursor-default"
+              className="relative group flex flex-col items-center"
             >
-              {/* Glow ring on hover */}
-              <motion.div
-                className="absolute inset-0 rounded-full bg-primary/0"
+              {/* Clickable photo */}
+              <motion.button
+                onClick={() => setSelectedFounder(founder)}
                 whileHover={{ 
-                  boxShadow: '0 0 40px hsl(var(--primary) / 0.5)',
+                  scale: 1.1,
                 }}
-                transition={{ duration: 0.3 }}
-              />
-              <motion.img
-                src={founder.avatar}
-                alt={founder.name}
-                className="w-24 h-24 lg:w-32 lg:h-32 rounded-full border-4 border-primary/50 object-cover relative z-10"
-                whileHover={{ borderColor: 'hsl(var(--primary))' }}
-              />
-              {/* Role badge */}
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20">
-                <motion.div
-                  className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  {founder.role}
-                </motion.div>
-              </div>
-              {/* Name tooltip on hover */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                whileHover={{ opacity: 1, y: 0 }}
-                className="absolute -bottom-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-sm font-medium text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                whileTap={{ scale: 0.95 }}
+                className="relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background rounded-full"
               >
-                {founder.name}
-              </motion.div>
+                {/* Glow ring on hover */}
+                <motion.div
+                  className="absolute inset-0 rounded-full"
+                  whileHover={{ 
+                    boxShadow: '0 0 40px hsl(var(--primary) / 0.5)',
+                  }}
+                  transition={{ duration: 0.3 }}
+                />
+                <motion.img
+                  src={founder.avatar}
+                  alt={founder.name}
+                  className="w-24 h-24 lg:w-32 lg:h-32 rounded-full border-4 border-primary/50 object-cover relative z-10"
+                  whileHover={{ borderColor: 'hsl(var(--primary))' }}
+                />
+                {/* Role badge */}
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20">
+                  <motion.div
+                    className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    {founder.role}
+                  </motion.div>
+                </div>
+              </motion.button>
+              
+              {/* Name */}
+              <p className="mt-6 text-sm font-medium text-center">{founder.name}</p>
+              
+              {/* Social Links */}
+              <div className="flex gap-3 mt-3">
+                {founder.linkedin && (
+                  <motion.a
+                    href={founder.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.2, y: -2 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="w-8 h-8 rounded-full bg-card/80 border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                  >
+                    <Linkedin className="w-4 h-4" />
+                  </motion.a>
+                )}
+                {founder.twitter && (
+                  <motion.a
+                    href={founder.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.2, y: -2 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="w-8 h-8 rounded-full bg-card/80 border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                  >
+                    <Twitter className="w-4 h-4" />
+                  </motion.a>
+                )}
+                <motion.a
+                  href={`mailto:${founder.email}`}
+                  whileHover={{ scale: 1.2, y: -2 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="w-8 h-8 rounded-full bg-card/80 border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                </motion.a>
+              </div>
             </motion.div>
           ))}
         </div>
       </motion.section>
+
+      {/* Founder Profile Modal */}
+      <Dialog open={!!selectedFounder} onOpenChange={(open) => !open && setSelectedFounder(null)}>
+        <DialogContent className="glass-card border-border max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Founder Profile</DialogTitle>
+          </DialogHeader>
+          {selectedFounder && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={springPresets.snappy}
+              className="flex flex-col items-center text-center pt-2"
+            >
+              {/* Avatar */}
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={springPresets.bouncy}
+                className="relative mb-4"
+              >
+                <img
+                  src={selectedFounder.avatar}
+                  alt={selectedFounder.name}
+                  className="w-28 h-28 rounded-full border-4 border-primary object-cover shadow-lg"
+                />
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+                  <span className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg">
+                    {selectedFounder.role}
+                  </span>
+                </div>
+              </motion.div>
+
+              {/* Name & Description */}
+              <h3 className="text-2xl font-bold mt-4">{selectedFounder.name}</h3>
+              <p className="text-primary font-medium mt-1">{selectedFounder.description}</p>
+
+              {/* Bio */}
+              <p className="text-muted-foreground text-sm leading-relaxed mt-4 px-2">
+                {selectedFounder.bio}
+              </p>
+
+              {/* Social Links */}
+              <div className="flex gap-4 mt-6">
+                {selectedFounder.linkedin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => window.open(selectedFounder.linkedin, '_blank')}
+                  >
+                    <Linkedin className="w-4 h-4" />
+                    LinkedIn
+                  </Button>
+                )}
+                {selectedFounder.twitter && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => window.open(selectedFounder.twitter, '_blank')}
+                  >
+                    <Twitter className="w-4 h-4" />
+                    Twitter
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => window.location.href = `mailto:${selectedFounder.email}`}
+                >
+                  <Mail className="w-4 h-4" />
+                  Email
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Team Members Section */}
       <motion.section
