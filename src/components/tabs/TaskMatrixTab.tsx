@@ -57,6 +57,10 @@ export function TaskMatrixTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', description: '', priority: 'normal' as Task['priority'] });
+  
+  // Validation constants
+  const MAX_TITLE_LENGTH = 200;
+  const MAX_DESCRIPTION_LENGTH = 2000;
   const [showConfetti, setShowConfetti] = useState(false);
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
 
@@ -104,9 +108,31 @@ export function TaskMatrixTab() {
   const handleAddTask = async () => {
     if (!newTask.title.trim() || !user) return;
 
+    // Input validation
+    const trimmedTitle = newTask.title.trim();
+    const trimmedDescription = newTask.description.trim();
+    
+    if (trimmedTitle.length > MAX_TITLE_LENGTH) {
+      toast({
+        title: 'Title too long',
+        description: `Maximum ${MAX_TITLE_LENGTH} characters allowed`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (trimmedDescription.length > MAX_DESCRIPTION_LENGTH) {
+      toast({
+        title: 'Description too long',
+        description: `Maximum ${MAX_DESCRIPTION_LENGTH} characters allowed`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const { error } = await supabase.from('tasks').insert({
-      title: newTask.title.trim(),
-      description: newTask.description.trim() || null,
+      title: trimmedTitle,
+      description: trimmedDescription || null,
       priority: newTask.priority,
       status: 'backlog',
       created_by: user.id,
@@ -315,7 +341,9 @@ export function TaskMatrixTab() {
                 onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Enter task title..."
                 className="bg-background/50"
+                maxLength={MAX_TITLE_LENGTH}
               />
+              <span className="text-xs text-muted-foreground">{newTask.title.length}/{MAX_TITLE_LENGTH}</span>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Description</label>
@@ -324,7 +352,9 @@ export function TaskMatrixTab() {
                 onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Enter task description..."
                 className="bg-background/50 min-h-[100px]"
+                maxLength={MAX_DESCRIPTION_LENGTH}
               />
+              <span className="text-xs text-muted-foreground">{newTask.description.length}/{MAX_DESCRIPTION_LENGTH}</span>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Priority</label>
