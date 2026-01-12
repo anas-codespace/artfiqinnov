@@ -14,11 +14,7 @@ import ceoImage from '@/assets/ceo-sulaiman.jpeg';
 import ctoImage from '@/assets/cto-anas.jpeg';
 import { springPresets } from '@/components/ui/spring-config';
 
-// Founder emails to filter from team list
-const FOUNDER_EMAILS = [
-  'mohammedsulaimanofficial@gmail.com',
-  'anas.m77581@gmail.com',
-];
+// No more hardcoded emails - founders are determined by user_roles table
 
 interface Founder {
   name: string;
@@ -63,6 +59,7 @@ const features = [
 
 interface TeamMember {
   id: string;
+  user_id: string;
   display_name: string | null;
   avatar_url: string | null;
   email: string | null;
@@ -86,15 +83,24 @@ export function HomeTab() {
 
   useEffect(() => {
     const fetchTeamMembers = async () => {
+      // Fetch founder user_ids from user_roles table
+      const { data: founderRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .in('role', ['ceo', 'cto']);
+      
+      const founderUserIds = new Set(founderRoles?.map(r => r.user_id) || []);
+      
+      // Use profiles_safe view instead of profiles table to protect email privacy
       const { data } = await supabase
-        .from('profiles')
-        .select('id, display_name, avatar_url, email')
+        .from('profiles_safe')
+        .select('id, user_id, display_name, avatar_url, email')
         .order('created_at', { ascending: true });
       
       if (data) {
-        // Filter out founders from team members list
+        // Filter out founders from team members list using role-based lookup
         const filteredMembers = data.filter(
-          member => !FOUNDER_EMAILS.includes(member.email?.toLowerCase() || '')
+          member => member.user_id && !founderUserIds.has(member.user_id)
         );
         setTeamMembers(filteredMembers);
       }

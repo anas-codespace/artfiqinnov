@@ -178,8 +178,9 @@ export function ChatTab() {
   // Fetch participants and presence with roles
   useEffect(() => {
     const fetchParticipants = async () => {
+      // Use profiles_safe view instead of profiles table to protect email privacy
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('profiles_safe')
         .select('id, user_id, display_name, avatar_url')
         .order('created_at', { ascending: true });
 
