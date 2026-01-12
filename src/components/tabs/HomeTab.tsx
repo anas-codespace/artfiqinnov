@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Target, Users, Zap, Globe, Mail, Linkedin, Twitter, X } from 'lucide-react';
+import { Target, Users, Zap, Globe, Mail, Linkedin, Instagram } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { FluidButton } from '@/components/ui/fluid-button';
@@ -24,7 +24,7 @@ interface Founder {
   description: string;
   bio: string;
   linkedin?: string;
-  twitter?: string;
+  instagram?: string;
 }
 
 const founders: Founder[] = [
@@ -36,7 +36,7 @@ const founders: Founder[] = [
     description: 'Visionary leader driving digital innovation',
     bio: 'Mohammed Sulaiman is the CEO and co-founder of ARTFIQ Innovations. With a passion for bridging technology and human experiences, he leads the company\'s strategic vision and growth initiatives. His leadership focuses on creating meaningful digital solutions that empower teams worldwide.',
     linkedin: 'https://linkedin.com/in/mohammedsulaiman',
-    twitter: 'https://twitter.com/msulaiman',
+    instagram: 'https://instagram.com/chocoboy_sulai_',
   },
   {
     name: 'Mohammed Anas',
@@ -46,7 +46,7 @@ const founders: Founder[] = [
     description: 'Technical architect building the future',
     bio: 'Mohammed Anas serves as the CTO and co-founder of ARTFIQ Innovations. He oversees all technical aspects of the company, from architecture design to implementation. His expertise in modern technologies ensures that ARTFIQ delivers cutting-edge, performant, and scalable solutions.',
     linkedin: 'https://linkedin.com/in/mohammedanas',
-    twitter: 'https://twitter.com/anasm',
+    instagram: 'https://instagram.com/anas.m_07',
   },
 ];
 
@@ -286,16 +286,16 @@ export function HomeTab() {
                     <Linkedin className="w-4 h-4" />
                   </motion.a>
                 )}
-                {founder.twitter && (
+                {founder.instagram && (
                   <motion.a
-                    href={founder.twitter}
+                    href={founder.instagram}
                     target="_blank"
                     rel="noopener noreferrer"
                     whileHover={{ scale: 1.2, y: -2 }}
                     whileTap={{ scale: 0.9 }}
                     className="w-8 h-8 rounded-full bg-card/80 border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
                   >
-                    <Twitter className="w-4 h-4" />
+                    <Instagram className="w-4 h-4" />
                   </motion.a>
                 )}
                 <motion.a
@@ -366,15 +366,15 @@ export function HomeTab() {
                     LinkedIn
                   </Button>
                 )}
-                {selectedFounder.twitter && (
+                {selectedFounder.instagram && (
                   <Button
                     variant="outline"
                     size="sm"
                     className="gap-2"
-                    onClick={() => window.open(selectedFounder.twitter, '_blank')}
+                    onClick={() => window.open(selectedFounder.instagram, '_blank')}
                   >
-                    <Twitter className="w-4 h-4" />
-                    Twitter
+                    <Instagram className="w-4 h-4" />
+                    Instagram
                   </Button>
                 )}
                 <Button
