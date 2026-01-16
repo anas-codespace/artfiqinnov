@@ -247,15 +247,48 @@ export function VaultTab() {
 
   // Generate signed URL for secure file access (1 hour expiry)
   const getSignedUrl = async (storagePath: string): Promise<string | null> => {
-    const { data, error } = await supabase.storage
-      .from('files')
-      .createSignedUrl(storagePath, 3600); // 1 hour expiry
+    try {
+      const { data, error } = await supabase.storage
+        .from('files')
+        .createSignedUrl(storagePath, 3600); // 1 hour expiry
 
-    if (error) {
-      console.error('Error creating signed URL:', error);
+      if (error) {
+        console.error('Error creating signed URL:', error);
+        return null;
+      }
+      return data.signedUrl;
+    } catch (err) {
+      console.error('Error in getSignedUrl:', err);
       return null;
     }
-    return data.signedUrl;
+  };
+
+  // Download file using blob method for reliable downloads
+  const downloadFileAsBlob = async (storagePath: string, filename: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('files')
+        .download(storagePath);
+
+      if (error) {
+        console.error('Error downloading file:', error);
+        return false;
+      }
+
+      // Create blob URL and trigger download
+      const url = window.URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      return true;
+    } catch (err) {
+      console.error('Error in downloadFileAsBlob:', err);
+      return false;
+    }
   };
 
   const handleDelete = async (file: UploadedFile) => {
@@ -294,14 +327,25 @@ export function VaultTab() {
     // Track the view
     await trackFileView(file.id);
     
-    const signedUrl = await getSignedUrl(file.storage_path);
-    if (signedUrl) {
-      window.open(signedUrl, '_blank');
+    // Try blob download first (most reliable)
+    const blobSuccess = await downloadFileAsBlob(file.storage_path, file.name);
+    
+    if (!blobSuccess) {
+      // Fallback to signed URL
+      const signedUrl = await getSignedUrl(file.storage_path);
+      if (signedUrl) {
+        window.open(signedUrl, '_blank');
+      } else {
+        toast({
+          title: 'Download failed',
+          description: 'Could not generate download link. Please try again.',
+          variant: 'destructive',
+        });
+      }
     } else {
       toast({
-        title: 'Download failed',
-        description: 'Could not generate download link.',
-        variant: 'destructive',
+        title: 'Download started',
+        description: `${file.name} is downloading.`,
       });
     }
   };
@@ -336,19 +380,32 @@ export function VaultTab() {
     // Track the view
     await trackFileView(file.id);
     
-    // Get signed URL for preview
+    // Try to get signed URL for preview
     const signedUrl = await getSignedUrl(file.storage_path);
-    if (!signedUrl) {
-      toast({
-        title: 'Preview failed',
-        description: 'Could not generate preview link.',
-        variant: 'destructive',
-      });
-      return;
+    
+    if (signedUrl) {
+      // Store signed URL in previewFile for rendering
+      setPreviewFile({ ...file, url: signedUrl });
+    } else {
+      // Fallback: try to download and create object URL
+      try {
+        const { data, error } = await supabase.storage
+          .from('files')
+          .download(file.storage_path);
+        
+        if (error) throw error;
+        
+        const blobUrl = window.URL.createObjectURL(data);
+        setPreviewFile({ ...file, url: blobUrl });
+      } catch (err) {
+        console.error('Preview error:', err);
+        toast({
+          title: 'Preview failed',
+          description: 'Could not generate preview. Try downloading instead.',
+          variant: 'destructive',
+        });
+      }
     }
-
-    // Store signed URL in previewFile for rendering
-    setPreviewFile({ ...file, url: signedUrl });
   };
 
   const closePreview = () => {
