@@ -367,15 +367,20 @@ export function HomeTab() {
                   </Button>
                 )}
                 {selectedFounder.instagram && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => window.open(selectedFounder.instagram, '_blank')}
+                  <a
+                    href={selectedFounder.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    <Instagram className="w-4 h-4" />
-                    Instagram
-                  </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Instagram className="w-4 h-4" />
+                      Instagram
+                    </Button>
+                  </a>
                 )}
                 <Button
                   variant="outline"
