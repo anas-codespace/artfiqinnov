@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, X, File, Users, Bell } from 'lucide-react';
+import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, File, Users, Bell, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -9,12 +10,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { FileViewersModal } from '@/components/ui/file-viewers-modal';
 import { springPresets } from '@/components/ui/spring-config';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 interface UploadedFile {
   id: string;
@@ -65,14 +60,15 @@ function getFileIcon(filename: string) {
 
 export function VaultTab() {
   const { user, profile } = useAuth();
-  const { role, isFounder } = useUserRole();
+  const { isFounder } = useUserRole();
   const { toast } = useToast();
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [fileViews, setFileViews] = useState<Record<string, FileView[]>>({});
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
+  const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [viewersModalFile, setViewersModalFile] = useState<UploadedFile | null>(null);
 
   // Fetch files from database
@@ -245,17 +241,23 @@ export function VaultTab() {
     }
   };
 
-  // Generate signed URL for secure file access (1 hour expiry)
-  const getSignedUrl = async (storagePath: string): Promise<string | null> => {
+  const STORAGE_BUCKET = 'files' as const;
+
+  // Generate signed URL for secure file access (short expiry)
+  const getSignedUrl = async (
+    storagePath: string,
+    expiresInSeconds = 60,
+  ): Promise<string | null> => {
     try {
       const { data, error } = await supabase.storage
-        .from('files')
-        .createSignedUrl(storagePath, 3600); // 1 hour expiry
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(storagePath, expiresInSeconds);
 
       if (error) {
         console.error('Error creating signed URL:', error);
         return null;
       }
+
       return data.signedUrl;
     } catch (err) {
       console.error('Error in getSignedUrl:', err);
@@ -263,39 +265,11 @@ export function VaultTab() {
     }
   };
 
-  // Download file using blob method for reliable downloads
-  const downloadFileAsBlob = async (storagePath: string, filename: string) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('files')
-        .download(storagePath);
-
-      if (error) {
-        console.error('Error downloading file:', error);
-        return false;
-      }
-
-      // Create blob URL and trigger download
-      const url = window.URL.createObjectURL(data);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      return true;
-    } catch (err) {
-      console.error('Error in downloadFileAsBlob:', err);
-      return false;
-    }
-  };
-
   const handleDelete = async (file: UploadedFile) => {
     try {
       // Delete from storage
       const { error: storageError } = await supabase.storage
-        .from('files')
+        .from(STORAGE_BUCKET)
         .remove([file.storage_path]);
 
       if (storageError) throw storageError;
@@ -315,37 +289,11 @@ export function VaultTab() {
 
       fetchFiles();
     } catch (error: any) {
+      console.error('Delete error:', error);
       toast({
         title: 'Delete failed',
-        description: error.message,
+        description: error?.message || 'Please try again.',
         variant: 'destructive',
-      });
-    }
-  };
-
-  const handleDownload = async (file: UploadedFile) => {
-    // Track the view
-    await trackFileView(file.id);
-    
-    // Try blob download first (most reliable)
-    const blobSuccess = await downloadFileAsBlob(file.storage_path, file.name);
-    
-    if (!blobSuccess) {
-      // Fallback to signed URL
-      const signedUrl = await getSignedUrl(file.storage_path);
-      if (signedUrl) {
-        window.open(signedUrl, '_blank');
-      } else {
-        toast({
-          title: 'Download failed',
-          description: 'Could not generate download link. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    } else {
-      toast({
-        title: 'Download started',
-        description: `${file.name} is downloading.`,
       });
     }
   };
@@ -370,58 +318,131 @@ export function VaultTab() {
       });
     } else {
       toast({
-        title: '🔔 Review requested!',
+        title: 'Review requested',
         description: 'CEO and CTO have been notified.',
       });
     }
   };
 
-  const handlePreview = async (file: UploadedFile) => {
-    // Track the view
-    await trackFileView(file.id);
-    
-    // Try to get signed URL for preview
-    const signedUrl = await getSignedUrl(file.storage_path);
-    
-    if (signedUrl) {
-      // Store signed URL in previewFile for rendering
-      setPreviewFile({ ...file, url: signedUrl });
-    } else {
-      // Fallback: try to download and create object URL
-      try {
-        const { data, error } = await supabase.storage
-          .from('files')
-          .download(file.storage_path);
-        
-        if (error) throw error;
-        
-        const blobUrl = window.URL.createObjectURL(data);
-        setPreviewFile({ ...file, url: blobUrl });
-      } catch (err) {
-        console.error('Preview error:', err);
-        toast({
-          title: 'Preview failed',
-          description: 'Could not generate preview. Try downloading instead.',
-          variant: 'destructive',
-        });
+  const triggerDownloadFromBlob = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const fetchBlobWithProgress = async (
+    url: string,
+    onProgress: (pct: number | null) => void,
+  ): Promise<Blob> => {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Download failed (HTTP ${response.status})`);
+    }
+
+    const contentLength = Number(response.headers.get('content-length') ?? 0);
+    const contentType = response.headers.get('content-type') ?? 'application/octet-stream';
+
+    // If streaming/progress isn't available, fall back to a plain blob
+    if (!response.body || !contentLength) {
+      onProgress(null);
+      const blob = await response.blob();
+      return new Blob([blob], { type: contentType });
+    }
+
+    const reader = response.body.getReader();
+    const chunks: BlobPart[] = [];
+    let received = 0;
+
+    onProgress(0);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+
+      chunks.push(value as unknown as BlobPart);
+      received += value.length;
+      onProgress(Math.min(100, Math.round((received / contentLength) * 100)));
+    }
+
+    onProgress(100);
+    return new Blob(chunks, { type: contentType });
+  };
+
+  const handleDownload = async (file: UploadedFile) => {
+    if (!file.storage_path) {
+      toast({
+        title: 'Download failed',
+        description: 'Missing file path.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (downloadingFileId) return;
+
+    // Track the view (non-blocking)
+    trackFileView(file.id);
+
+    setDownloadingFileId(file.id);
+    setDownloadProgress(null);
+
+    try {
+      const signedUrl = await getSignedUrl(file.storage_path, 60);
+      if (!signedUrl) {
+        throw new Error('Could not generate a secure download link.');
       }
+
+      const blob = await fetchBlobWithProgress(signedUrl, setDownloadProgress);
+      triggerDownloadFromBlob(blob, file.name);
+
+      toast({
+        title: 'File downloaded successfully',
+        description: file.name,
+      });
+    } catch (error: any) {
+      console.error('Download error:', error);
+      toast({
+        title: 'Download failed',
+        description: error?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingFileId(null);
+      setDownloadProgress(null);
     }
   };
 
-  const closePreview = () => {
-    setPreviewFile(null);
-  };
+  const handlePreview = async (file: UploadedFile) => {
+    if (!file.storage_path) {
+      toast({
+        title: 'Preview failed',
+        description: 'Missing file path.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-  const renderPreviewContent = () => {
-    if (!previewFile) return null;
+    // Track the view (non-blocking)
+    trackFileView(file.id);
 
-    return (
-      <iframe
-        src={`${previewFile.url}#toolbar=1`}
-        className="w-full h-[70vh] rounded-lg border border-border"
-        title={previewFile.name}
-      />
-    );
+    const signedUrl = await getSignedUrl(file.storage_path, 60);
+    if (!signedUrl) {
+      toast({
+        title: 'Preview failed',
+        description: 'Could not generate a secure preview link.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    window.open(signedUrl, '_blank', 'noopener,noreferrer');
   };
 
   // Check if user can see viewers (CEO, CTO, or uploader)
@@ -541,6 +562,7 @@ export function VaultTab() {
                   const fileStyle = getFileIcon(file.name);
                   const viewCount = fileViews[file.id]?.length || 0;
                   const showViewers = canSeeViewers(file);
+                  const isDownloadingThis = downloadingFileId === file.id;
                   
                   return (
                     <motion.div
@@ -575,6 +597,24 @@ export function VaultTab() {
                             </span>
                           )}
                         </div>
+
+                        {isDownloadingThis && (
+                          <div className="mt-2 flex items-center gap-3">
+                            {downloadProgress != null ? (
+                              <>
+                                <Progress value={downloadProgress} className="h-2 flex-1" />
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                  Downloading... {Math.round(downloadProgress)}%
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">Downloading...</span>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -603,9 +643,14 @@ export function VaultTab() {
                           size="icon"
                           onClick={() => handleDownload(file)}
                           className="h-9 w-9"
-                          title="Download"
+                          title={isDownloadingThis ? 'Downloading...' : 'Download'}
+                          disabled={isDownloadingThis}
                         >
-                          <Download className="w-4 h-4" />
+                          {isDownloadingThis ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Download className="w-4 h-4" />
+                          )}
                         </Button>
                         {/* Request Review Button */}
                         <Button
@@ -638,18 +683,6 @@ export function VaultTab() {
         )}
       </motion.div>
 
-      {/* Preview Modal */}
-      <Dialog open={!!previewFile} onOpenChange={() => closePreview()}>
-        <DialogContent className="max-w-4xl w-full bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              {previewFile?.name}
-            </DialogTitle>
-          </DialogHeader>
-          {renderPreviewContent()}
-        </DialogContent>
-      </Dialog>
 
       {/* File Viewers Modal */}
       <FileViewersModal
