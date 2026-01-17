@@ -13,6 +13,7 @@ import {
 import ceoImage from '@/assets/ceo-sulaiman.jpeg';
 import ctoImage from '@/assets/cto-anas.jpeg';
 import { springPresets } from '@/components/ui/spring-config';
+import defaultAvatarImg from '@/assets/default-avatar.webp';
 
 // No more hardcoded emails - founders are determined by user_roles table
 
@@ -425,7 +426,7 @@ export function HomeTab() {
               />
               <div className="relative z-10">
                 <motion.img
-                  src={member.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${member.id}`}
+                  src={member.avatar_url || defaultAvatarImg}
                   alt={member.display_name || 'Team member'}
                   className="w-16 h-16 rounded-full border-2 border-primary/30 mx-auto mb-3 object-cover"
                   whileHover={{ scale: 1.1, borderColor: 'hsl(var(--primary))' }}

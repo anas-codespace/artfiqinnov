@@ -13,6 +13,7 @@ import { MessageInfoModal } from '@/components/ui/message-info-modal';
 import { springPresets } from '@/components/ui/spring-config';
 import { useUserRole } from '@/hooks/useUserRole';
 import artfiqLogo from '@/assets/artfiq-logo.jpeg';
+import defaultAvatarImg from '@/assets/default-avatar.webp';
 
 interface Message {
   id: string;
@@ -458,7 +459,7 @@ export function ChatTab() {
       const { error } = await supabase.from('messages').insert({
         user_id: user.id,
         user_name: (profile?.display_name || user.email?.split('@')[0] || 'Unknown').slice(0, 100),
-        user_avatar: profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
+        user_avatar: profile?.avatar_url || defaultAvatarImg,
         text: messageText,
         reply_to: replyToId,
       });
@@ -663,7 +664,7 @@ export function ChatTab() {
                     transition={springPresets.bouncy}
                   >
                     <img
-                      src={p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`}
+                      src={p.avatar_url || defaultAvatarImg}
                       alt={p.display_name || 'User'}
                       className="w-8 h-8 rounded-full border-2 border-background"
                     />
@@ -739,7 +740,7 @@ export function ChatTab() {
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={springPresets.bouncy}
-                          src={message.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${message.user_id}`}
+                          src={message.user_avatar || defaultAvatarImg}
                           alt={message.user_name}
                           className="w-10 h-10 rounded-full border border-border"
                         />

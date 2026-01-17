@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, CheckCheck, Clock, User } from 'lucide-react';
 import { springPresets } from './spring-config';
 import { cn } from '@/lib/utils';
+import defaultAvatarImg from '@/assets/default-avatar.webp';
 
 interface MessageRead {
   user_id: string;
@@ -118,7 +119,7 @@ export function MessageInfoModal({
                         >
                           <div className="flex items-center gap-2">
                             <img
-                              src={p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`}
+                              src={p.avatar_url || defaultAvatarImg}
                               alt={p.display_name || 'User'}
                               className="w-8 h-8 rounded-full"
                             />
@@ -151,7 +152,7 @@ export function MessageInfoModal({
                         className="flex items-center gap-2"
                       >
                         <img
-                          src={p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.user_id}`}
+                          src={p.avatar_url || defaultAvatarImg}
                           alt={p.display_name || 'User'}
                           className="w-8 h-8 rounded-full opacity-60"
                         />
