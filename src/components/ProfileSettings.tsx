@@ -26,7 +26,8 @@ export function ProfileSettings({ open, onOpenChange }: ProfileSettingsProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  const avatarUrl = avatarPreview || profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
+  const defaultAvatar = new URL('@/assets/default-avatar.webp', import.meta.url).href;
+  const avatarUrl = avatarPreview || profile?.avatar_url || defaultAvatar;
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

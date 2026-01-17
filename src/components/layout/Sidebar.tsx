@@ -24,7 +24,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const [showProfileSettings, setShowProfileSettings] = useState(false);
 
   const displayName = profile?.display_name || user?.email?.split('@')[0] || 'User';
-  const avatarUrl = profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`;
+  const defaultAvatar = new URL('@/assets/default-avatar.webp', import.meta.url).href;
+  const avatarUrl = profile?.avatar_url || defaultAvatar;
 
   return (
     <>
