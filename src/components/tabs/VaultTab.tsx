@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, File, Users, Bell, Loader2 } from 'lucide-react';
+import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, File, Users, Bell, Loader2, Image, FileType } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -32,11 +32,22 @@ interface FileView {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-const ALLOWED_TYPES = {
+const ALLOWED_TYPES: Record<string, { ext: string; icon: string; color: string }> = {
+  // PDF
   'application/pdf': { ext: 'pdf', icon: 'pdf', color: 'text-destructive' },
+  // Text files
+  'text/plain': { ext: 'txt', icon: 'text', color: 'text-blue-500' },
+  // Word documents
+  'application/msword': { ext: 'doc', icon: 'word', color: 'text-blue-600' },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { ext: 'docx', icon: 'word', color: 'text-blue-600' },
+  // Images
+  'image/jpeg': { ext: 'jpg', icon: 'image', color: 'text-green-500' },
+  'image/png': { ext: 'png', icon: 'image', color: 'text-green-500' },
+  'image/gif': { ext: 'gif', icon: 'image', color: 'text-purple-500' },
+  'image/webp': { ext: 'webp', icon: 'image', color: 'text-green-500' },
 };
 
-const ALLOWED_EXTENSIONS = ['.pdf'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.txt', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B';
@@ -52,9 +63,20 @@ function getFileIcon(filename: string) {
   const ext = getFileExtension(filename);
   switch (ext) {
     case 'pdf':
-      return { color: 'text-destructive', bg: 'bg-destructive/10' };
+      return { color: 'text-destructive', bg: 'bg-destructive/10', icon: FileText };
+    case 'txt':
+      return { color: 'text-blue-500', bg: 'bg-blue-500/10', icon: FileType };
+    case 'doc':
+    case 'docx':
+      return { color: 'text-blue-600', bg: 'bg-blue-600/10', icon: FileText };
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+    case 'webp':
+      return { color: 'text-green-500', bg: 'bg-green-500/10', icon: Image };
     default:
-      return { color: 'text-muted-foreground', bg: 'bg-muted' };
+      return { color: 'text-muted-foreground', bg: 'bg-muted', icon: File };
   }
 }
 
@@ -176,11 +198,11 @@ export function VaultTab() {
     }
 
     for (const file of fileList) {
-      // Check file type - Only PDF allowed
+      // Check file type
       if (!isValidFileType(file)) {
         toast({
           title: 'Invalid file type',
-          description: 'Only PDF files are allowed.',
+          description: 'Allowed: PDF, TXT, DOC, DOCX, JPG, PNG, GIF, WEBP',
           variant: 'destructive',
         });
         continue;
@@ -461,7 +483,7 @@ export function VaultTab() {
       >
         <h1 className="text-3xl font-bold">Document Vault</h1>
         <p className="text-muted-foreground">
-          Securely store and share PDF documents with your team. Max file size: 10MB.
+          Securely store and share documents & images with your team. Max file size: 10MB.
         </p>
       </motion.div>
 
@@ -485,7 +507,7 @@ export function VaultTab() {
         >
           <input
             type="file"
-            accept=".pdf"
+            accept=".pdf,.txt,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
             multiple
             onChange={handleFileInput}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -514,7 +536,7 @@ export function VaultTab() {
               {isUploading ? 'Uploading...' : isDragging ? 'Drop your files here' : 'Drag & drop files'}
             </h3>
             <p className="text-sm text-muted-foreground mb-3">
-              PDF only • or click to browse
+              PDF, TXT, DOC, DOCX, JPG, PNG, GIF, WEBP • or click to browse
             </p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <AlertCircle className="w-3 h-3" />
@@ -579,7 +601,7 @@ export function VaultTab() {
                         whileHover={{ scale: 1.05 }}
                         transition={springPresets.button}
                       >
-                        <File className={cn("w-6 h-6", fileStyle.color)} />
+                        <fileStyle.icon className={cn("w-6 h-6", fileStyle.color)} />
                       </motion.div>
                       
                       <div className="flex-1 min-w-0">
