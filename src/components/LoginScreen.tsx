@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Check, X } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Check, X, Clock, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,8 @@ const PASSWORD_REQUIREMENTS = [
   { id: 'special', label: 'One special character (!@#$%^&*)', test: (p: string) => /[!@#$%^&*]/.test(p) },
 ];
 
+const RESEND_COOLDOWN_SECONDS = 60;
+
 type AuthView = 'login' | 'forgot-password' | 'verify-email';
 
 export function LoginScreen() {
@@ -41,6 +43,10 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [pendingEmail, setPendingEmail] = useState('');
+  
+  // Cooldown timer for resend
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resetCooldown, setResetCooldown] = useState(0);
 
   // Check password requirements
   const passwordChecks = useMemo(() => {
@@ -51,6 +57,22 @@ export function LoginScreen() {
   }, [password]);
 
   const allPasswordRequirementsMet = passwordChecks.every(req => req.passed);
+
+  // Cooldown timer effect for resend verification code
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  // Cooldown timer effect for password reset
+  useEffect(() => {
+    if (resetCooldown > 0) {
+      const timer = setTimeout(() => setResetCooldown(resetCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resetCooldown]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,6 +187,8 @@ export function LoginScreen() {
   };
 
   const handleResendCode = async () => {
+    if (resendCooldown > 0) return;
+    
     setLoading(true);
     try {
       const { error } = await supabase.auth.resend({
@@ -179,9 +203,10 @@ export function LoginScreen() {
           variant: 'destructive',
         });
       } else {
+        setResendCooldown(RESEND_COOLDOWN_SECONDS);
         toast({
           title: 'Code resent!',
-          description: 'Please check your email for the new code.',
+          description: 'Please check your email for the new code. Check spam if not in inbox.',
         });
       }
     } finally {
@@ -191,6 +216,15 @@ export function LoginScreen() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (resetCooldown > 0) {
+      toast({
+        title: 'Please wait',
+        description: `You can request another reset in ${resetCooldown} seconds.`,
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       emailSchema.parse(email);
@@ -216,9 +250,10 @@ export function LoginScreen() {
           variant: 'destructive',
         });
       } else {
+        setResetCooldown(RESEND_COOLDOWN_SECONDS);
         toast({
           title: 'Reset email sent!',
-          description: 'Check your inbox for a password reset link.',
+          description: 'Check your inbox (and spam folder) for a password reset link.',
         });
         setView('login');
       }
@@ -455,14 +490,29 @@ export function LoginScreen() {
                   </Button>
                 </form>
 
+                {/* Spam Warning */}
+                <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                  <p className="text-xs text-amber-200">
+                    Check your spam folder if the email doesn't arrive in 1 minute.
+                  </p>
+                </div>
+
                 {/* Resend & Back */}
                 <div className="space-y-2">
                   <button
                     onClick={handleResendCode}
-                    disabled={loading}
-                    className="w-full text-sm text-primary hover:underline disabled:opacity-50"
+                    disabled={loading || resendCooldown > 0}
+                    className="w-full text-sm text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    Didn't receive the code? Resend
+                    {resendCooldown > 0 ? (
+                      <>
+                        <Clock className="w-4 h-4" />
+                        Resend in {resendCooldown}s
+                      </>
+                    ) : (
+                      "Didn't receive the code? Resend"
+                    )}
                   </button>
                   <button
                     onClick={() => {
@@ -502,15 +552,28 @@ export function LoginScreen() {
                     />
                   </div>
 
+                  {/* Spam Warning */}
+                  <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    <p className="text-xs text-amber-200">
+                      Check your spam folder if the email doesn't arrive in 1 minute.
+                    </p>
+                  </div>
+
                   <Button
                     type="submit"
                     variant="cyber"
                     size="lg"
                     className="w-full"
-                    disabled={loading || isLoading}
+                    disabled={loading || isLoading || resetCooldown > 0}
                   >
                     {loading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : resetCooldown > 0 ? (
+                      <span className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Wait {resetCooldown}s
+                      </span>
                     ) : (
                       <span>Send Reset Link</span>
                     )}
