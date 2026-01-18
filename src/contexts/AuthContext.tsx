@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Profile {
@@ -15,11 +15,15 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   isLoading: boolean;
+  isPasswordRecovery: boolean;
+  authEvent: AuthChangeEvent | null;
   signInWithEmail: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
+  resendVerificationEmail: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  clearPasswordRecovery: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [authEvent, setAuthEvent] = useState<AuthChangeEvent | null>(null);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -42,12 +48,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const clearPasswordRecovery = useCallback(() => {
+    setIsPasswordRecovery(false);
+  }, []);
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth event:', event);
+        setAuthEvent(event);
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // CRITICAL: Handle PASSWORD_RECOVERY event
+        if (event === 'PASSWORD_RECOVERY') {
+          console.log('Password recovery detected');
+          setIsPasswordRecovery(true);
+        }
         
         // Defer profile fetch with setTimeout to avoid deadlock
         if (session?.user) {
@@ -120,12 +138,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });
+    if (!error) {
+      // Clear recovery state after successful password update
+      setIsPasswordRecovery(false);
+    }
+    return { error };
+  };
+
+  const resendVerificationEmail = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+    });
     return { error };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    setIsPasswordRecovery(false);
   };
 
   return (
@@ -133,12 +164,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user, 
       session, 
       profile, 
-      isLoading, 
+      isLoading,
+      isPasswordRecovery,
+      authEvent,
       signInWithEmail,
       signUpWithEmail,
       resetPassword,
       updatePassword,
-      signOut 
+      resendVerificationEmail,
+      signOut,
+      clearPasswordRecovery,
     }}>
       {children}
     </AuthContext.Provider>
