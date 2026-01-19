@@ -306,6 +306,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_status: string | null
           avatar_url: string | null
           created_at: string
           display_name: string | null
@@ -315,6 +316,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          access_status?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
@@ -324,6 +326,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          access_status?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
@@ -425,6 +428,7 @@ export type Database = {
     Views: {
       profiles_safe: {
         Row: {
+          access_status: string | null
           avatar_url: string | null
           created_at: string | null
           display_name: string | null
@@ -434,6 +438,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          access_status?: string | null
           avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -443,6 +448,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          access_status?: string | null
           avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -456,6 +462,7 @@ export type Database = {
     }
     Functions: {
       cleanup_old_messages: { Args: never; Returns: number }
+      get_access_status: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -467,6 +474,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_approved_member: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "ceo" | "cto" | "team"

@@ -10,6 +10,7 @@ import { ChatTab } from '@/components/tabs/ChatTab';
 import { TaskMatrixTab } from '@/components/tabs/TaskMatrixTab';
 import { TimelineTab } from '@/components/tabs/TimelineTab';
 import { AnimatedBackground } from '@/components/ui/animated-background';
+import { VisitorBanner } from '@/components/VisitorBanner';
 import { Loader2 } from 'lucide-react';
 
 function WorkspaceContent() {
@@ -52,6 +53,9 @@ function WorkspaceContent() {
     <div className="min-h-screen bg-background relative">
       {/* Animated gradient orbs background */}
       <AnimatedBackground />
+      
+      {/* Visitor Banner */}
+      <VisitorBanner />
       
       <TopHeader onNavigate={setActiveTab} />
       

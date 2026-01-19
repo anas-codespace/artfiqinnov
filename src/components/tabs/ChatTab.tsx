@@ -12,6 +12,8 @@ import { RoleBadge } from '@/components/ui/role-badge';
 import { MessageInfoModal } from '@/components/ui/message-info-modal';
 import { springPresets } from '@/components/ui/spring-config';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useUserStatus } from '@/hooks/useUserStatus';
+import { RestrictedContent } from '@/components/RestrictedContent';
 import artfiqLogo from '@/assets/artfiq-logo.jpeg';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 
@@ -67,6 +69,7 @@ function formatTime(dateStr: string): string {
 export function ChatTab() {
   const { user, profile } = useAuth();
   const { role, isFounder } = useUserRole();
+  const { isMember, isAdmin, isLoading: statusLoading } = useUserStatus();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
@@ -608,6 +611,11 @@ export function ChatTab() {
   };
 
   const onlineParticipants = participants.filter(p => p.isOnline || presenceData[p.user_id]?.is_online);
+
+  // Show restricted content for non-members
+  if (!statusLoading && !isMember && !isAdmin) {
+    return <RestrictedContent type="chat" />;
+  }
 
   return (
     <div className="flex h-[calc(100vh-11rem)] relative overflow-hidden max-w-5xl mx-auto">

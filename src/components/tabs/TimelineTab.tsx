@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Plus, X, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Calendar, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { springPresets } from '@/components/ui/spring-config';
+import { useUserStatus } from '@/hooks/useUserStatus';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,7 @@ const MAX_DESCRIPTION_LENGTH = 2000;
 export function TimelineTab() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { isMember, isAdmin, isVisitor, isPending } = useUserStatus();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -125,12 +127,19 @@ export function TimelineTab() {
     );
   };
 
+  // Filter events for visitors (only show past/today events)
   const getEventsForDay = (day: number) => {
     const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+    const isVisitorOrPending = isVisitor || isPending;
+    
     return events.filter(event => {
       const start = event.start_date;
       const end = event.end_date;
-      return dateStr >= start && dateStr <= end;
+      const inRange = dateStr >= start && dateStr <= end;
+      // Visitors can only see events that have started
+      if (isVisitorOrPending && start > today) return false;
+      return inRange;
     });
   };
 

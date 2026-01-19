@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Loader2, User, X } from 'lucide-react';
+import { Camera, Loader2, User, X, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useUserStatus } from '@/hooks/useUserStatus';
+import { TeamRequestsModal } from '@/components/TeamRequestsModal';
 import {
   Dialog,
   DialogContent,
@@ -21,10 +23,12 @@ interface ProfileSettingsProps {
 export function ProfileSettings({ open, onOpenChange }: ProfileSettingsProps) {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { isAdmin } = useUserStatus();
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [showTeamRequests, setShowTeamRequests] = useState(false);
 
   const defaultAvatar = new URL('@/assets/default-avatar.webp', import.meta.url).href;
   const avatarUrl = avatarPreview || profile?.avatar_url || defaultAvatar;
@@ -190,6 +194,18 @@ export function ProfileSettings({ open, onOpenChange }: ProfileSettingsProps) {
             />
           </div>
 
+          {/* Admin: Team Requests Button */}
+          {isAdmin && (
+            <Button
+              variant="outline"
+              className="w-full gap-2 border-primary/30 hover:bg-primary/10"
+              onClick={() => setShowTeamRequests(true)}
+            >
+              <Users className="w-4 h-4" />
+              Team Access Requests
+            </Button>
+          )}
+
           {/* Actions */}
           <div className="flex gap-3 pt-4">
             <Button
@@ -214,6 +230,12 @@ export function ProfileSettings({ open, onOpenChange }: ProfileSettingsProps) {
           </div>
         </div>
       </DialogContent>
+
+      {/* Team Requests Modal */}
+      <TeamRequestsModal 
+        open={showTeamRequests} 
+        onOpenChange={setShowTeamRequests} 
+      />
     </Dialog>
   );
 }
