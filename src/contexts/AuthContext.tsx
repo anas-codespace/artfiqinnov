@@ -8,6 +8,7 @@ interface Profile {
   display_name: string | null;
   avatar_url: string | null;
   email: string | null;
+  access_status: 'visitor' | 'pending' | 'approved_member' | null;
 }
 
 interface AuthContextType {
@@ -44,7 +45,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
     
     if (data && !error) {
-      setProfile(data);
+      setProfile({
+        id: data.id,
+        user_id: data.user_id,
+        display_name: data.display_name,
+        avatar_url: data.avatar_url,
+        email: data.email,
+        access_status: (data.access_status as Profile['access_status']) ?? 'visitor',
+      });
     }
   };
 
