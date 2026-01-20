@@ -61,12 +61,19 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
         cyber: {
           cyan: "hsl(187 100% 50%)",
           red: "hsl(4 90% 58%)",
           dark: "hsl(0 0% 4%)",
           darker: "hsl(0 0% 2%)",
         },
+      },
+      screens: {
+        'xs': '400px',
       },
       borderRadius: {
         lg: "var(--radius)",

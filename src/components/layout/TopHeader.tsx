@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { LogOut } from 'lucide-react';
+import { LogOut, Menu } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -28,17 +28,17 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed top-0 left-0 right-0 z-40 h-16 flex items-center justify-between px-6 bg-background/60 backdrop-blur-xl border-b border-border/30"
+        className="fixed top-0 left-0 right-0 z-40 h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 bg-background/60 backdrop-blur-xl border-b border-border/30"
       >
         {/* Logo - Left Side */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}
-          className="flex items-center gap-3"
+          className="flex items-center gap-2 sm:gap-3 min-w-0"
         >
           {/* Logo Badge Container with Navy Blue styling and white glow */}
-          <div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-card/60 backdrop-blur-md border border-border/50 shadow-lg overflow-hidden drop-shadow-[0_0_3px_rgba(255,255,255,0.8)]">
+          <div className="relative flex-shrink-0 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-card/60 backdrop-blur-md border border-border/50 shadow-lg overflow-hidden drop-shadow-[0_0_3px_rgba(255,255,255,0.8)]">
             <img 
               src={artfiqLogo} 
               alt="ARTFIQ Logo" 
@@ -61,12 +61,13 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
           </div>
           {/* Brand Text - Using theme colors */}
           <h1 
-            className="text-lg font-bold tracking-wider hidden sm:block text-primary"
+            className="text-sm sm:text-lg font-bold tracking-wider hidden xs:block text-primary truncate max-w-[120px] sm:max-w-none"
             style={{
               fontFamily: "'Orbitron', 'Syncopate', sans-serif",
             }}
           >
-            ARTFIQ INNOVATIONS
+            <span className="hidden sm:inline">ARTFIQ INNOVATIONS</span>
+            <span className="sm:hidden">ARTFIQ</span>
           </h1>
         </motion.div>
 
@@ -76,22 +77,26 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="flex items-center gap-3"
+            className="flex items-center gap-1 sm:gap-3"
           >
             <NotificationBell onNavigate={onNavigate} />
             
-            {/* Role Badge */}
-            <RoleBadge role={role} size="sm" />
+            {/* Role Badge - Hidden on very small screens */}
+            <div className="hidden xs:block">
+              <RoleBadge role={role} size="sm" />
+            </div>
             
             <div 
-              className="flex items-center gap-3 cursor-pointer hover:bg-secondary/50 rounded-full pl-3 pr-1 py-1 transition-all"
+              className="flex items-center gap-1 sm:gap-3 cursor-pointer hover:bg-secondary/50 rounded-full pl-2 sm:pl-3 pr-1 py-1 transition-all"
               onClick={() => setShowProfileSettings(true)}
             >
-              <span className="text-sm font-medium hidden sm:block">{displayName}</span>
+              <span className="text-xs sm:text-sm font-medium hidden md:block truncate max-w-[100px]">
+                {displayName}
+              </span>
               <motion.img
                 src={avatarUrl}
                 alt={displayName}
-                className="w-9 h-9 rounded-full border-2 border-primary/30"
+                className="w-7 h-7 sm:w-9 sm:h-9 rounded-full border-2 border-primary/30 flex-shrink-0"
                 whileHover={{ scale: 1.05, borderColor: 'hsl(var(--primary))' }}
               />
             </div>
@@ -100,7 +105,7 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
               variant="ghost"
               size="icon"
               onClick={signOut}
-              className="text-muted-foreground hover:text-destructive rounded-full"
+              className="text-muted-foreground hover:text-destructive rounded-full w-8 h-8 sm:w-10 sm:h-10"
             >
               <LogOut className="w-4 h-4" />
             </Button>

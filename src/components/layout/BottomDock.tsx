@@ -39,9 +39,10 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.2 }}
-      className="fixed bottom-6 left-0 right-0 z-50 flex justify-center items-center"
+      className="fixed bottom-0 left-0 right-0 z-50 flex justify-center items-end pb-safe"
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0.75rem), 0.75rem)' }}
     >
-      <div className="flex items-center gap-2 px-4 py-3 rounded-full bg-card/60 backdrop-blur-xl border border-border/50 shadow-2xl shadow-black/50">
+      <div className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-full bg-card/60 backdrop-blur-xl border border-border/50 shadow-2xl shadow-black/50 mx-4 mb-2">
         {navItems.map((item, index) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -60,7 +61,7 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
               }}
               whileTap={{ scale: 0.95 }}
               className={cn(
-                "relative flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all duration-300 overflow-hidden",
+                "relative flex flex-col items-center justify-center px-3 sm:px-5 py-2 rounded-full transition-all duration-300 overflow-hidden min-w-[48px] sm:min-w-[56px]",
                 isActive
                   ? "bg-primary/20 text-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -104,14 +105,19 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
                 />
               )}
               
-              <Icon className={cn("w-5 h-5 relative z-10", isActive && "drop-shadow-[0_0_8px_hsl(var(--primary))]")} />
-              <span className="text-[10px] font-medium mt-1 relative z-10">{item.label}</span>
+              <Icon className={cn(
+                "w-4 h-4 sm:w-5 sm:h-5 relative z-10", 
+                isActive && "drop-shadow-[0_0_8px_hsl(var(--primary))]"
+              )} />
+              <span className="text-[9px] sm:text-[10px] font-medium mt-0.5 sm:mt-1 relative z-10 whitespace-nowrap">
+                {item.label}
+              </span>
               
               {/* Active dot indicator */}
               {isActive && (
                 <motion.div
                   layoutId="dock-active-dot"
-                  className="absolute -bottom-1 w-1 h-1 rounded-full bg-primary"
+                  className="absolute -bottom-0.5 sm:-bottom-1 w-1 h-1 rounded-full bg-primary"
                   style={{ boxShadow: '0 0 6px hsl(var(--primary))' }}
                 />
               )}

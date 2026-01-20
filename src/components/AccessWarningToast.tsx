@@ -48,10 +48,10 @@ export function AccessWarningToast() {
             damping: 30,
             mass: 0.8
           }}
-          className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-lg"
+          className="fixed top-20 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto z-[100] sm:w-[90%] sm:max-w-lg"
         >
           {/* Glassmorphism Toast Container */}
-          <div className="relative bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 backdrop-blur-xl border border-amber-400/30 rounded-2xl shadow-2xl shadow-amber-500/20 overflow-hidden">
+          <div className="relative bg-gradient-to-r from-warning/20 via-warning/15 to-warning/20 backdrop-blur-xl border border-warning/30 rounded-2xl shadow-2xl overflow-hidden">
             {/* Animated glow border */}
             <motion.div 
               className="absolute inset-0 rounded-2xl opacity-50"
@@ -65,31 +65,32 @@ export function AccessWarningToast() {
               transition={{ duration: 2, repeat: Infinity }}
             />
 
-            <div className="relative px-5 py-4 flex items-center justify-between gap-4">
+            {/* Mobile-first responsive layout */}
+            <div className="relative px-4 py-3 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
               {/* Icon and Text */}
-              <div className="flex items-center gap-3 flex-1">
+              <div className="flex items-start sm:items-center gap-3 flex-1">
                 {isPending ? (
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                    className="flex-shrink-0"
+                    className="flex-shrink-0 mt-0.5 sm:mt-0"
                   >
-                    <Clock className="w-6 h-6 text-amber-400" />
+                    <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-warning" />
                   </motion.div>
                 ) : (
                   <motion.div
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
-                    className="flex-shrink-0"
+                    className="flex-shrink-0 mt-0.5 sm:mt-0"
                   >
-                    <ShieldAlert className="w-6 h-6 text-amber-400" />
+                    <ShieldAlert className="w-5 h-5 sm:w-6 sm:h-6 text-warning" />
                   </motion.div>
                 )}
-                <div>
-                  <p className="font-semibold text-amber-100">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm sm:text-base text-warning-foreground whitespace-normal break-words">
                     {isPending ? 'Access Request Pending' : 'Guest Mode Active'}
                   </p>
-                  <p className="text-sm text-amber-200/80">
+                  <p className="text-xs sm:text-sm text-warning-foreground/80 whitespace-normal break-words">
                     {isPending
                       ? 'Awaiting founder approval'
                       : 'Request access to unlock all features'}
@@ -97,33 +98,33 @@ export function AccessWarningToast() {
                 </div>
               </div>
 
-              {/* Action Button */}
-              <div className="flex items-center gap-2">
+              {/* Action Button Row */}
+              <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
                 {isVisitor && (
                   <Button
                     onClick={handleRequestAccess}
                     disabled={isRequesting}
                     size="sm"
-                    className="bg-amber-500 hover:bg-amber-600 text-amber-950 border-none shadow-lg gap-2 font-semibold"
+                    className="flex-1 sm:flex-none bg-warning hover:bg-warning/90 text-warning-foreground border-none shadow-lg gap-2 font-semibold text-xs sm:text-sm"
                   >
                     {isRequesting ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="hidden sm:inline">Requesting...</span>
+                        <span>Requesting...</span>
                       </>
                     ) : (
                       <>
                         <Shield className="w-4 h-4" />
-                        <span className="hidden sm:inline">Request Access</span>
+                        <span>Request Access</span>
                       </>
                     )}
                   </Button>
                 )}
 
                 {isPending && (
-                  <div className="flex items-center gap-2 text-amber-200 bg-amber-900/30 px-3 py-1.5 rounded-lg">
+                  <div className="flex items-center gap-2 text-warning-foreground bg-warning/20 px-3 py-1.5 rounded-lg flex-1 sm:flex-none justify-center">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm font-medium hidden sm:inline">Pending...</span>
+                    <span className="text-xs sm:text-sm font-medium">Pending...</span>
                   </div>
                 )}
 
@@ -132,7 +133,7 @@ export function AccessWarningToast() {
                   variant="ghost"
                   size="icon"
                   onClick={hideWarning}
-                  className="h-8 w-8 text-amber-300 hover:text-amber-100 hover:bg-amber-500/20"
+                  className="h-8 w-8 flex-shrink-0 text-warning-foreground/70 hover:text-warning-foreground hover:bg-warning/20"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -141,7 +142,7 @@ export function AccessWarningToast() {
 
             {/* Progress bar for auto-dismiss */}
             <motion.div
-              className="h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-400"
+              className="h-1 bg-gradient-to-r from-warning via-warning to-warning"
               initial={{ scaleX: 1, originX: 0 }}
               animate={{ scaleX: 0 }}
               transition={{ duration: 10, ease: 'linear' }}
