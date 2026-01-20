@@ -9,6 +9,7 @@ interface RestrictedContentProps {
   title?: string;
   description?: string;
   onRequestAccess?: () => void;
+  showWarning?: () => void;
 }
 
 const contentConfig = {
@@ -42,13 +43,19 @@ export function RestrictedContent({
   type, 
   title, 
   description, 
-  onRequestAccess 
+  onRequestAccess,
+  showWarning 
 }: RestrictedContentProps) {
   const { isVisitor, isPending, requestAccess } = useUserStatus();
   const config = contentConfig[type];
   const Icon = config.icon;
 
   const handleRequest = async () => {
+    // Trigger the floating warning toast
+    if (showWarning) {
+      showWarning();
+    }
+    
     if (onRequestAccess) {
       onRequestAccess();
     } else {

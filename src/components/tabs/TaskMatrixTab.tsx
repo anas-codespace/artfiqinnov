@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, User, Users, UserCheck } from 'lucide-react';
+import { Plus, Trash2, User, Users, UserCheck, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useUserStatus } from '@/hooks/useUserStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -69,7 +70,9 @@ const ENTIRE_TEAM = 'ALL';
 export function TaskMatrixTab() {
   const { user, profile } = useAuth();
   const { isFounder, isLoading: roleLoading } = useUserRole();
+  const { isVisitor, isPending, isMember, isAdmin } = useUserStatus();
   const { toast } = useToast();
+  const isRestricted = isVisitor || isPending;
   const [tasks, setTasks] = useState<Task[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -385,26 +388,43 @@ export function TaskMatrixTab() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={springPresets.snappy}
-                    draggable
-                    onDragStart={() => setDraggingTask(task)}
+                    draggable={!isRestricted}
+                    onDragStart={() => !isRestricted && setDraggingTask(task)}
                     onDragEnd={() => setDraggingTask(null)}
                     whileHover={{ 
                       scale: 1.02,
                       boxShadow: '0 0 20px hsl(187 100% 50% / 0.3)',
                     }}
                     className={cn(
-                      "bg-[#161616] rounded-xl p-4 cursor-grab active:cursor-grabbing border-l-4 transition-all",
+                      "bg-card rounded-xl p-4 border-l-4 transition-all",
                       priorityColors[task.priority],
-                      "hover:border-primary/50 border border-transparent"
+                      "hover:border-primary/50 border border-transparent",
+                      isRestricted ? "cursor-default" : "cursor-grab active:cursor-grabbing"
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{task.title}</p>
                         {task.description && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {task.description}
-                          </p>
+                          <div className="relative mt-1">
+                            {isRestricted ? (
+                              <div className="relative">
+                                <p className="text-xs text-muted-foreground line-clamp-2 blur-sm select-none">
+                                  {task.description}
+                                </p>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground/70 bg-background/50 px-2 py-0.5 rounded">
+                                    <Lock className="w-3 h-3" />
+                                    <span>Restricted</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                {task.description}
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
                       {/* Only show delete for founders */}
