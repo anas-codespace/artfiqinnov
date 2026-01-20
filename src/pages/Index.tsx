@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AccessWarningProvider } from '@/contexts/AccessWarningContext';
 import { LoginScreen } from '@/components/LoginScreen';
 import { BottomDock } from '@/components/layout/BottomDock';
 import { TopHeader } from '@/components/layout/TopHeader';
@@ -10,7 +11,7 @@ import { ChatTab } from '@/components/tabs/ChatTab';
 import { TaskMatrixTab } from '@/components/tabs/TaskMatrixTab';
 import { TimelineTab } from '@/components/tabs/TimelineTab';
 import { AnimatedBackground } from '@/components/ui/animated-background';
-import { VisitorBanner } from '@/components/VisitorBanner';
+import { AccessWarningToast } from '@/components/AccessWarningToast';
 import { Loader2 } from 'lucide-react';
 
 function WorkspaceContent() {
@@ -50,32 +51,34 @@ function WorkspaceContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Animated gradient orbs background */}
-      <AnimatedBackground />
-      
-      {/* Visitor Banner */}
-      <VisitorBanner />
-      
-      <TopHeader onNavigate={setActiveTab} />
-      
-      <main className="pt-16 pb-28">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="h-full"
-          >
-            {renderTab()}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+    <AccessWarningProvider>
+      <div className="min-h-screen bg-background relative">
+        {/* Animated gradient orbs background */}
+        <AnimatedBackground />
+        
+        {/* Floating Access Warning Toast */}
+        <AccessWarningToast />
+        
+        <TopHeader onNavigate={setActiveTab} />
+        
+        <main className="pt-16 pb-28">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="h-full"
+            >
+              {renderTab()}
+            </motion.div>
+          </AnimatePresence>
+        </main>
 
-      <BottomDock activeTab={activeTab} onTabChange={setActiveTab} />
-    </div>
+        <BottomDock activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
+    </AccessWarningProvider>
   );
 }
 

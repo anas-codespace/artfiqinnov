@@ -14,6 +14,7 @@ import { springPresets } from '@/components/ui/spring-config';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useUserStatus } from '@/hooks/useUserStatus';
 import { RestrictedContent } from '@/components/RestrictedContent';
+import { useAccessWarning } from '@/contexts/AccessWarningContext';
 import artfiqLogo from '@/assets/artfiq-logo.jpeg';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 
@@ -70,6 +71,7 @@ export function ChatTab() {
   const { user, profile } = useAuth();
   const { role, isFounder } = useUserRole();
   const { isMember, isAdmin, isLoading: statusLoading } = useUserStatus();
+  const { showWarning } = useAccessWarning();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
@@ -614,7 +616,7 @@ export function ChatTab() {
 
   // Show restricted content for non-members
   if (!statusLoading && !isMember && !isAdmin) {
-    return <RestrictedContent type="chat" />;
+    return <RestrictedContent type="chat" showWarning={showWarning} />;
   }
 
   return (

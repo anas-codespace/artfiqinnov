@@ -46,6 +46,7 @@ export function TimelineTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showFutureWarning, setShowFutureWarning] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
@@ -53,6 +54,8 @@ export function TimelineTab() {
     endDate: '',
     isUrgent: false,
   });
+  
+  const isRestricted = isVisitor || isPending;
 
   // Fetch events
   useEffect(() => {
@@ -145,10 +148,22 @@ export function TimelineTab() {
 
   const handlePrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    setShowFutureWarning(false);
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    const today = new Date();
+    
+    // Check if trying to go to a future month (visitors/pending only)
+    if (isRestricted && nextMonth > today) {
+      setShowFutureWarning(true);
+      // Still allow navigation but show warning
+    } else {
+      setShowFutureWarning(false);
+    }
+    
+    setCurrentDate(nextMonth);
   };
 
   const handleDayClick = (day: number) => {
@@ -245,8 +260,45 @@ export function TimelineTab() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...springPresets.snappy, delay: 0.1 }}
-        className="glass-card rounded-2xl p-6"
+        className="glass-card rounded-2xl p-6 relative overflow-hidden"
       >
+        {/* Future Operations Classified Overlay */}
+        <AnimatePresence>
+          {showFutureWarning && isRestricted && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-20 backdrop-blur-md bg-background/60 flex flex-col items-center justify-center gap-4"
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="flex flex-col items-center gap-3"
+              >
+                <div className="p-4 rounded-full bg-destructive/20 border border-destructive/30">
+                  <Lock className="w-8 h-8 text-destructive" />
+                </div>
+                <h3 className="text-xl font-bold text-destructive">CLASSIFIED</h3>
+                <p className="text-muted-foreground text-center max-w-xs">
+                  Future Operations are restricted to approved team members only.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowFutureWarning(false);
+                    setCurrentDate(new Date());
+                  }}
+                  className="mt-2"
+                >
+                  Return to Current Month
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {/* Month Navigation */}
         <div className="flex items-center justify-between mb-6">
           <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
