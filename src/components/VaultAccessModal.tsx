@@ -84,11 +84,11 @@ export function VaultAccessModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm bg-card border-border">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-sm mx-auto bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileWarning className="w-5 h-5 text-amber-500" />
-            Restricted File
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <FileWarning className="w-4 h-4 sm:w-5 sm:h-5 text-warning flex-shrink-0" />
+            <span className="truncate">Restricted File</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -96,31 +96,31 @@ export function VaultAccessModal({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={springPresets.snappy}
-          className="py-4 space-y-6"
+          className="py-2 sm:py-4 space-y-4 sm:space-y-6"
         >
           {/* File info */}
-          <div className="p-4 bg-secondary/50 rounded-xl border border-border/50 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Requested File:</p>
-            <p className="font-medium truncate">{fileName}</p>
+          <div className="p-3 sm:p-4 bg-secondary/50 rounded-xl border border-border/50 text-center">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-1">Requested File:</p>
+            <p className="font-medium text-sm sm:text-base break-words">{fileName}</p>
           </div>
 
           {/* Warning message */}
-          <p className="text-center text-muted-foreground text-sm leading-relaxed">
+          <p className="text-center text-muted-foreground text-xs sm:text-sm leading-relaxed px-2">
             This file requires elevated permissions. Would you like to request 
             one-time access from an administrator?
           </p>
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <Button
               variant="outline"
-              className="flex-1"
+              className="flex-1 text-sm"
               onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
             <Button
-              className="flex-1 gap-2"
+              className="flex-1 gap-2 text-sm"
               onClick={handleRequestAccess}
               disabled={isRequesting}
             >

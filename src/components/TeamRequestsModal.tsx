@@ -142,15 +142,15 @@ export function TeamRequestsModal({ open, onOpenChange }: TeamRequestsModalProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg bg-card border-border">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-lg mx-auto bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-primary" />
-            Team Access Requests
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+            <span className="truncate">Team Access Requests</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="py-4 space-y-4">
+        <div className="py-2 sm:py-4 space-y-3 sm:space-y-4 max-h-[60vh] overflow-y-auto scrollbar-cyber">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -161,8 +161,8 @@ export function TeamRequestsModal({ open, onOpenChange }: TeamRequestsModalProps
               animate={{ opacity: 1 }}
               className="text-center py-8"
             >
-              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">No pending access requests</p>
+              <Users className="w-10 h-10 sm:w-12 sm:h-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No pending access requests</p>
             </motion.div>
           ) : (
             <AnimatePresence mode="popLayout">
@@ -173,58 +173,64 @@ export function TeamRequestsModal({ open, onOpenChange }: TeamRequestsModalProps
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ ...springPresets.snappy, delay: index * 0.05 }}
-                  className="flex items-center gap-4 p-4 bg-secondary/50 rounded-xl border border-border/50"
+                  className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-secondary/50 rounded-xl border border-border/50"
                 >
-                  {/* Avatar */}
-                  <img
-                    src={user.avatar_url || defaultAvatar}
-                    alt={user.display_name || 'User'}
-                    className="w-12 h-12 rounded-full border-2 border-primary/30 object-cover"
-                  />
+                  {/* User Info Row */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {/* Avatar */}
+                    <img
+                      src={user.avatar_url || defaultAvatar}
+                      alt={user.display_name || 'User'}
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-primary/30 object-cover flex-shrink-0"
+                    />
 
-                  {/* User Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">
-                      {user.display_name || 'Unknown User'}
-                    </p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {user.email || 'No email'}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-amber-500">
-                      <Clock className="w-3 h-3" />
-                      <span>
-                        Requested {new Date(user.created_at).toLocaleDateString()}
-                      </span>
+                    {/* User Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm sm:text-base truncate">
+                        {user.display_name || 'Unknown User'}
+                      </p>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                        {user.email || 'No email'}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1 text-xs text-warning">
+                        <Clock className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">
+                          Requested {new Date(user.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-2">
+                  {/* Actions Row */}
+                  <div className="flex gap-2 justify-end">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleReject(user)}
                       disabled={processingId === user.id}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30 flex-1 sm:flex-none"
                     >
                       {processingId === user.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <X className="w-4 h-4" />
+                        <>
+                          <X className="w-4 h-4" />
+                          <span className="sm:hidden ml-1">Reject</span>
+                        </>
                       )}
                     </Button>
                     <Button
                       size="sm"
                       onClick={() => handleApprove(user)}
                       disabled={processingId === user.id}
-                      className="gap-1"
+                      className="gap-1 flex-1 sm:flex-none"
                     >
                       {processingId === user.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <>
                           <Check className="w-4 h-4" />
-                          Approve
+                          <span>Approve</span>
                         </>
                       )}
                     </Button>

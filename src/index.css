@@ -30,6 +30,9 @@
     --destructive: 4 90% 58%;
     --destructive-foreground: 0 0% 100%;
 
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
+
     --border: 0 0% 15%;
     --input: 0 0% 15%;
     --ring: 187 100% 50%;
@@ -124,5 +127,39 @@
   .scrollbar-cyber::-webkit-scrollbar-thumb {
     background: hsl(var(--primary));
     border-radius: 3px;
+  }
+
+  /* Safe area padding for iOS devices */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 1.5rem);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  /* Responsive text utilities */
+  .text-responsive-sm {
+    @apply text-xs sm:text-sm;
+  }
+
+  .text-responsive-base {
+    @apply text-sm sm:text-base;
+  }
+
+  .text-responsive-lg {
+    @apply text-base sm:text-lg md:text-xl;
+  }
+
+  .text-responsive-xl {
+    @apply text-lg sm:text-xl md:text-2xl lg:text-3xl;
+  }
+
+  /* Break words utility for long text */
+  .break-words-safe {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
   }
 }

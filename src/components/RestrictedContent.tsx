@@ -29,7 +29,7 @@ const contentConfig = {
     icon: FileWarning,
     title: 'Restricted Document',
     description: 'This file requires elevated access permissions.',
-    color: 'amber-500',
+    color: 'warning',
   },
   tasks: {
     icon: ShieldAlert,
@@ -68,16 +68,16 @@ export function RestrictedContent({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={springPresets.snappy}
-      className="flex items-center justify-center min-h-[400px] p-6"
+      className="flex items-center justify-center min-h-[300px] sm:min-h-[400px] p-4 sm:p-6"
     >
       <div className="relative max-w-md w-full">
         {/* Glassmorphism card */}
-        <div className="relative backdrop-blur-xl bg-card/40 border border-border/50 rounded-2xl p-8 shadow-2xl">
+        <div className="relative backdrop-blur-xl bg-card/40 border border-border/50 rounded-2xl p-6 sm:p-8 shadow-2xl">
           {/* Glow effect */}
           <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/10 via-transparent to-destructive/10 pointer-events-none" />
           
           {/* Content */}
-          <div className="relative z-10 text-center space-y-6">
+          <div className="relative z-10 text-center space-y-4 sm:space-y-6">
             {/* Icon with animated ring */}
             <div className="relative inline-flex">
               <motion.div
@@ -92,18 +92,18 @@ export function RestrictedContent({
                   ease: 'easeInOut',
                 }}
               />
-              <div className="relative w-20 h-20 rounded-full bg-card border-2 border-primary/50 flex items-center justify-center">
-                <Icon className="w-10 h-10 text-primary" />
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-card border-2 border-primary/50 flex items-center justify-center">
+                <Icon className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
               </div>
             </div>
 
             {/* Title */}
-            <h3 className="text-xl font-bold">
+            <h3 className="text-lg sm:text-xl font-bold break-words">
               {title || config.title}
             </h3>
 
             {/* Description */}
-            <p className="text-muted-foreground leading-relaxed">
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed break-words">
               {description || config.description}
             </p>
 
@@ -111,7 +111,7 @@ export function RestrictedContent({
             {isVisitor && (
               <Button 
                 onClick={handleRequest}
-                className="w-full gap-2"
+                className="w-full gap-2 text-sm sm:text-base"
               >
                 <Shield className="w-4 h-4" />
                 Request Access
@@ -119,14 +119,14 @@ export function RestrictedContent({
             )}
 
             {isPending && (
-              <div className="flex items-center justify-center gap-2 text-amber-500">
+              <div className="flex items-center justify-center gap-2 text-warning">
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
                 >
                   <Lock className="w-4 h-4" />
                 </motion.div>
-                <span className="text-sm">Access request pending approval...</span>
+                <span className="text-xs sm:text-sm">Access request pending approval...</span>
               </div>
             )}
           </div>
