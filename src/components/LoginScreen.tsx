@@ -31,7 +31,7 @@ const RESEND_COOLDOWN_SECONDS = 60;
 type AuthView = 'login' | 'forgot-password' | 'verify-email';
 
 export function LoginScreen() {
-  const { signInWithEmail, signUpWithEmail, resetPassword, isLoading } = useAuth();
+  const { signInWithEmail, signUpWithEmail, resetPassword, isLoading, authEvent } = useAuth();
   const { toast } = useToast();
   const [view, setView] = useState<AuthView>('login');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -43,10 +43,31 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [pendingEmail, setPendingEmail] = useState('');
+  const [verificationSuccess, setVerificationSuccess] = useState(false);
   
   // Cooldown timer for resend
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resetCooldown, setResetCooldown] = useState(0);
+
+  // Handle email verification success from magic link
+  useEffect(() => {
+    if (authEvent === 'SIGNED_IN') {
+      // Check if this is from an email verification link
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+      
+      // Supabase verification redirects include access_token in hash or type in query
+      if (hashParams.get('access_token') || urlParams.get('type') === 'signup' || urlParams.get('type') === 'email') {
+        setVerificationSuccess(true);
+        toast({
+          title: 'Verification Successful!',
+          description: 'Redirecting to dashboard...',
+        });
+        // Clear the URL params
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [authEvent, toast]);
 
   // Check password requirements
   const passwordChecks = useMemo(() => {
@@ -285,12 +306,36 @@ export function LoginScreen() {
               ARTFIQ
             </h1>
             <p className="text-muted-foreground text-sm">
-              {view === 'forgot-password' ? 'Reset Password' : view === 'verify-email' ? 'Verify Email' : 'Workspace'}
+              {verificationSuccess 
+                ? 'Verification Successful!' 
+                : view === 'forgot-password' 
+                  ? 'Reset Password' 
+                  : view === 'verify-email' 
+                    ? 'Verify Email' 
+                    : 'Workspace'}
             </p>
           </SoftFloat>
 
+          {/* Verification Success Message */}
+          {verificationSuccess && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center gap-4 py-6"
+            >
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                <Check className="w-8 h-8 text-primary" />
+              </div>
+              <div className="text-center space-y-2">
+                <p className="text-lg font-medium text-foreground">Email Verified Successfully!</p>
+                <p className="text-sm text-muted-foreground">Redirecting to dashboard...</p>
+              </div>
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </motion.div>
+          )}
+
           <AnimatePresence mode="wait">
-            {view === 'login' ? (
+            {!verificationSuccess && view === 'login' ? (
               <motion.div
                 key="login"
                 initial={{ opacity: 0, x: -20 }}
@@ -438,7 +483,7 @@ export function LoginScreen() {
                   By signing in, you agree to our Terms of Service and Privacy Policy
                 </p>
               </motion.div>
-            ) : view === 'verify-email' ? (
+            ) : !verificationSuccess && view === 'verify-email' ? (
               <motion.div
                 key="verify-email"
                 initial={{ opacity: 0, x: 20 }}
@@ -491,9 +536,9 @@ export function LoginScreen() {
                 </form>
 
                 {/* Spam Warning */}
-                <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                  <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                  <p className="text-xs text-amber-200">
+                <div className="flex items-center gap-2 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
+                  <p className="text-xs text-warning-foreground">
                     Check your spam folder if the email doesn't arrive in 1 minute.
                   </p>
                 </div>
@@ -526,7 +571,7 @@ export function LoginScreen() {
                   </button>
                 </div>
               </motion.div>
-            ) : (
+            ) : !verificationSuccess && view === 'forgot-password' ? (
               <motion.div
                 key="forgot-password"
                 initial={{ opacity: 0, x: 20 }}
@@ -553,9 +598,9 @@ export function LoginScreen() {
                   </div>
 
                   {/* Spam Warning */}
-                  <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                    <p className="text-xs text-amber-200">
+                  <div className="flex items-center gap-2 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
+                    <p className="text-xs text-warning-foreground">
                       Check your spam folder if the email doesn't arrive in 1 minute.
                     </p>
                   </div>
@@ -589,7 +634,7 @@ export function LoginScreen() {
                   Back to Sign In
                 </button>
               </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
         </div>
       </SoftFloat>
