@@ -19,7 +19,7 @@ interface AuthContextType {
   isPasswordRecovery: boolean;
   authEvent: AuthChangeEvent | null;
   signInWithEmail: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
-  signUpWithEmail: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
+  signUpWithEmail: (email: string, password: string, name: string) => Promise<{ error: Error | null; session: Session | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   resendVerificationEmail: (email: string) => Promise<{ error: Error | null }>;
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUpWithEmail = async (email: string, password: string, name: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       },
     });
-    return { error };
+    return { error, session: data?.session ?? null };
   };
 
   const resetPassword = async (email: string) => {

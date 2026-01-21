@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Check, X, Clock, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,8 +11,6 @@ import { AnimatedBackground } from '@/components/ui/animated-background';
 import { LiquidLogo } from '@/components/ui/liquid-logo';
 import { SoftFloat } from '@/components/ui/soft-float';
 import { sanitizeAuthError } from '@/lib/auth-errors';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { supabase } from '@/integrations/supabase/client';
 
 const emailSchema = z.string().email('Please enter a valid email');
 const nameSchema = z.string().min(2, 'Name must be at least 2 characters');
@@ -26,12 +24,12 @@ const PASSWORD_REQUIREMENTS = [
   { id: 'special', label: 'One special character (!@#$%^&*)', test: (p: string) => /[!@#$%^&*]/.test(p) },
 ];
 
-const RESEND_COOLDOWN_SECONDS = 60;
+const RESET_COOLDOWN_SECONDS = 60;
 
-type AuthView = 'login' | 'forgot-password' | 'verify-email';
+type AuthView = 'login' | 'forgot-password';
 
 export function LoginScreen() {
-  const { signInWithEmail, signUpWithEmail, resetPassword, isLoading, authEvent } = useAuth();
+  const { signInWithEmail, signUpWithEmail, resetPassword, isLoading } = useAuth();
   const { toast } = useToast();
   const [view, setView] = useState<AuthView>('login');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -41,33 +39,10 @@ export function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [pendingEmail, setPendingEmail] = useState('');
-  const [verificationSuccess, setVerificationSuccess] = useState(false);
+  const [signUpSuccess, setSignUpSuccess] = useState(false);
   
-  // Cooldown timer for resend
-  const [resendCooldown, setResendCooldown] = useState(0);
+  // Cooldown timer for password reset
   const [resetCooldown, setResetCooldown] = useState(0);
-
-  // Handle email verification success from magic link
-  useEffect(() => {
-    if (authEvent === 'SIGNED_IN') {
-      // Check if this is from an email verification link
-      const urlParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
-      
-      // Supabase verification redirects include access_token in hash or type in query
-      if (hashParams.get('access_token') || urlParams.get('type') === 'signup' || urlParams.get('type') === 'email') {
-        setVerificationSuccess(true);
-        toast({
-          title: 'Verification Successful!',
-          description: 'Redirecting to dashboard...',
-        });
-        // Clear the URL params
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-    }
-  }, [authEvent, toast]);
 
   // Check password requirements
   const passwordChecks = useMemo(() => {
@@ -78,14 +53,6 @@ export function LoginScreen() {
   }, [password]);
 
   const allPasswordRequirementsMet = passwordChecks.every(req => req.passed);
-
-  // Cooldown timer effect for resend verification code
-  useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendCooldown]);
 
   // Cooldown timer effect for password reset
   useEffect(() => {
@@ -137,21 +104,29 @@ export function LoginScreen() {
     
     try {
       if (isSignUp) {
-        const { error } = await signUpWithEmail(email, password, name);
+        const { error, session } = await signUpWithEmail(email, password, name);
         if (error) {
           toast({
             title: 'Sign up failed',
             description: sanitizeAuthError(error),
             variant: 'destructive',
           });
-        } else {
-          // Email verification required
-          setPendingEmail(email);
-          setView('verify-email');
+        } else if (session) {
+          // Direct login - session is returned immediately (email confirmation disabled)
+          setSignUpSuccess(true);
           toast({
-            title: 'Verification code sent!',
-            description: 'Please check your email for the 6-digit code.',
+            title: 'Account created!',
+            description: 'Logging you in...',
           });
+          // User will be automatically redirected by auth state change
+        } else {
+          // Fallback - this shouldn't happen with email confirmation disabled
+          toast({
+            title: 'Account created!',
+            description: 'Please sign in with your new account.',
+          });
+          setIsSignUp(false);
+          setPassword('');
         }
       } else {
         const { error } = await signInWithEmail(email, password, rememberMe);
@@ -162,73 +137,6 @@ export function LoginScreen() {
             variant: 'destructive',
           });
         }
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (otpCode.length !== 6) {
-      toast({
-        title: 'Invalid Code',
-        description: 'Please enter the 6-digit verification code',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setLoading(true);
-    
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: pendingEmail,
-        token: otpCode,
-        type: 'signup',
-      });
-
-      if (error) {
-        toast({
-          title: 'Verification failed',
-          description: sanitizeAuthError(error),
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Email verified!',
-          description: 'Your account has been created successfully.',
-        });
-        // User should now be logged in automatically
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendCode = async () => {
-    if (resendCooldown > 0) return;
-    
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: pendingEmail,
-      });
-
-      if (error) {
-        toast({
-          title: 'Failed to resend',
-          description: sanitizeAuthError(error),
-          variant: 'destructive',
-        });
-      } else {
-        setResendCooldown(RESEND_COOLDOWN_SECONDS);
-        toast({
-          title: 'Code resent!',
-          description: 'Please check your email for the new code. Check spam if not in inbox.',
-        });
       }
     } finally {
       setLoading(false);
@@ -271,7 +179,7 @@ export function LoginScreen() {
           variant: 'destructive',
         });
       } else {
-        setResetCooldown(RESEND_COOLDOWN_SECONDS);
+        setResetCooldown(RESET_COOLDOWN_SECONDS);
         toast({
           title: 'Reset email sent!',
           description: 'Check your inbox (and spam folder) for a password reset link.',
@@ -306,18 +214,16 @@ export function LoginScreen() {
               ARTFIQ
             </h1>
             <p className="text-muted-foreground text-sm">
-              {verificationSuccess 
-                ? 'Verification Successful!' 
+              {signUpSuccess 
+                ? 'Account Created!' 
                 : view === 'forgot-password' 
                   ? 'Reset Password' 
-                  : view === 'verify-email' 
-                    ? 'Verify Email' 
-                    : 'Workspace'}
+                  : 'Workspace'}
             </p>
           </SoftFloat>
 
-          {/* Verification Success Message */}
-          {verificationSuccess && (
+          {/* Sign Up Success Message */}
+          {signUpSuccess && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -327,15 +233,15 @@ export function LoginScreen() {
                 <Check className="w-8 h-8 text-primary" />
               </div>
               <div className="text-center space-y-2">
-                <p className="text-lg font-medium text-foreground">Email Verified Successfully!</p>
-                <p className="text-sm text-muted-foreground">Redirecting to dashboard...</p>
+                <p className="text-lg font-medium text-foreground">Account Created Successfully!</p>
+                <p className="text-sm text-muted-foreground">Logging you in...</p>
               </div>
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </motion.div>
           )}
 
           <AnimatePresence mode="wait">
-            {!verificationSuccess && view === 'login' ? (
+            {!signUpSuccess && view === 'login' ? (
               <motion.div
                 key="login"
                 initial={{ opacity: 0, x: -20 }}
@@ -483,95 +389,7 @@ export function LoginScreen() {
                   By signing in, you agree to our Terms of Service and Privacy Policy
                 </p>
               </motion.div>
-            ) : !verificationSuccess && view === 'verify-email' ? (
-              <motion.div
-                key="verify-email"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="text-center space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    We've sent a 6-digit verification code to
-                  </p>
-                  <p className="text-sm font-medium text-foreground">
-                    {pendingEmail}
-                  </p>
-                </div>
-
-                {/* OTP Form */}
-                <form onSubmit={handleVerifyOTP} className="space-y-4">
-                  <div className="flex justify-center">
-                    <InputOTP
-                      value={otpCode}
-                      onChange={setOtpCode}
-                      maxLength={6}
-                    >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    variant="cyber"
-                    size="lg"
-                    className="w-full"
-                    disabled={loading || isLoading || otpCode.length !== 6}
-                  >
-                    {loading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <span>Verify Email</span>
-                    )}
-                  </Button>
-                </form>
-
-                {/* Spam Warning */}
-                <div className="flex items-center gap-2 p-3 bg-warning/10 border border-warning/20 rounded-lg">
-                  <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
-                  <p className="text-xs text-warning-foreground">
-                    Check your spam folder if the email doesn't arrive in 1 minute.
-                  </p>
-                </div>
-
-                {/* Resend & Back */}
-                <div className="space-y-2">
-                  <button
-                    onClick={handleResendCode}
-                    disabled={loading || resendCooldown > 0}
-                    className="w-full text-sm text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {resendCooldown > 0 ? (
-                      <>
-                        <Clock className="w-4 h-4" />
-                        Resend in {resendCooldown}s
-                      </>
-                    ) : (
-                      "Didn't receive the code? Resend"
-                    )}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setView('login');
-                      setOtpCode('');
-                    }}
-                    className="flex items-center justify-center gap-2 w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to Sign Up
-                  </button>
-                </div>
-              </motion.div>
-            ) : !verificationSuccess && view === 'forgot-password' ? (
+            ) : !signUpSuccess && view === 'forgot-password' ? (
               <motion.div
                 key="forgot-password"
                 initial={{ opacity: 0, x: 20 }}
