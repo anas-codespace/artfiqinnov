@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
-import { LogOut, Menu } from 'lucide-react';
+import { LogOut, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { NotificationBell } from '@/components/NotificationBell';
 import { ProfileSettings } from '@/components/ProfileSettings';
+import { AdminDashboard } from '@/components/AdminDashboard';
 import { RoleBadge } from '@/components/ui/role-badge';
 import { useUserRole } from '@/hooks/useUserRole';
 import artfiqLogo from '@/assets/artfiq-logo.jpeg';
@@ -15,8 +16,9 @@ interface TopHeaderProps {
 
 export function TopHeader({ onNavigate }: TopHeaderProps) {
   const { user, profile, signOut } = useAuth();
-  const { role } = useUserRole();
+  const { role, isFounder } = useUserRole();
   const [showProfileSettings, setShowProfileSettings] = useState(false);
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false);
 
   const displayName = profile?.display_name || user?.email?.split('@')[0] || 'User';
   const defaultAvatar = new URL('@/assets/default-avatar.webp', import.meta.url).href;
@@ -79,7 +81,23 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="flex items-center gap-1 sm:gap-3"
           >
-            <NotificationBell onNavigate={onNavigate} />
+            <NotificationBell 
+              onNavigate={onNavigate} 
+              onOpenAdmin={() => setShowAdminDashboard(true)}
+            />
+            
+            {/* Admin Dashboard Button - Only for Founders */}
+            {isFounder && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowAdminDashboard(true)}
+                className="text-primary hover:text-primary hover:bg-primary/10 rounded-full w-8 h-8 sm:w-10 sm:h-10"
+                title="Admin Dashboard"
+              >
+                <Shield className="w-4 h-4" />
+              </Button>
+            )}
             
             {/* Role Badge - Hidden on very small screens */}
             <div className="hidden xs:block">
@@ -117,6 +135,12 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
       <ProfileSettings 
         open={showProfileSettings} 
         onOpenChange={setShowProfileSettings} 
+      />
+
+      {/* Admin Dashboard Modal */}
+      <AdminDashboard
+        open={showAdminDashboard}
+        onOpenChange={setShowAdminDashboard}
       />
     </>
   );
