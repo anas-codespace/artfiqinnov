@@ -105,10 +105,12 @@ export function useUserStatus(): UserStatusData {
 
       if (founders && founders.length > 0) {
         // Create notifications for each founder
+        // Format message to include email in parentheses for extraction
+        const displayName = profile.display_name || user.email?.split('@')[0] || 'Unknown';
         const notifications = founders.map(f => ({
           user_id: f.user_id,
           title: 'Access Request',
-          message: `${profile.display_name || user.email} is requesting team access.`,
+          message: `${displayName} (${user.email}) is requesting team access.`,
           type: 'access_request',
           link: '/settings',
         }));

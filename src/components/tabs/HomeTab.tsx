@@ -42,10 +42,10 @@ const foundersMetadata: FounderData[] = [
   },
   {
     name: 'Mohammed Anas',
-    role: 'CTO',
+    role: 'CTO & Managing Director',
     email: FOUNDER_EMAILS.cto,
     description: 'Technical architect building the future',
-    bio: 'Mohammed Anas serves as the CTO and co-founder of ARTFIQ Innovations. He oversees all technical aspects of the company, from architecture design to implementation. His expertise in modern technologies ensures that ARTFIQ delivers cutting-edge, performant, and scalable solutions.',
+    bio: 'Mohammed Anas serves as the CTO & Managing Director and co-founder of ARTFIQ Innovations. He oversees all technical aspects of the company, from architecture design to implementation. His expertise in modern technologies ensures that ARTFIQ delivers cutting-edge, performant, and scalable solutions.',
     linkedin: 'https://linkedin.com/in/mohammedanas',
     instagram: 'https://instagram.com/anas.m_07',
   },
@@ -319,10 +319,10 @@ export function HomeTab() {
                   className="w-24 h-24 lg:w-32 lg:h-32 rounded-full border-4 border-primary/50 object-cover relative z-10"
                   whileHover={{ borderColor: 'hsl(var(--primary))' }}
                 />
-                {/* Role badge */}
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20">
+                {/* Role badge - responsive text size for long titles */}
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20 w-max max-w-[120px] lg:max-w-none">
                   <motion.div
-                    className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg"
+                    className="px-2 lg:px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] lg:text-xs font-bold shadow-lg text-center leading-tight whitespace-nowrap"
                     whileHover={{ scale: 1.05 }}
                   >
                     {founder.role}
