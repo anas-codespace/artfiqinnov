@@ -10,17 +10,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import ceoImage from '@/assets/ceo-sulaiman.jpeg';
-import ctoImage from '@/assets/cto-anas.jpeg';
 import { springPresets } from '@/components/ui/spring-config';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 
-// No more hardcoded emails - founders are determined by user_roles table
+// Founder emails for fetching dynamic avatars
+const FOUNDER_EMAILS = {
+  ceo: 'mohammedsulaimanofficial@gmail.com',
+  cto: 'anas.m77581@gmail.com',
+};
 
-interface Founder {
+interface FounderData {
   name: string;
   role: string;
-  avatar: string;
   email: string;
   description: string;
   bio: string;
@@ -28,12 +29,12 @@ interface Founder {
   instagram?: string;
 }
 
-const founders: Founder[] = [
+// Static metadata for founders (avatar will be fetched dynamically)
+const foundersMetadata: FounderData[] = [
   {
     name: 'Mohammed Sulaiman',
     role: 'CEO',
-    avatar: ceoImage,
-    email: 'mohammedsulaimanofficial@gmail.com',
+    email: FOUNDER_EMAILS.ceo,
     description: 'Visionary leader driving digital innovation',
     bio: 'Mohammed Sulaiman is the CEO and co-founder of ARTFIQ Innovations. With a passion for bridging technology and human experiences, he leads the company\'s strategic vision and growth initiatives. His leadership focuses on creating meaningful digital solutions that empower teams worldwide.',
     linkedin: 'https://linkedin.com/in/mohammedsulaiman',
@@ -42,14 +43,17 @@ const founders: Founder[] = [
   {
     name: 'Mohammed Anas',
     role: 'CTO',
-    avatar: ctoImage,
-    email: 'anas.m77581@gmail.com',
+    email: FOUNDER_EMAILS.cto,
     description: 'Technical architect building the future',
     bio: 'Mohammed Anas serves as the CTO and co-founder of ARTFIQ Innovations. He oversees all technical aspects of the company, from architecture design to implementation. His expertise in modern technologies ensures that ARTFIQ delivers cutting-edge, performant, and scalable solutions.',
     linkedin: 'https://linkedin.com/in/mohammedanas',
     instagram: 'https://instagram.com/anas.m_07',
   },
 ];
+
+interface Founder extends FounderData {
+  avatar: string;
+}
 
 const features = [
   { icon: Target, title: 'Mission-Driven', description: 'Focused on meaningful impact' },
@@ -68,6 +72,7 @@ interface TeamMember {
 
 export function HomeTab() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [founders, setFounders] = useState<Founder[]>([]);
   const [selectedFounder, setSelectedFounder] = useState<Founder | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -81,6 +86,61 @@ export function HomeTab() {
   const featuresY = useTransform(scrollYProgress, [0, 1], [0, 80]);
   const foundersY = useTransform(scrollYProgress, [0, 1], [0, 50]);
   const bgScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
+
+  // Fetch founders' dynamic avatars from profiles table
+  useEffect(() => {
+    const fetchFounderAvatars = async () => {
+      const founderEmails = Object.values(FOUNDER_EMAILS);
+      
+      const { data: founderProfiles } = await supabase
+        .from('profiles')
+        .select('email, avatar_url')
+        .in('email', founderEmails);
+      
+      // Create a map of email -> avatar_url
+      const avatarMap = new Map<string, string>();
+      founderProfiles?.forEach(profile => {
+        if (profile.email && profile.avatar_url) {
+          avatarMap.set(profile.email, profile.avatar_url);
+        }
+      });
+      
+      // Merge static metadata with dynamic avatars
+      const foundersWithAvatars: Founder[] = foundersMetadata.map(founder => ({
+        ...founder,
+        avatar: avatarMap.get(founder.email) || defaultAvatarImg,
+      }));
+      
+      setFounders(foundersWithAvatars);
+    };
+
+    fetchFounderAvatars();
+
+    // Subscribe to real-time changes for founder profiles
+    const founderEmails = Object.values(FOUNDER_EMAILS);
+    const channel = supabase
+      .channel('founder-profiles')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+        },
+        (payload) => {
+          const updatedProfile = payload.new as { email?: string; avatar_url?: string };
+          if (updatedProfile.email && founderEmails.includes(updatedProfile.email)) {
+            // Re-fetch to get updated avatars
+            fetchFounderAvatars();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchTeamMembers = async () => {
