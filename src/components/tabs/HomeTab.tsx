@@ -319,15 +319,15 @@ export function HomeTab() {
                   className="w-24 h-24 lg:w-32 lg:h-32 rounded-full border-4 border-primary/50 object-cover relative z-10"
                   whileHover={{ borderColor: 'hsl(var(--primary))' }}
                 />
-                {/* Role badge - positioned half-in/half-out at bottom center */}
-                <motion.div
-                  className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-20"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <span className="inline-block px-3 lg:px-4 py-1 rounded-full bg-primary text-primary-foreground text-[9px] lg:text-[11px] font-bold shadow-lg whitespace-nowrap">
+                {/* Role badge - mathematically centered at bottom rim */}
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 z-20">
+                  <motion.span
+                    whileHover={{ scale: 1.05 }}
+                    className="inline-flex items-center justify-center w-max px-3 py-1 rounded-full bg-primary text-primary-foreground text-[9px] lg:text-xs font-bold shadow-lg whitespace-nowrap"
+                  >
                     {founder.role}
-                  </span>
-                </motion.div>
+                  </motion.span>
+                </div>
               </motion.button>
               
               {/* Name */}
@@ -391,15 +391,16 @@ export function HomeTab() {
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
                 transition={springPresets.bouncy}
-                className="relative mb-4"
+                className="relative mb-6"
               >
                 <img
                   src={selectedFounder.avatar}
                   alt={selectedFounder.name}
                   className="w-28 h-28 rounded-full border-4 border-primary object-cover shadow-lg"
                 />
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-                  <span className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg">
+                {/* Badge positioned below avatar circle, not overlapping face */}
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 z-20">
+                  <span className="inline-flex items-center justify-center w-max px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg whitespace-nowrap">
                     {selectedFounder.role}
                   </span>
                 </div>
