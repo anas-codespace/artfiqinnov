@@ -319,15 +319,15 @@ export function HomeTab() {
                   className="w-24 h-24 lg:w-32 lg:h-32 rounded-full border-4 border-primary/50 object-cover relative z-10"
                   whileHover={{ borderColor: 'hsl(var(--primary))' }}
                 />
-                {/* Role badge - responsive text size for long titles */}
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20 w-max max-w-[120px] lg:max-w-none">
-                  <motion.div
-                    className="px-2 lg:px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] lg:text-xs font-bold shadow-lg text-center leading-tight whitespace-nowrap"
-                    whileHover={{ scale: 1.05 }}
-                  >
+                {/* Role badge - positioned half-in/half-out at bottom center */}
+                <motion.div
+                  className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-20"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <span className="inline-block px-3 lg:px-4 py-1 rounded-full bg-primary text-primary-foreground text-[9px] lg:text-[11px] font-bold shadow-lg whitespace-nowrap">
                     {founder.role}
-                  </motion.div>
-                </div>
+                  </span>
+                </motion.div>
               </motion.button>
               
               {/* Name */}
