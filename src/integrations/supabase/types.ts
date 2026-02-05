@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_pins: {
+        Row: {
+          created_at: string
+          id: string
+          pin_hash: string
+          security_answer_hash: string
+          security_question: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pin_hash: string
+          security_answer_hash: string
+          security_question: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pin_hash?: string
+          security_answer_hash?: string
+          security_question?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cleanup_log: {
         Row: {
           executed_at: string
@@ -476,6 +506,14 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_approved_member: { Args: { _user_id: string }; Returns: boolean }
+      verify_admin_pin: {
+        Args: { _pin: string; _user_id: string }
+        Returns: boolean
+      }
+      verify_security_answer: {
+        Args: { _answer: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "ceo" | "cto" | "team"
