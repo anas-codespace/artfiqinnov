@@ -375,7 +375,7 @@ export function HomeTab() {
 
       {/* Founder Profile Modal */}
       <Dialog open={!!selectedFounder} onOpenChange={(open) => !open && setSelectedFounder(null)}>
-        <DialogContent className="glass-card border-border max-w-lg">
+        <DialogContent className="glass-card border-border max-w-lg w-[calc(100%-2rem)] mx-4 p-4 sm:p-6 overflow-hidden">
           <DialogHeader>
             <DialogTitle className="sr-only">Founder Profile</DialogTitle>
           </DialogHeader>
@@ -384,34 +384,34 @@ export function HomeTab() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={springPresets.snappy}
-              className="flex flex-col items-center text-center pt-2"
+              className="flex flex-col items-center text-center pt-2 max-w-full overflow-hidden"
             >
               {/* Avatar */}
               <motion.div
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
                 transition={springPresets.bouncy}
-                className="relative mb-6"
+                className="relative mb-6 flex-shrink-0"
               >
                 <img
                   src={selectedFounder.avatar}
                   alt={selectedFounder.name}
-                  className="w-28 h-28 rounded-full border-4 border-primary object-cover shadow-lg"
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-primary object-cover shadow-lg"
                 />
-                {/* Badge positioned below avatar circle, not overlapping face */}
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 z-20">
-                  <span className="inline-flex items-center justify-center w-max px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg whitespace-nowrap">
+                {/* Badge positioned below avatar circle, responsive and wrappable */}
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 z-20 max-w-[90%]">
+                  <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] sm:text-xs font-bold shadow-lg text-center leading-tight break-words">
                     {selectedFounder.role}
                   </span>
                 </div>
               </motion.div>
 
               {/* Name & Description */}
-              <h3 className="text-2xl font-bold mt-4">{selectedFounder.name}</h3>
-              <p className="text-primary font-medium mt-1">{selectedFounder.description}</p>
+              <h3 className="text-xl sm:text-2xl font-bold mt-4 max-w-full truncate px-2">{selectedFounder.name}</h3>
+              <p className="text-primary font-medium mt-1 text-sm sm:text-base max-w-full px-2">{selectedFounder.description}</p>
 
               {/* Bio */}
-              <p className="text-muted-foreground text-sm leading-relaxed mt-4 px-2">
+              <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mt-4 px-2 max-w-full">
                 {selectedFounder.bio}
               </p>
 

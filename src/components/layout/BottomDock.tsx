@@ -61,7 +61,7 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
               }}
               whileTap={{ scale: 0.95 }}
               className={cn(
-                "relative flex flex-col items-center justify-center px-3 sm:px-5 py-2 rounded-full transition-all duration-300 overflow-hidden min-w-[48px] sm:min-w-[56px]",
+                "relative flex flex-col items-center justify-center gap-0.5 px-3 sm:px-5 py-2 rounded-full transition-all duration-300 overflow-hidden min-w-[48px] sm:min-w-[56px]",
                 isActive
                   ? "bg-primary/20 text-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -106,10 +106,10 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
               )}
               
               <Icon className={cn(
-                "w-4 h-4 sm:w-5 sm:h-5 relative z-10", 
+                "w-4 h-4 sm:w-5 sm:h-5 relative z-10 flex-shrink-0", 
                 isActive && "drop-shadow-[0_0_8px_hsl(var(--primary))]"
               )} />
-              <span className="text-[9px] sm:text-[10px] font-medium mt-0.5 sm:mt-1 relative z-10 whitespace-nowrap">
+              <span className="text-[9px] sm:text-[10px] font-medium relative z-10 whitespace-nowrap leading-tight">
                 {item.label}
               </span>
               
