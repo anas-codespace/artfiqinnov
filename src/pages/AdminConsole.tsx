@@ -162,13 +162,18 @@ export default function AdminConsole() {
       .from('admin_pins')
       .insert({
         user_id: user!.id,
-        pin_hash: newPin,
+        pin_hash: newPin.toString(), // Ensure PIN is a string
         security_question: securityQuestion,
         security_answer_hash: securityAnswer.trim().toLowerCase()
       });
 
     if (error) {
-      toast({ title: 'Error', description: 'Failed to setup PIN', variant: 'destructive' });
+      console.error("Supabase PIN Setup Error:", error.message, error.details, error.code);
+      toast({ 
+        title: 'Error', 
+        description: error.message || 'Failed to setup PIN', 
+        variant: 'destructive' 
+      });
     } else {
       toast({ title: 'Success', description: 'Admin PIN configured successfully!' });
       setStage('unlocked');
@@ -204,22 +209,30 @@ export default function AdminConsole() {
     const { data, error } = await supabase
       .rpc('verify_security_answer', { _user_id: user!.id, _answer: recoveryAnswer.trim() });
 
-    if (error || !data) {
+    if (error) {
+      console.error("Supabase Security Answer Error:", error.message, error.details, error.code);
+      toast({ title: 'Error', description: error.message || 'Failed to verify answer', variant: 'destructive' });
+    } else if (!data) {
       toast({ title: 'Incorrect Answer', description: 'Security answer does not match', variant: 'destructive' });
     } else {
       // Delete old PIN to allow new setup
-      await supabase
+      const { error: deleteError } = await supabase
         .from('admin_pins')
         .delete()
         .eq('user_id', user!.id);
 
-      toast({ title: 'Verified', description: 'Please set up a new PIN' });
-      setRecoveryAnswer('');
-      setNewPin('');
-      setConfirmPin('');
-      setSecurityQuestion('');
-      setSecurityAnswer('');
-      setStage('setup');
+      if (deleteError) {
+        console.error("Supabase PIN Delete Error:", deleteError.message, deleteError.details, deleteError.code);
+        toast({ title: 'Error', description: 'Failed to reset PIN. Please try again.', variant: 'destructive' });
+      } else {
+        toast({ title: 'Verified', description: 'Please set up a new PIN' });
+        setRecoveryAnswer('');
+        setNewPin('');
+        setConfirmPin('');
+        setSecurityQuestion('');
+        setSecurityAnswer('');
+        setStage('setup');
+      }
     }
 
     setRecoveryLoading(false);
