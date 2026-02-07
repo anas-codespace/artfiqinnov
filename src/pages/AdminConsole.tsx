@@ -373,6 +373,23 @@ export default function AdminConsole() {
   }
 
   if (stage === 'locked') {
+    const handlePinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+      setEnteredPin(value);
+      setPinError(false);
+      
+      // Auto-submit when 4 digits entered
+      if (value.length === 4) {
+        setTimeout(() => handleVerifyPin(), 100);
+      }
+    };
+
+    const handlePinKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter' && enteredPin.length === 4) {
+        handleVerifyPin();
+      }
+    };
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <motion.div
@@ -392,51 +409,63 @@ export default function AdminConsole() {
             <p className="text-muted-foreground text-sm mt-2">Enter your access PIN</p>
           </div>
 
-          {/* PIN Display */}
-          <div className="flex justify-center gap-3 mb-8">
+          {/* PIN Input Field */}
+          <div className="mb-6">
+            <motion.div
+              animate={pinError ? { x: [-8, 8, -8, 8, 0] } : {}}
+              transition={{ duration: 0.4 }}
+            >
+              <input
+                type="password"
+                value={enteredPin}
+                onChange={handlePinInputChange}
+                onKeyDown={handlePinKeyDown}
+                maxLength={4}
+                autoFocus
+                disabled={verifying}
+                placeholder="Enter Admin PIN"
+                className="w-full h-14 bg-black/30 backdrop-blur-sm border border-border rounded-xl text-center text-2xl tracking-[0.75rem] text-foreground placeholder:text-muted-foreground placeholder:text-sm placeholder:tracking-normal focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 focus:shadow-[0_0_20px_rgba(0,210,255,0.3)] transition-all duration-300 disabled:opacity-50"
+              />
+            </motion.div>
+          </div>
+
+          {/* PIN Indicator Dots */}
+          <div className="flex justify-center gap-3 mb-6">
             {[0, 1, 2, 3].map((i) => (
               <motion.div
                 key={i}
                 initial={{ scale: 0.8 }}
                 animate={{ 
-                  scale: enteredPin.length > i ? 1.1 : 1,
+                  scale: enteredPin.length > i ? 1.2 : 1,
                   backgroundColor: enteredPin.length > i ? 'hsl(var(--primary))' : 'hsl(var(--muted))'
                 }}
-                className="w-4 h-4 rounded-full transition-colors"
+                className="w-3 h-3 rounded-full transition-all duration-200"
               />
             ))}
           </div>
 
-          {/* Keypad */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '←'].map((key) => (
-              <motion.button
-                key={key}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  if (key === '←') handleKeypadBackspace();
-                  else if (key) handleKeypadPress(key);
-                }}
-                disabled={!key || verifying}
-                className={`h-14 rounded-xl font-bold text-xl transition-colors ${
-                  key ? 'bg-secondary hover:bg-secondary/80' : ''
-                } ${verifying ? 'opacity-50' : ''}`}
-              >
-                {key}
-              </motion.button>
-            ))}
-          </div>
-
-          {verifying && (
-            <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">Verifying...</span>
-            </div>
-          )}
+          {/* Unlock Button */}
+          <Button
+            onClick={handleVerifyPin}
+            disabled={enteredPin.length !== 4 || verifying}
+            className="w-full h-12 bg-gradient-to-r from-primary/80 to-primary backdrop-blur-md border border-primary/30 hover:shadow-[0_0_25px_rgba(0,210,255,0.4)] transition-all duration-300 font-semibold"
+          >
+            {verifying ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                Verifying...
+              </>
+            ) : (
+              <>
+                <Lock className="w-5 h-5 mr-2" />
+                Unlock
+              </>
+            )}
+          </Button>
 
           <button
             onClick={() => setStage('forgot-pin')}
-            className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors mt-4"
+            className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors mt-6"
           >
             <HelpCircle className="w-4 h-4 inline mr-1" />
             Forgot PIN?
