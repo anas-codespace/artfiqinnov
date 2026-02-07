@@ -566,21 +566,25 @@ export default function AdminConsole() {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border/50"
+      className="flex items-center justify-between gap-2 p-3 sm:p-4 rounded-xl bg-secondary/30 border border-border/50 w-full max-w-full overflow-hidden"
     >
-      <div className="flex items-center gap-3">
-        <Avatar className="w-12 h-12">
+      {/* Left side - Avatar & Text (must shrink) */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        <Avatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
           <AvatarImage src={user.avatar_url || defaultAvatar} alt={user.display_name || 'User'} />
           <AvatarFallback>{(user.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
         </Avatar>
-        <div>
-          <p className="font-medium">{user.display_name || 'Unknown'}</p>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium truncate">{user.display_name || 'Unknown'}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">{user.email}</p>
         </div>
       </div>
-      <div className="flex items-center gap-3">
+      
+      {/* Right side - Badge & Actions (fixed size) */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
         <Badge 
           variant={user.access_status === 'approved_member' ? 'default' : user.access_status === 'pending' ? 'secondary' : 'outline'}
+          className="hidden xs:inline-flex text-xs"
         >
           {user.access_status === 'approved_member' ? 'Member' : user.access_status === 'pending' ? 'Pending' : 'Visitor'}
         </Badge>
@@ -591,6 +595,7 @@ export default function AdminConsole() {
             variant="default"
             disabled={actionLoading === user.user_id}
             onClick={() => updateUserStatus(user.user_id, 'approved_member')}
+            className="flex-shrink-0"
           >
             {actionLoading === user.user_id ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -606,6 +611,7 @@ export default function AdminConsole() {
             variant="destructive"
             disabled={actionLoading === user.user_id}
             onClick={() => updateUserStatus(user.user_id, 'visitor')}
+            className="flex-shrink-0"
           >
             {actionLoading === user.user_id ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -619,28 +625,28 @@ export default function AdminConsole() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <header className="sticky top-0 z-50 glass-card border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-full">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
               <Shield className="w-5 h-5 text-primary" />
             </div>
-            <div>
-              <h1 className="font-bold text-lg">Command Center</h1>
+            <div className="min-w-0">
+              <h1 className="font-bold text-lg truncate">Command Center</h1>
               <p className="text-xs text-muted-foreground">Admin Console</p>
             </div>
           </div>
-          <Button variant="ghost" onClick={() => navigate('/')}>
+          <Button variant="ghost" onClick={() => navigate('/')} className="flex-shrink-0">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Exit
+            <span className="hidden sm:inline">Exit</span>
           </Button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 max-w-full overflow-x-hidden">
         <Tabs defaultValue="team" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="team" className="gap-2">
