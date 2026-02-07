@@ -83,11 +83,7 @@ function WorkspaceContent() {
 }
 
 const Index = () => {
-  return (
-    <AuthProvider>
-      <WorkspaceContent />
-    </AuthProvider>
-  );
+  return <WorkspaceContent />;
 };
 
 export default Index;
