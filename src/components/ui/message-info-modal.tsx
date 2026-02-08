@@ -56,24 +56,24 @@ export function MessageInfoModal({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop - z-[99] to sit behind modal but above everything else */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[99]"
             onClick={onClose}
           />
           
-          {/* Modal - Constrained with max-height and proper margins */}
+          {/* Modal - Centered with z-[100] to appear above bottom dock */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 50 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 50 }}
             transition={springPresets.modal}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md max-h-[80vh] flex flex-col"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-[90%] max-w-md"
           >
-            <div className="glass-card rounded-2xl p-4 sm:p-6 flex flex-col max-h-[80vh] overflow-hidden">
+            <div className="bg-background border border-border rounded-2xl shadow-2xl p-4 sm:p-6 flex flex-col max-h-[70vh] overflow-hidden">
               {/* Header - Fixed */}
               <div className="flex items-center justify-between flex-shrink-0 pb-4 border-b border-border">
                 <h3 className="text-lg font-semibold">Message Info</h3>
