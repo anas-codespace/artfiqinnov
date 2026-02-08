@@ -18,6 +18,7 @@ import { useAccessWarning } from '@/contexts/AccessWarningContext';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import artfiqLogo from '@/assets/artfiq-logo.jpeg';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
+
 interface Message {
   id: string;
   user_id: string;
@@ -29,17 +30,20 @@ interface Message {
   reactions?: Reaction[];
   reply_message?: Message | null;
 }
+
 interface Reaction {
   id: string;
   message_id: string;
   user_id: string;
   emoji: string;
 }
+
 interface MessageRead {
   message_id: string;
   user_id: string;
   read_at: string;
 }
+
 interface Participant {
   id: string;
   user_id: string;
@@ -49,40 +53,27 @@ interface Participant {
   isTyping: boolean;
   role?: 'ceo' | 'cto' | 'team' | null;
 }
+
 interface UserPresence {
   user_id: string;
   is_online: boolean;
   is_typing: boolean;
   last_seen: string;
 }
+
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '👏'];
+
 function formatTime(dateStr: string): string {
   const date = new Date(dateStr);
-  return date.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
+
 export function ChatTab() {
-  const {
-    user,
-    profile
-  } = useAuth();
-  const {
-    role,
-    isFounder
-  } = useUserRole();
-  const {
-    isMember,
-    isAdmin,
-    isLoading: statusLoading
-  } = useUserStatus();
-  const {
-    showWarning
-  } = useAccessWarning();
-  const {
-    toast
-  } = useToast();
+  const { user, profile } = useAuth();
+  const { role, isFounder } = useUserRole();
+  const { isMember, isAdmin, isLoading: statusLoading } = useUserStatus();
+  const { showWarning } = useAccessWarning();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
   const [messageReads, setMessageReads] = useState<Record<string, MessageRead[]>>({});
@@ -101,19 +92,15 @@ export function ChatTab() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: 'smooth'
-    });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   // Auto-delete messages older than 72 hours (only founders can trigger)
   const cleanupOldMessages = useCallback(async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.rpc('cleanup_old_messages');
+      const { data, error } = await supabase.rpc('cleanup_old_messages');
       if (error) {
         // Silently ignore access denied errors for non-founders
         // The function now requires CEO/CTO role
@@ -124,7 +111,7 @@ export function ChatTab() {
         setCleanupCount(data);
         toast({
           title: 'Old messages cleaned up',
-          description: `${data} message(s) older than 72 hours were removed.`
+          description: `${data} message(s) older than 72 hours were removed.`,
         });
         // Remove old messages from local state
         const cutoffTime = new Date(Date.now() - 72 * 60 * 60 * 1000);
@@ -143,17 +130,16 @@ export function ChatTab() {
   // Mark message as read
   const markMessageAsRead = useCallback(async (messageId: string) => {
     if (!user) return;
-
+    
     // Check if already marked as read
     const existingRead = messageReads[messageId]?.find(r => r.user_id === user.id);
     if (existingRead) return;
+    
     try {
       await supabase.from('message_reads').upsert({
         message_id: messageId,
-        user_id: user.id
-      }, {
-        onConflict: 'message_id,user_id'
-      });
+        user_id: user.id,
+      }, { onConflict: 'message_id,user_id' });
     } catch (error) {
       console.error('Error marking message as read:', error);
     }
@@ -162,16 +148,15 @@ export function ChatTab() {
   // Update presence
   const updatePresence = useCallback(async (isTyping: boolean = false) => {
     if (!user) return;
+    
     try {
       await supabase.from('user_presence').upsert({
         user_id: user.id,
         is_online: true,
         is_typing: isTyping,
         last_seen: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id'
-      });
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
     } catch (error) {
       console.error('Error updating presence:', error);
     }
@@ -179,18 +164,20 @@ export function ChatTab() {
 
   // Set up intersection observer for read receipts
   useEffect(() => {
-    observerRef.current = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const messageId = entry.target.getAttribute('data-message-id');
-          if (messageId) {
-            markMessageAsRead(messageId);
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const messageId = entry.target.getAttribute('data-message-id');
+            if (messageId) {
+              markMessageAsRead(messageId);
+            }
           }
-        }
-      });
-    }, {
-      threshold: 0.5
-    });
+        });
+      },
+      { threshold: 0.5 }
+    );
+
     return () => {
       observerRef.current?.disconnect();
     };
@@ -200,37 +187,42 @@ export function ChatTab() {
   useEffect(() => {
     const fetchParticipants = async () => {
       // Use profiles_safe view instead of profiles table to protect email privacy
-      const {
-        data: profiles
-      } = await supabase.from('profiles_safe').select('id, user_id, display_name, avatar_url').order('created_at', {
-        ascending: true
-      });
-      const {
-        data: presence
-      } = await supabase.from('user_presence').select('*');
-      const {
-        data: roles
-      } = await supabase.from('user_roles').select('user_id, role');
+      const { data: profiles } = await supabase
+        .from('profiles_safe')
+        .select('id, user_id, display_name, avatar_url')
+        .order('created_at', { ascending: true });
+
+      const { data: presence } = await supabase
+        .from('user_presence')
+        .select('*');
+
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
       const presenceMap: Record<string, UserPresence> = {};
       presence?.forEach(p => {
         presenceMap[p.user_id] = p;
       });
       setPresenceData(presenceMap);
+
       const rolesMap: Record<string, 'ceo' | 'cto' | 'team'> = {};
       roles?.forEach(r => {
         rolesMap[r.user_id] = r.role as 'ceo' | 'cto' | 'team';
       });
+
       if (profiles) {
         setParticipants(profiles.map(p => ({
           ...p,
           isOnline: presenceMap[p.user_id]?.is_online ?? false,
           isTyping: presenceMap[p.user_id]?.is_typing ?? false,
-          role: rolesMap[p.user_id] || 'team'
+          role: rolesMap[p.user_id] || 'team',
         })));
       }
     };
-    fetchParticipants();
 
+    fetchParticipants();
+    
     // Update own presence on mount
     updatePresence(false);
 
@@ -240,7 +232,7 @@ export function ChatTab() {
         supabase.from('user_presence').update({
           is_online: false,
           is_typing: false,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         }).eq('user_id', user.id);
       }
     };
@@ -250,12 +242,12 @@ export function ChatTab() {
   useEffect(() => {
     const fetchData = async () => {
       // Fetch messages
-      const {
-        data: messagesData,
-        error: messagesError
-      } = await supabase.from('messages').select('*').order('created_at', {
-        ascending: true
-      }).limit(100);
+      const { data: messagesData, error: messagesError } = await supabase
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .limit(100);
+
       if (messagesError) {
         console.error('Error fetching messages:', messagesError);
       } else {
@@ -268,12 +260,13 @@ export function ChatTab() {
       }
 
       // Fetch reactions
-      const {
-        data: reactionsData
-      } = await supabase.from('message_reactions').select('*');
+      const { data: reactionsData } = await supabase
+        .from('message_reactions')
+        .select('*');
+
       if (reactionsData) {
         const groupedReactions: Record<string, Reaction[]> = {};
-        reactionsData.forEach(r => {
+        reactionsData.forEach((r) => {
           if (!groupedReactions[r.message_id]) {
             groupedReactions[r.message_id] = [];
           }
@@ -283,12 +276,13 @@ export function ChatTab() {
       }
 
       // Fetch read receipts
-      const {
-        data: readsData
-      } = await supabase.from('message_reads').select('*');
+      const { data: readsData } = await supabase
+        .from('message_reads')
+        .select('*');
+
       if (readsData) {
         const groupedReads: Record<string, MessageRead[]> = {};
-        readsData.forEach(r => {
+        readsData.forEach((r) => {
           if (!groupedReads[r.message_id]) {
             groupedReads[r.message_id] = [];
           }
@@ -296,106 +290,129 @@ export function ChatTab() {
         });
         setMessageReads(groupedReads);
       }
+
       setIsLoading(false);
     };
+
     fetchData();
   }, []);
 
   // Real-time subscriptions
   useEffect(() => {
-    const messagesChannel = supabase.channel('messages-realtime').on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages'
-    }, payload => {
-      const newMsg = payload.new as Message;
-      setMessages(prev => {
-        const replyMessage = newMsg.reply_to ? prev.find(m => m.id === newMsg.reply_to) || null : null;
-        return [...prev, {
-          ...newMsg,
-          reply_message: replyMessage
-        }];
-      });
-
-      // Show toast for new messages from others
-      if (newMsg.user_id !== user?.id) {
-        toast({
-          title: newMsg.user_name,
-          description: newMsg.text.slice(0, 50) + (newMsg.text.length > 50 ? '...' : '')
-        });
-      }
-    }).subscribe();
-    const reactionsChannel = supabase.channel('reactions-realtime').on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'message_reactions'
-    }, payload => {
-      if (payload.eventType === 'INSERT') {
-        const newReaction = payload.new as Reaction;
-        setReactions(prev => ({
-          ...prev,
-          [newReaction.message_id]: [...(prev[newReaction.message_id] || []), newReaction]
-        }));
-      } else if (payload.eventType === 'DELETE') {
-        const oldReaction = payload.old as Reaction;
-        setReactions(prev => ({
-          ...prev,
-          [oldReaction.message_id]: (prev[oldReaction.message_id] || []).filter(r => r.id !== oldReaction.id)
-        }));
-      }
-    }).subscribe();
-
-    // Real-time read receipts
-    const readsChannel = supabase.channel('reads-realtime').on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'message_reads'
-    }, payload => {
-      const newRead = payload.new as MessageRead;
-      setMessageReads(prev => ({
-        ...prev,
-        [newRead.message_id]: [...(prev[newRead.message_id] || []), newRead]
-      }));
-    }).subscribe();
-
-    // Real-time presence
-    const presenceChannel = supabase.channel('presence-realtime').on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'user_presence'
-    }, payload => {
-      if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-        const presence = payload.new as UserPresence;
-        setPresenceData(prev => ({
-          ...prev,
-          [presence.user_id]: presence
-        }));
-
-        // Update typing users
-        if (presence.is_typing && presence.user_id !== user?.id) {
-          const participant = participants.find(p => p.user_id === presence.user_id);
-          if (participant) {
-            setTypingUsers(prev => {
-              const name = participant.display_name || 'Someone';
-              if (!prev.includes(name)) return [...prev, name];
-              return prev;
+    const messagesChannel = supabase
+      .channel('messages-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        (payload) => {
+          const newMsg = payload.new as Message;
+          setMessages((prev) => {
+            const replyMessage = newMsg.reply_to 
+              ? prev.find(m => m.id === newMsg.reply_to) || null 
+              : null;
+            return [...prev, { ...newMsg, reply_message: replyMessage }];
+          });
+          
+          // Show toast for new messages from others
+          if (newMsg.user_id !== user?.id) {
+            toast({
+              title: newMsg.user_name,
+              description: newMsg.text.slice(0, 50) + (newMsg.text.length > 50 ? '...' : ''),
             });
           }
-        } else if (!presence.is_typing) {
-          const participant = participants.find(p => p.user_id === presence.user_id);
-          if (participant) {
-            setTypingUsers(prev => prev.filter(n => n !== (participant.display_name || 'Someone')));
+        }
+      )
+      .subscribe();
+
+    const reactionsChannel = supabase
+      .channel('reactions-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'message_reactions' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newReaction = payload.new as Reaction;
+            setReactions((prev) => ({
+              ...prev,
+              [newReaction.message_id]: [
+                ...(prev[newReaction.message_id] || []),
+                newReaction,
+              ],
+            }));
+          } else if (payload.eventType === 'DELETE') {
+            const oldReaction = payload.old as Reaction;
+            setReactions((prev) => ({
+              ...prev,
+              [oldReaction.message_id]: (prev[oldReaction.message_id] || []).filter(
+                (r) => r.id !== oldReaction.id
+              ),
+            }));
           }
         }
+      )
+      .subscribe();
 
-        // Update participant online status
-        setParticipants(prev => prev.map(p => p.user_id === presence.user_id ? {
-          ...p,
-          isOnline: presence.is_online,
-          isTyping: presence.is_typing
-        } : p));
-      }
-    }).subscribe();
+    // Real-time read receipts
+    const readsChannel = supabase
+      .channel('reads-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'message_reads' },
+        (payload) => {
+          const newRead = payload.new as MessageRead;
+          setMessageReads((prev) => ({
+            ...prev,
+            [newRead.message_id]: [
+              ...(prev[newRead.message_id] || []),
+              newRead,
+            ],
+          }));
+        }
+      )
+      .subscribe();
+
+    // Real-time presence
+    const presenceChannel = supabase
+      .channel('presence-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_presence' },
+        (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const presence = payload.new as UserPresence;
+            setPresenceData((prev) => ({
+              ...prev,
+              [presence.user_id]: presence,
+            }));
+
+            // Update typing users
+            if (presence.is_typing && presence.user_id !== user?.id) {
+              const participant = participants.find(p => p.user_id === presence.user_id);
+              if (participant) {
+                setTypingUsers(prev => {
+                  const name = participant.display_name || 'Someone';
+                  if (!prev.includes(name)) return [...prev, name];
+                  return prev;
+                });
+              }
+            } else if (!presence.is_typing) {
+              const participant = participants.find(p => p.user_id === presence.user_id);
+              if (participant) {
+                setTypingUsers(prev => prev.filter(n => n !== (participant.display_name || 'Someone')));
+              }
+            }
+
+            // Update participant online status
+            setParticipants(prev => prev.map(p => 
+              p.user_id === presence.user_id 
+                ? { ...p, isOnline: presence.is_online, isTyping: presence.is_typing }
+                : p
+            ));
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(reactionsChannel);
@@ -403,6 +420,7 @@ export function ChatTab() {
       supabase.removeChannel(presenceChannel);
     };
   }, [user?.id, participants, toast]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -410,16 +428,21 @@ export function ChatTab() {
   // Handle typing indicator
   const handleTyping = () => {
     updatePresence(true);
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
+
     typingTimeoutRef.current = setTimeout(() => {
       updatePresence(false);
     }, 2000);
   };
+
   const MAX_MESSAGE_LENGTH = 5000;
+
   const handleSend = async () => {
     if (!newMessage.trim() || !user) return;
+
     const messageText = newMessage.trim();
 
     // Validate message length
@@ -427,152 +450,157 @@ export function ChatTab() {
       toast({
         title: 'Message too long',
         description: `Please keep messages under ${MAX_MESSAGE_LENGTH} characters.`,
-        variant: 'destructive'
+        variant: 'destructive',
       });
       return;
     }
+
     setIsSending(true);
     updatePresence(false);
+    
     setNewMessage('');
     const replyToId = replyTo?.id || null;
     setReplyTo(null);
+
     try {
-      const {
-        error
-      } = await supabase.from('messages').insert({
+      const { error } = await supabase.from('messages').insert({
         user_id: user.id,
         user_name: (profile?.display_name || user.email?.split('@')[0] || 'Unknown').slice(0, 100),
         user_avatar: profile?.avatar_url || defaultAvatarImg,
         text: messageText,
-        reply_to: replyToId
+        reply_to: replyToId,
       });
+
       if (error) throw error;
     } catch (error: any) {
       toast({
         title: 'Failed to send message',
         description: 'Unable to send your message. Please try again.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
       setNewMessage(messageText);
     }
+
     setIsSending(false);
   };
+
   const handleReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
-    const existingReaction = reactions[messageId]?.find(r => r.user_id === user.id && r.emoji === emoji);
+
+    const existingReaction = reactions[messageId]?.find(
+      (r) => r.user_id === user.id && r.emoji === emoji
+    );
+
     if (existingReaction) {
-      await supabase.from('message_reactions').delete().eq('id', existingReaction.id);
+      await supabase
+        .from('message_reactions')
+        .delete()
+        .eq('id', existingReaction.id);
     } else {
       await supabase.from('message_reactions').insert({
         message_id: messageId,
         user_id: user.id,
-        emoji
+        emoji,
       });
     }
+
     setShowEmojiPicker(null);
   };
 
   // Delete message (only sender can delete their own message)
   const handleDeleteMessage = async (messageId: string) => {
-    const {
-      error
-    } = await supabase.from('messages').delete().eq('id', messageId);
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId);
+
     if (error) {
       toast({
         title: 'Failed to delete message',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } else {
       setMessages(prev => prev.filter(m => m.id !== messageId));
-      toast({
-        title: 'Message deleted'
-      });
+      toast({ title: 'Message deleted' });
     }
   };
 
   // Notify Founders
   const handleNotifyFounders = async () => {
     if (!user || !profile) return;
-    const {
-      error
-    } = await supabase.from('founder_alerts').insert({
+
+    const { error } = await supabase.from('founder_alerts').insert({
       type: 'chat',
       message: 'Urgent attention needed in team chat!',
       triggered_by: user.id,
-      triggered_by_name: profile.display_name || user.email?.split('@')[0] || 'Unknown'
+      triggered_by_name: profile.display_name || user.email?.split('@')[0] || 'Unknown',
     });
+
     if (error) {
       toast({
         title: 'Failed to notify founders',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } else {
       toast({
         title: '🔔 Founders notified!',
-        description: 'CEO and CTO have been alerted.'
+        description: 'CEO and CTO have been alerted.',
       });
     }
   };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
+
   const getReactionCounts = (messageId: string) => {
     const messageReactions = reactions[messageId] || [];
-    const counts: Record<string, {
-      count: number;
-      hasUserReacted: boolean;
-    }> = {};
-    messageReactions.forEach(r => {
+    const counts: Record<string, { count: number; hasUserReacted: boolean }> = {};
+
+    messageReactions.forEach((r) => {
       if (!counts[r.emoji]) {
-        counts[r.emoji] = {
-          count: 0,
-          hasUserReacted: false
-        };
+        counts[r.emoji] = { count: 0, hasUserReacted: false };
       }
       counts[r.emoji].count++;
       if (r.user_id === user?.id) {
         counts[r.emoji].hasUserReacted = true;
       }
     });
+
     return counts;
   };
+
   const getReadStatus = (message: Message) => {
     if (message.user_id !== user?.id) return null;
+    
     const reads = messageReads[message.id] || [];
     const otherReads = reads.filter(r => r.user_id !== user?.id);
     const totalOthers = participants.filter(p => p.user_id !== user?.id).length;
+    
     if (otherReads.length === 0) {
-      return {
-        status: 'sent',
-        count: 0
-      };
+      return { status: 'sent', count: 0 };
     } else if (otherReads.length >= totalOthers) {
-      return {
-        status: 'read_all',
-        count: otherReads.length
-      };
+      return { status: 'read_all', count: otherReads.length };
     } else {
-      return {
-        status: 'read_some',
-        count: otherReads.length
-      };
+      return { status: 'read_some', count: otherReads.length };
     }
   };
 
   // Long press handlers for message info
   const handleMessageLongPressStart = (message: Message) => {
     if (message.user_id !== user?.id) return; // Only for own messages
-
+    
     const timer = setTimeout(() => {
       setSelectedMessageForInfo(message);
     }, 500);
     setLongPressTimer(timer);
   };
+
   const handleMessageLongPressEnd = () => {
     if (longPressTimer) {
       clearTimeout(longPressTimer);
@@ -585,22 +613,28 @@ export function ChatTab() {
     const participant = participants.find(p => p.user_id === userId);
     return participant?.role || null;
   };
+
   const onlineParticipants = participants.filter(p => p.isOnline || presenceData[p.user_id]?.is_online);
 
   // Show restricted content for non-members
   if (!statusLoading && !isMember && !isAdmin) {
     return <RestrictedContent type="chat" showWarning={showWarning} />;
   }
-  return <div className="flex h-[calc(100vh-11rem)] relative overflow-hidden max-w-5xl mx-auto">
+
+  return (
+    <div className="flex h-[calc(100vh-11rem)] relative overflow-hidden max-w-5xl mx-auto">
       {/* Watermark Background */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0" style={{
-      backgroundImage: `url(${artfiqLogo})`,
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-      backgroundSize: '40%',
-      opacity: 0.03,
-      filter: 'grayscale(100%)'
-    }} />
+      <div 
+        className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+        style={{
+          backgroundImage: `url(${artfiqLogo})`,
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: '40%',
+          opacity: 0.03,
+          filter: 'grayscale(100%)',
+        }}
+      />
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col z-10">
@@ -615,12 +649,17 @@ export function ChatTab() {
             </div>
             <div className="flex items-center gap-3">
               {/* Notify Founders Button */}
-              <motion.div whileHover={{
-              scale: 1.05
-            }} whileTap={{
-              scale: 0.95
-            }} transition={springPresets.button}>
-                <Button variant="outline" size="sm" onClick={handleNotifyFounders} className="gap-2 border-destructive/50 hover:bg-destructive/10 hover:text-destructive">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={springPresets.button}
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNotifyFounders}
+                  className="gap-2 border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                >
                   <Bell className="w-4 h-4" />
                   <span className="hidden sm:inline">Notify Founders</span>
                 </Button>
@@ -628,33 +667,39 @@ export function ChatTab() {
               {/* Online participants avatars with status dot */}
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2">
-                {onlineParticipants.slice(0, 5).map(p => <motion.div key={p.id} className="relative" initial={{
-                  scale: 0
-                }} animate={{
-                  scale: 1
-                }} transition={springPresets.bouncy}>
-                    <img src={p.avatar_url || defaultAvatarImg} alt={p.display_name || 'User'} className="w-8 h-8 rounded-full border-2 border-background" />
+                {onlineParticipants.slice(0, 5).map((p) => (
+                  <motion.div
+                    key={p.id}
+                    className="relative"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={springPresets.bouncy}
+                  >
+                    <img
+                      src={p.avatar_url || defaultAvatarImg}
+                      alt={p.display_name || 'User'}
+                      className="w-8 h-8 rounded-full border-2 border-background"
+                    />
                     {/* Green online dot */}
                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
-                  </motion.div>)}
+                  </motion.div>
+                ))}
               </div>
-              {onlineParticipants.length > 5 && <span className="text-xs text-muted-foreground">
+              {onlineParticipants.length > 5 && (
+                <span className="text-xs text-muted-foreground">
                   +{onlineParticipants.length - 5} more
-                </span>}
+                </span>
+              )}
               </div>
             </div>
           </div>
           {/* Privacy Notice */}
-          <motion.div initial={{
-          opacity: 0,
-          y: -10
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          ...springPresets.snappy,
-          delay: 0.5
-        }} className="mt-3 flex items-center gap-2 text-xs text-muted-foreground bg-secondary/50 rounded-full px-3 py-1.5 w-fit">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...springPresets.snappy, delay: 0.5 }}
+            className="mt-3 flex items-center gap-2 text-xs text-muted-foreground bg-secondary/50 rounded-full px-3 py-1.5 w-fit"
+          >
             <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
@@ -664,242 +709,336 @@ export function ChatTab() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 scrollbar-cyber">
-          {isLoading ? <div className="text-center text-muted-foreground py-8">
+          {isLoading ? (
+            <div className="text-center text-muted-foreground py-8">
               Loading messages...
-            </div> : messages.length === 0 ? <SoftFloat delay={0.2} className="text-center text-muted-foreground py-8">
+            </div>
+          ) : messages.length === 0 ? (
+            <SoftFloat delay={0.2} className="text-center text-muted-foreground py-8">
               No messages yet. Start the conversation!
-            </SoftFloat> : <AnimatePresence initial={false}>
+            </SoftFloat>
+          ) : (
+            <AnimatePresence initial={false}>
               {messages.map((message, index) => {
-            const isOwnMessage = message.user_id === user?.id;
-            const showAvatar = index === 0 || messages[index - 1].user_id !== message.user_id;
-            const reactionCounts = getReactionCounts(message.id);
-            const readStatus = getReadStatus(message);
-            const senderRole = getParticipantRole(message.user_id);
-            return <motion.div key={message.id} data-message-id={message.id} ref={el => {
-              if (el && !isOwnMessage && observerRef.current) {
-                observerRef.current.observe(el);
-              }
-            }} initial={{
-              opacity: 0,
-              y: 30,
-              scale: 0.95
-            }} animate={{
-              opacity: 1,
-              y: 0,
-              scale: 1
-            }} transition={springPresets.snappy} onMouseDown={() => handleMessageLongPressStart(message)} onMouseUp={handleMessageLongPressEnd} onMouseLeave={handleMessageLongPressEnd} onTouchStart={() => handleMessageLongPressStart(message)} onTouchEnd={handleMessageLongPressEnd} className={cn("flex gap-3 group", isOwnMessage && "flex-row-reverse")}>
+                const isOwnMessage = message.user_id === user?.id;
+                const showAvatar = index === 0 || messages[index - 1].user_id !== message.user_id;
+                const reactionCounts = getReactionCounts(message.id);
+                const readStatus = getReadStatus(message);
+                const senderRole = getParticipantRole(message.user_id);
+
+                return (
+                  <motion.div
+                    key={message.id}
+                    data-message-id={message.id}
+                    ref={(el) => {
+                      if (el && !isOwnMessage && observerRef.current) {
+                        observerRef.current.observe(el);
+                      }
+                    }}
+                    initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={springPresets.snappy}
+                    onMouseDown={() => handleMessageLongPressStart(message)}
+                    onMouseUp={handleMessageLongPressEnd}
+                    onMouseLeave={handleMessageLongPressEnd}
+                    onTouchStart={() => handleMessageLongPressStart(message)}
+                    onTouchEnd={handleMessageLongPressEnd}
+                    className={cn("flex gap-3 group", isOwnMessage && "flex-row-reverse")}
+                  >
                     {/* Avatar */}
                     <div className="flex-shrink-0 w-10">
-                      {showAvatar && <motion.img initial={{
-                  scale: 0
-                }} animate={{
-                  scale: 1
-                }} transition={springPresets.bouncy} src={message.user_avatar || defaultAvatarImg} alt={message.user_name} className="w-10 h-10 rounded-full border border-border" />}
+                      {showAvatar && (
+                        <motion.img
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={springPresets.bouncy}
+                          src={message.user_avatar || defaultAvatarImg}
+                          alt={message.user_name}
+                          className="w-10 h-10 rounded-full border border-border"
+                        />
+                      )}
                     </div>
 
                     {/* Message Content */}
                     <div className={cn("max-w-[70%] space-y-1", isOwnMessage && "items-end")}>
-                      {showAvatar && <div className={cn("flex items-center gap-2 text-sm", isOwnMessage && "flex-row-reverse")}>
+                      {showAvatar && (
+                        <div className={cn("flex items-center gap-2 text-sm", isOwnMessage && "flex-row-reverse")}>
                           <span className="font-medium">{message.user_name}</span>
-                          {senderRole && senderRole !== 'team' && <RoleBadge role={senderRole} size="sm" showIcon={false} />}
+                          {senderRole && senderRole !== 'team' && (
+                            <RoleBadge role={senderRole} size="sm" showIcon={false} />
+                          )}
                           <span className="text-muted-foreground text-xs">
                             {formatTime(message.created_at)}
                           </span>
-                        </div>}
+                        </div>
+                      )}
 
                       {/* Reply Preview */}
-                      {message.reply_message && <div className={cn("text-xs px-3 py-1.5 rounded-lg bg-muted/50 border-l-2 border-primary", isOwnMessage && "ml-auto")}>
+                      {message.reply_message && (
+                        <div className={cn(
+                          "text-xs px-3 py-1.5 rounded-lg bg-muted/50 border-l-2 border-primary",
+                          isOwnMessage && "ml-auto"
+                        )}>
                           <span className="font-medium text-primary">
                             {message.reply_message.user_name}
                           </span>
                           <p className="text-muted-foreground truncate max-w-[200px]">
                             {message.reply_message.text}
                           </p>
-                        </div>}
+                        </div>
+                      )}
 
                       <div className="relative">
-                        <motion.div className={cn("px-4 py-2.5 rounded-2xl", isOwnMessage ? "bg-primary text-primary-foreground rounded-tr-md" : "glass-card rounded-tl-md")} whileHover={{
-                    scale: 1.01
-                  }} transition={springPresets.button}>
+                        <motion.div 
+                          className={cn(
+                            "px-4 py-2.5 rounded-2xl",
+                            isOwnMessage
+                              ? "bg-primary text-primary-foreground rounded-tr-md"
+                              : "glass-card rounded-tl-md"
+                          )}
+                          whileHover={{ scale: 1.01 }}
+                          transition={springPresets.button}
+                        >
                           <p className="text-sm leading-relaxed">{message.text}</p>
                           
                           {/* Read receipt for own messages */}
-                          {isOwnMessage && readStatus && <motion.div className="flex items-center justify-end gap-1 mt-1" initial={{
-                      opacity: 0
-                    }} animate={{
-                      opacity: 1
-                    }} transition={springPresets.snappy}>
-                              {readStatus.status === 'sent' ? <Check className="w-4 h-4 text-primary-foreground/50" /> : readStatus.status === 'read_all' ? <>
+                          {isOwnMessage && readStatus && (
+                            <motion.div 
+                              className="flex items-center justify-end gap-1 mt-1"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={springPresets.snappy}
+                            >
+                              {readStatus.status === 'sent' ? (
+                                <Check className="w-4 h-4 text-primary-foreground/50" />
+                              ) : readStatus.status === 'read_all' ? (
+                                <>
                                   <CheckCheck className="w-4 h-4 text-cyan-300" />
                                   <span className="text-[10px] text-cyan-300">Read by all</span>
-                                </> : <>
+                                </>
+                              ) : (
+                                <>
                                   <CheckCheck className="w-4 h-4 text-primary-foreground/70" />
                                   <span className="text-[10px] text-primary-foreground/60">
                                     Read by {readStatus.count}
                                   </span>
-                                </>}
-                            </motion.div>}
+                                </>
+                              )}
+                            </motion.div>
+                          )}
                         </motion.div>
 
                         {/* Context Menu Button - Inside bubble */}
-                        <Popover open={openMessageMenu === message.id} onOpenChange={open => setOpenMessageMenu(open ? message.id : null)}>
+                        <Popover open={openMessageMenu === message.id} onOpenChange={(open) => setOpenMessageMenu(open ? message.id : null)}>
                           <PopoverTrigger asChild>
-                            <motion.button className={cn("absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10", isOwnMessage ? "right-1" : "left-1")} whileHover={{
-                        scale: 1.1
-                      }} whileTap={{
-                        scale: 0.9
-                      }} transition={springPresets.button}>
-                              <MoreVertical className="w-4 h-4 mx-[220px]" />
+                            <motion.button
+                              className={cn(
+                                "absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10",
+                                isOwnMessage ? "right-1" : "left-1"
+                              )}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              transition={springPresets.button}
+                            >
+                              <MoreVertical className="w-4 h-4" />
                             </motion.button>
                           </PopoverTrigger>
-                          <PopoverContent side={isOwnMessage ? "left" : "right"} align="start" sideOffset={8} className="w-auto p-2 z-50 bg-popover border border-border shadow-lg rounded-xl">
+                          <PopoverContent 
+                            side={isOwnMessage ? "left" : "right"} 
+                            align="start"
+                            sideOffset={8}
+                            className="w-auto p-2 z-50 bg-popover border border-border shadow-lg rounded-xl"
+                          >
                             <div className="flex flex-col gap-1 min-w-[140px]">
                               {/* Emoji Row */}
                               <div className="flex gap-1 p-1 border-b border-border pb-2 mb-1">
-                                {EMOJI_OPTIONS.slice(0, 4).map(emoji => <motion.button key={emoji} onClick={() => {
-                            handleReaction(message.id, emoji);
-                            setOpenMessageMenu(null);
-                          }} className="w-8 h-8 hover:bg-secondary rounded-lg transition-colors text-lg" whileHover={{
-                            scale: 1.15
-                          }} whileTap={{
-                            scale: 0.9
-                          }} transition={springPresets.button}>
+                                {EMOJI_OPTIONS.slice(0, 4).map((emoji) => (
+                                  <motion.button
+                                    key={emoji}
+                                    onClick={() => {
+                                      handleReaction(message.id, emoji);
+                                      setOpenMessageMenu(null);
+                                    }}
+                                    className="w-8 h-8 hover:bg-secondary rounded-lg transition-colors text-lg"
+                                    whileHover={{ scale: 1.15 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    transition={springPresets.button}
+                                  >
                                     {emoji}
-                                  </motion.button>)}
+                                  </motion.button>
+                                ))}
                               </div>
                               
                               {/* More Emoji Button */}
-                              <button onClick={() => {
-                          setShowEmojiPicker(message.id);
-                          setOpenMessageMenu(null);
-                        }} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary rounded-lg transition-colors text-left">
+                              <button
+                                onClick={() => {
+                                  setShowEmojiPicker(message.id);
+                                  setOpenMessageMenu(null);
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary rounded-lg transition-colors text-left"
+                              >
                                 <Smile className="w-4 h-4" />
                                 <span>More reactions</span>
                               </button>
                               
                               {/* Reply */}
-                              <button onClick={() => {
-                          setReplyTo(message);
-                          setOpenMessageMenu(null);
-                        }} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary rounded-lg transition-colors text-left">
+                              <button
+                                onClick={() => {
+                                  setReplyTo(message);
+                                  setOpenMessageMenu(null);
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary rounded-lg transition-colors text-left"
+                              >
                                 <Reply className="w-4 h-4" />
                                 <span>Reply</span>
                               </button>
                               
                               {/* Own message options */}
-                              {isOwnMessage && <>
-                                  <button onClick={() => {
-                            setSelectedMessageForInfo(message);
-                            setOpenMessageMenu(null);
-                          }} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary rounded-lg transition-colors text-left">
+                              {isOwnMessage && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedMessageForInfo(message);
+                                      setOpenMessageMenu(null);
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary rounded-lg transition-colors text-left"
+                                  >
                                     <Info className="w-4 h-4" />
                                     <span>Message info</span>
                                   </button>
-                                  <button onClick={() => {
-                            handleDeleteMessage(message.id);
-                            setOpenMessageMenu(null);
-                          }} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-destructive/10 text-destructive rounded-lg transition-colors text-left">
+                                  <button
+                                    onClick={() => {
+                                      handleDeleteMessage(message.id);
+                                      setOpenMessageMenu(null);
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-destructive/10 text-destructive rounded-lg transition-colors text-left"
+                                  >
                                     <Trash2 className="w-4 h-4" />
                                     <span>Delete</span>
                                   </button>
-                                </>}
+                                </>
+                              )}
                             </div>
                           </PopoverContent>
                         </Popover>
 
                         {/* Full Emoji Picker (shown via "More reactions") */}
                         <AnimatePresence>
-                          {showEmojiPicker === message.id && <motion.div initial={{
-                      opacity: 0,
-                      scale: 0.9,
-                      y: 10
-                    }} animate={{
-                      opacity: 1,
-                      scale: 1,
-                      y: 0
-                    }} exit={{
-                      opacity: 0,
-                      scale: 0.9,
-                      y: 10
-                    }} transition={springPresets.bouncy} className={cn("absolute top-full mt-2 z-50 bg-popover border border-border shadow-lg rounded-xl p-2 flex flex-wrap gap-1 max-w-[200px]", isOwnMessage ? "right-0" : "left-0")}>
-                              {EMOJI_OPTIONS.map(emoji => <motion.button key={emoji} onClick={() => handleReaction(message.id, emoji)} className="w-8 h-8 hover:bg-secondary rounded-lg transition-colors text-lg" whileHover={{
-                        scale: 1.2
-                      }} whileTap={{
-                        scale: 0.9
-                      }} transition={springPresets.button}>
+                          {showEmojiPicker === message.id && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                              transition={springPresets.bouncy}
+                              className={cn(
+                                "absolute top-full mt-2 z-50 bg-popover border border-border shadow-lg rounded-xl p-2 flex flex-wrap gap-1 max-w-[200px]",
+                                isOwnMessage ? "right-0" : "left-0"
+                              )}
+                            >
+                              {EMOJI_OPTIONS.map((emoji) => (
+                                <motion.button
+                                  key={emoji}
+                                  onClick={() => handleReaction(message.id, emoji)}
+                                  className="w-8 h-8 hover:bg-secondary rounded-lg transition-colors text-lg"
+                                  whileHover={{ scale: 1.2 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  transition={springPresets.button}
+                                >
                                   {emoji}
-                                </motion.button>)}
-                              <button onClick={() => setShowEmojiPicker(null)} className="w-8 h-8 hover:bg-secondary rounded-lg transition-colors text-sm text-muted-foreground">
+                                </motion.button>
+                              ))}
+                              <button
+                                onClick={() => setShowEmojiPicker(null)}
+                                className="w-8 h-8 hover:bg-secondary rounded-lg transition-colors text-sm text-muted-foreground"
+                              >
                                 <X className="w-4 h-4 mx-auto" />
                               </button>
-                            </motion.div>}
+                            </motion.div>
+                          )}
                         </AnimatePresence>
                       </div>
 
                       {/* Reactions */}
-                      {Object.keys(reactionCounts).length > 0 && <div className={cn("flex flex-wrap gap-1", isOwnMessage && "justify-end")}>
-                          {Object.entries(reactionCounts).map(([emoji, {
-                    count,
-                    hasUserReacted
-                  }]) => <motion.button key={emoji} onClick={() => handleReaction(message.id, emoji)} className={cn("flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-colors", hasUserReacted ? "bg-primary/20 border border-primary/50" : "bg-secondary hover:bg-secondary/80")} whileHover={{
-                    scale: 1.05
-                  }} whileTap={{
-                    scale: 0.95
-                  }} transition={springPresets.button}>
+                      {Object.keys(reactionCounts).length > 0 && (
+                        <div className={cn("flex flex-wrap gap-1", isOwnMessage && "justify-end")}>
+                          {Object.entries(reactionCounts).map(([emoji, { count, hasUserReacted }]) => (
+                            <motion.button
+                              key={emoji}
+                              onClick={() => handleReaction(message.id, emoji)}
+                              className={cn(
+                                "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-colors",
+                                hasUserReacted
+                                  ? "bg-primary/20 border border-primary/50"
+                                  : "bg-secondary hover:bg-secondary/80"
+                              )}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              transition={springPresets.button}
+                            >
                               <span>{emoji}</span>
                               <span className="text-muted-foreground">{count}</span>
-                            </motion.button>)}
-                        </div>}
+                            </motion.button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </motion.div>;
-          })}
-            </AnimatePresence>}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
         {/* Typing Indicator */}
         <AnimatePresence>
-          {typingUsers.length > 0 && <motion.div initial={{
-          opacity: 0,
-          height: 0
-        }} animate={{
-          opacity: 1,
-          height: 'auto'
-        }} exit={{
-          opacity: 0,
-          height: 0
-        }} transition={springPresets.snappy} className="px-4 lg:px-6 pb-2">
+          {typingUsers.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={springPresets.snappy}
+              className="px-4 lg:px-6 pb-2"
+            >
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="flex gap-1">
-                  {[0, 1, 2].map(i => <motion.span key={i} animate={{
-                y: [0, -4, 0],
-                opacity: [0.4, 1, 0.4]
-              }} transition={{
-                duration: 0.8,
-                repeat: Infinity,
-                ease: 'easeInOut',
-                delay: i * 0.15
-              }} className="w-2 h-2 bg-primary rounded-full" />)}
+                  {[0, 1, 2].map((i) => (
+                    <motion.span
+                      key={i}
+                      animate={{ 
+                        y: [0, -4, 0],
+                        opacity: [0.4, 1, 0.4],
+                      }}
+                      transition={{ 
+                        duration: 0.8, 
+                        repeat: Infinity, 
+                        ease: 'easeInOut', 
+                        delay: i * 0.15 
+                      }}
+                      className="w-2 h-2 bg-primary rounded-full"
+                    />
+                  ))}
                 </div>
                 <span>
-                  {typingUsers.length === 1 ? `${typingUsers[0]} is typing...` : `${typingUsers.join(', ')} are typing...`}
+                  {typingUsers.length === 1 
+                    ? `${typingUsers[0]} is typing...` 
+                    : `${typingUsers.join(', ')} are typing...`}
                 </span>
               </div>
-            </motion.div>}
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* Reply Preview */}
         <AnimatePresence>
-          {replyTo && <motion.div initial={{
-          opacity: 0,
-          height: 0
-        }} animate={{
-          opacity: 1,
-          height: 'auto'
-        }} exit={{
-          opacity: 0,
-          height: 0
-        }} transition={springPresets.snappy} className="border-t border-border bg-secondary/50 px-4 py-2">
+          {replyTo && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={springPresets.snappy}
+              className="border-t border-border bg-secondary/50 px-4 py-2"
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Reply className="w-4 h-4 text-primary" />
@@ -907,32 +1046,52 @@ export function ChatTab() {
                     Replying to <span className="font-medium text-primary">{replyTo.user_name}</span>
                   </span>
                 </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setReplyTo(null)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setReplyTo(null)}
+                >
                   <X className="w-4 h-4" />
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground truncate pl-6">{replyTo.text}</p>
-            </motion.div>}
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* Input */}
         <SoftFloat delay={0.3} className="flex-shrink-0 p-4 lg:p-6 border-t border-border bg-background/80 backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <motion.div className="flex-1 relative" whileFocus={{
-            scale: 1.01
-          }}>
-              <Input value={newMessage} onChange={e => {
-              setNewMessage(e.target.value);
-              handleTyping();
-            }} onKeyDown={handleKeyPress} placeholder={replyTo ? `Reply to ${replyTo.user_name}...` : "Type a message..."} className="bg-secondary border-0 focus-visible:ring-1 focus-visible:ring-primary" disabled={isSending} />
+            <motion.div 
+              className="flex-1 relative"
+              whileFocus={{ scale: 1.01 }}
+            >
+              <Input
+                value={newMessage}
+                onChange={(e) => {
+                  setNewMessage(e.target.value);
+                  handleTyping();
+                }}
+                onKeyDown={handleKeyPress}
+                placeholder={replyTo ? `Reply to ${replyTo.user_name}...` : "Type a message..."}
+                className="bg-secondary border-0 focus-visible:ring-1 focus-visible:ring-primary"
+                disabled={isSending}
+              />
             </motion.div>
 
-            <motion.div whileHover={{
-            scale: 1.05
-          }} whileTap={{
-            scale: 0.95
-          }} transition={springPresets.button}>
-              <Button variant="cyber" size="icon" onClick={handleSend} disabled={!newMessage.trim() || isSending} className="flex-shrink-0">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={springPresets.button}
+            >
+              <Button
+                variant="cyber"
+                size="icon"
+                onClick={handleSend}
+                disabled={!newMessage.trim() || isSending}
+                className="flex-shrink-0"
+              >
                 <Send className="w-5 h-5" />
               </Button>
             </motion.div>
@@ -941,6 +1100,15 @@ export function ChatTab() {
       </div>
 
       {/* Message Info Modal */}
-      <MessageInfoModal isOpen={!!selectedMessageForInfo} onClose={() => setSelectedMessageForInfo(null)} messageText={selectedMessageForInfo?.text || ''} sentAt={selectedMessageForInfo?.created_at || ''} reads={selectedMessageForInfo ? messageReads[selectedMessageForInfo.id] || [] : []} participants={participants} senderId={selectedMessageForInfo?.user_id || ''} />
-    </div>;
+      <MessageInfoModal
+        isOpen={!!selectedMessageForInfo}
+        onClose={() => setSelectedMessageForInfo(null)}
+        messageText={selectedMessageForInfo?.text || ''}
+        sentAt={selectedMessageForInfo?.created_at || ''}
+        reads={selectedMessageForInfo ? (messageReads[selectedMessageForInfo.id] || []) : []}
+        participants={participants}
+        senderId={selectedMessageForInfo?.user_id || ''}
+      />
+    </div>
+  );
 }
