@@ -65,17 +65,17 @@ export function MessageInfoModal({
             onClick={onClose}
           />
           
-          {/* Modal */}
+          {/* Modal - Constrained with max-height and proper margins */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 50 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 50 }}
             transition={springPresets.modal}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md max-h-[80vh] flex flex-col"
           >
-            <div className="glass-card rounded-2xl p-6 space-y-6 mx-4">
-              {/* Header */}
-              <div className="flex items-center justify-between">
+            <div className="glass-card rounded-2xl p-4 sm:p-6 flex flex-col max-h-[80vh] overflow-hidden">
+              {/* Header - Fixed */}
+              <div className="flex items-center justify-between flex-shrink-0 pb-4 border-b border-border">
                 <h3 className="text-lg font-semibold">Message Info</h3>
                 <motion.button
                   onClick={onClose}
@@ -88,80 +88,83 @@ export function MessageInfoModal({
                 </motion.button>
               </div>
 
-              {/* Message Preview */}
-              <div className="bg-secondary/50 rounded-xl p-4">
-                <p className="text-sm line-clamp-3">{messageText}</p>
-                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  <span>Sent {formatTime(sentAt)}</span>
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto space-y-4 pt-4 min-h-0">
+                {/* Message Preview */}
+                <div className="bg-secondary/50 rounded-xl p-4">
+                  <p className="text-sm line-clamp-3 break-words">{messageText}</p>
+                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                    <Clock className="w-3 h-3 flex-shrink-0" />
+                    <span>Sent {formatTime(sentAt)}</span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Read By Section */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <CheckCheck className="w-4 h-4 text-cyan-400" />
-                  <span>Read by ({readBy.length})</span>
+                {/* Read By Section */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <CheckCheck className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                    <span>Read by ({readBy.length})</span>
+                  </div>
+                  {readBy.length === 0 ? (
+                    <p className="text-sm text-muted-foreground pl-6">No one has read this message yet</p>
+                  ) : (
+                    <div className="space-y-2 pl-6">
+                      {readBy.map((p) => {
+                        const readRecord = reads.find(r => r.user_id === p.user_id);
+                        return (
+                          <motion.div
+                            key={p.user_id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={springPresets.snappy}
+                            className="flex items-center justify-between gap-2"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <img
+                                src={p.avatar_url || defaultAvatarImg}
+                                alt={p.display_name || 'User'}
+                                className="w-8 h-8 rounded-full flex-shrink-0"
+                              />
+                              <span className="text-sm truncate">{p.display_name || 'Unknown'}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground flex-shrink-0">
+                              {readRecord ? formatTime(readRecord.read_at) : ''}
+                            </span>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-                {readBy.length === 0 ? (
-                  <p className="text-sm text-muted-foreground pl-6">No one has read this message yet</p>
-                ) : (
-                  <div className="space-y-2 pl-6">
-                    {readBy.map((p) => {
-                      const readRecord = reads.find(r => r.user_id === p.user_id);
-                      return (
+
+                {/* Delivered To Section */}
+                {pendingRead.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <span>Delivered to ({pendingRead.length})</span>
+                    </div>
+                    <div className="space-y-2 pl-6">
+                      {pendingRead.map((p) => (
                         <motion.div
                           key={p.user_id}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={springPresets.snappy}
-                          className="flex items-center justify-between"
+                          className="flex items-center gap-2 min-w-0"
                         >
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={p.avatar_url || defaultAvatarImg}
-                              alt={p.display_name || 'User'}
-                              className="w-8 h-8 rounded-full"
-                            />
-                            <span className="text-sm">{p.display_name || 'Unknown'}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {readRecord ? formatTime(readRecord.read_at) : ''}
-                          </span>
+                          <img
+                            src={p.avatar_url || defaultAvatarImg}
+                            alt={p.display_name || 'User'}
+                            className="w-8 h-8 rounded-full opacity-60 flex-shrink-0"
+                          />
+                          <span className="text-sm text-muted-foreground truncate">{p.display_name || 'Unknown'}</span>
                         </motion.div>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-
-              {/* Delivered To Section */}
-              {pendingRead.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Check className="w-4 h-4 text-muted-foreground" />
-                    <span>Delivered to ({pendingRead.length})</span>
-                  </div>
-                  <div className="space-y-2 pl-6">
-                    {pendingRead.map((p) => (
-                      <motion.div
-                        key={p.user_id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={springPresets.snappy}
-                        className="flex items-center gap-2"
-                      >
-                        <img
-                          src={p.avatar_url || defaultAvatarImg}
-                          alt={p.display_name || 'User'}
-                          className="w-8 h-8 rounded-full opacity-60"
-                        />
-                        <span className="text-sm text-muted-foreground">{p.display_name || 'Unknown'}</span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </motion.div>
         </>
