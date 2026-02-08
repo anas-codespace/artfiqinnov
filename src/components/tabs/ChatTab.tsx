@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Smile, Reply, X, CheckCheck, Check, Info, Bell, Trash2, MoreVertical } from 'lucide-react';
+import { Send, Smile, Reply, X, CheckCheck, Check, Info, Bell, Trash2, MoreVertical, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +15,13 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useUserStatus } from '@/hooks/useUserStatus';
 import { RestrictedContent } from '@/components/RestrictedContent';
 import { useAccessWarning } from '@/contexts/AccessWarningContext';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import artfiqLogo from '@/assets/artfiq-logo.jpeg';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 
@@ -88,7 +94,7 @@ export function ChatTab() {
   const [cleanupCount, setCleanupCount] = useState<number | null>(null);
   const [selectedMessageForInfo, setSelectedMessageForInfo] = useState<Message | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
-  const [openMessageMenu, setOpenMessageMenu] = useState<string | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -621,8 +627,18 @@ export function ChatTab() {
     return <RestrictedContent type="chat" showWarning={showWarning} />;
   }
 
+  // Copy message to clipboard
+  const handleCopyMessage = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: 'Copied to clipboard' });
+    } catch {
+      toast({ title: 'Failed to copy', variant: 'destructive' });
+    }
+  };
+
   return (
-    <div className="flex h-[calc(100vh-11rem)] relative overflow-hidden max-w-5xl mx-auto">
+    <div className="flex h-[calc(100vh-11rem)] relative overflow-hidden max-w-5xl mx-auto pb-24">
       {/* Watermark Background */}
       <div 
         className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
@@ -828,99 +844,86 @@ export function ChatTab() {
                           )}
                         </motion.div>
 
-                        {/* Context Menu Button - Inside bubble */}
-                        <Popover open={openMessageMenu === message.id} onOpenChange={(open) => setOpenMessageMenu(open ? message.id : null)}>
-                          <PopoverTrigger asChild>
+                        {/* Context Menu - Dropdown with smart positioning */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                             <motion.button
                               className={cn(
-                                "absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10",
+                                "absolute top-1 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm",
                                 isOwnMessage ? "right-1" : "left-1"
                               )}
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                               transition={springPresets.button}
                             >
-                              <MoreVertical className="w-4 h-4" />
+                              <MoreVertical className="w-3.5 h-3.5" />
                             </motion.button>
-                          </PopoverTrigger>
-                          <PopoverContent 
-                            side={isOwnMessage ? "left" : "right"} 
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent 
+                            side={isOwnMessage ? "left" : "right"}
                             align="start"
                             sideOffset={8}
-                            className="w-auto p-2 z-50 bg-popover border border-border shadow-lg rounded-xl"
+                            collisionPadding={16}
+                            className="z-[60] min-w-[160px] bg-popover border border-border shadow-xl rounded-xl p-1"
                           >
-                            <div className="flex flex-col gap-1 min-w-[140px]">
-                              {/* Emoji Row */}
-                              <div className="flex gap-1 p-1 border-b border-border pb-2 mb-1">
-                                {EMOJI_OPTIONS.slice(0, 4).map((emoji) => (
-                                  <motion.button
-                                    key={emoji}
-                                    onClick={() => {
-                                      handleReaction(message.id, emoji);
-                                      setOpenMessageMenu(null);
-                                    }}
-                                    className="w-8 h-8 hover:bg-secondary rounded-lg transition-colors text-lg"
-                                    whileHover={{ scale: 1.15 }}
-                                    whileTap={{ scale: 0.9 }}
-                                    transition={springPresets.button}
-                                  >
-                                    {emoji}
-                                  </motion.button>
-                                ))}
-                              </div>
-                              
-                              {/* More Emoji Button */}
-                              <button
-                                onClick={() => {
-                                  setShowEmojiPicker(message.id);
-                                  setOpenMessageMenu(null);
-                                }}
-                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary rounded-lg transition-colors text-left"
-                              >
-                                <Smile className="w-4 h-4" />
-                                <span>More reactions</span>
-                              </button>
-                              
-                              {/* Reply */}
-                              <button
-                                onClick={() => {
-                                  setReplyTo(message);
-                                  setOpenMessageMenu(null);
-                                }}
-                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary rounded-lg transition-colors text-left"
-                              >
-                                <Reply className="w-4 h-4" />
-                                <span>Reply</span>
-                              </button>
-                              
-                              {/* Own message options */}
-                              {isOwnMessage && (
-                                <>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedMessageForInfo(message);
-                                      setOpenMessageMenu(null);
-                                    }}
-                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary rounded-lg transition-colors text-left"
-                                  >
-                                    <Info className="w-4 h-4" />
-                                    <span>Message info</span>
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      handleDeleteMessage(message.id);
-                                      setOpenMessageMenu(null);
-                                    }}
-                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-destructive/10 text-destructive rounded-lg transition-colors text-left"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                    <span>Delete</span>
-                                  </button>
-                                </>
-                              )}
+                            {/* Quick Emoji Row */}
+                            <div className="flex gap-1 p-2 border-b border-border mb-1">
+                              {EMOJI_OPTIONS.slice(0, 4).map((emoji) => (
+                                <button
+                                  key={emoji}
+                                  onClick={() => handleReaction(message.id, emoji)}
+                                  className="w-8 h-8 hover:bg-secondary rounded-lg transition-colors text-lg flex items-center justify-center"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
                             </div>
-                          </PopoverContent>
-                        </Popover>
+                            
+                            <DropdownMenuItem 
+                              onClick={() => setShowEmojiPicker(message.id)}
+                              className="gap-2 cursor-pointer"
+                            >
+                              <Smile className="w-4 h-4" />
+                              <span>More reactions</span>
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuItem 
+                              onClick={() => setReplyTo(message)}
+                              className="gap-2 cursor-pointer"
+                            >
+                              <Reply className="w-4 h-4" />
+                              <span>Reply</span>
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuItem 
+                              onClick={() => handleCopyMessage(message.text)}
+                              className="gap-2 cursor-pointer"
+                            >
+                              <Copy className="w-4 h-4" />
+                              <span>Copy text</span>
+                            </DropdownMenuItem>
+                            
+                            {isOwnMessage && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => setSelectedMessageForInfo(message)}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <Info className="w-4 h-4" />
+                                  <span>Message info</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteMessage(message.id)}
+                                  className="gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  <span>Delete</span>
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
 
                         {/* Full Emoji Picker (shown via "More reactions") */}
                         <AnimatePresence>
