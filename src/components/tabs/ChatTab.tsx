@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Smile, Reply, X, CheckCheck, Check, Info, Bell, Trash2 } from 'lucide-react';
+import { Send, Smile, Reply, X, CheckCheck, Check, Info, Bell, Trash2, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +15,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useUserStatus } from '@/hooks/useUserStatus';
 import { RestrictedContent } from '@/components/RestrictedContent';
 import { useAccessWarning } from '@/contexts/AccessWarningContext';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import artfiqLogo from '@/assets/artfiq-logo.jpeg';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 
@@ -87,6 +88,7 @@ export function ChatTab() {
   const [cleanupCount, setCleanupCount] = useState<number | null>(null);
   const [selectedMessageForInfo, setSelectedMessageForInfo] = useState<Message | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [openMessageMenu, setOpenMessageMenu] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -826,52 +828,101 @@ export function ChatTab() {
                           )}
                         </motion.div>
 
-                        {/* Action buttons */}
-                        <div className={cn(
-                          "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1",
-                          isOwnMessage ? "-left-20" : "-right-20"
-                        )}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id)}
+                        {/* Context Menu Button - Inside bubble */}
+                        <Popover open={openMessageMenu === message.id} onOpenChange={(open) => setOpenMessageMenu(open ? message.id : null)}>
+                          <PopoverTrigger asChild>
+                            <motion.button
+                              className={cn(
+                                "absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10",
+                                isOwnMessage ? "right-1" : "left-1"
+                              )}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              transition={springPresets.button}
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </motion.button>
+                          </PopoverTrigger>
+                          <PopoverContent 
+                            side={isOwnMessage ? "left" : "right"} 
+                            align="start"
+                            sideOffset={8}
+                            className="w-auto p-2 z-50 bg-popover border border-border shadow-lg rounded-xl"
                           >
-                            <Smile className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => setReplyTo(message)}
-                          >
-                            <Reply className="w-4 h-4" />
-                          </Button>
-                          {isOwnMessage && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => setSelectedMessageForInfo(message)}
-                                title="Message info"
+                            <div className="flex flex-col gap-1 min-w-[140px]">
+                              {/* Emoji Row */}
+                              <div className="flex gap-1 p-1 border-b border-border pb-2 mb-1">
+                                {EMOJI_OPTIONS.slice(0, 4).map((emoji) => (
+                                  <motion.button
+                                    key={emoji}
+                                    onClick={() => {
+                                      handleReaction(message.id, emoji);
+                                      setOpenMessageMenu(null);
+                                    }}
+                                    className="w-8 h-8 hover:bg-secondary rounded-lg transition-colors text-lg"
+                                    whileHover={{ scale: 1.15 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    transition={springPresets.button}
+                                  >
+                                    {emoji}
+                                  </motion.button>
+                                ))}
+                              </div>
+                              
+                              {/* More Emoji Button */}
+                              <button
+                                onClick={() => {
+                                  setShowEmojiPicker(message.id);
+                                  setOpenMessageMenu(null);
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary rounded-lg transition-colors text-left"
                               >
-                                <Info className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 hover:text-destructive"
-                                onClick={() => handleDeleteMessage(message.id)}
-                                title="Delete message"
+                                <Smile className="w-4 h-4" />
+                                <span>More reactions</span>
+                              </button>
+                              
+                              {/* Reply */}
+                              <button
+                                onClick={() => {
+                                  setReplyTo(message);
+                                  setOpenMessageMenu(null);
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary rounded-lg transition-colors text-left"
                               >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
+                                <Reply className="w-4 h-4" />
+                                <span>Reply</span>
+                              </button>
+                              
+                              {/* Own message options */}
+                              {isOwnMessage && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedMessageForInfo(message);
+                                      setOpenMessageMenu(null);
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary rounded-lg transition-colors text-left"
+                                  >
+                                    <Info className="w-4 h-4" />
+                                    <span>Message info</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      handleDeleteMessage(message.id);
+                                      setOpenMessageMenu(null);
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-destructive/10 text-destructive rounded-lg transition-colors text-left"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span>Delete</span>
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
 
-                        {/* Emoji Picker */}
+                        {/* Full Emoji Picker (shown via "More reactions") */}
                         <AnimatePresence>
                           {showEmojiPicker === message.id && (
                             <motion.div
@@ -880,7 +931,7 @@ export function ChatTab() {
                               exit={{ opacity: 0, scale: 0.9, y: 10 }}
                               transition={springPresets.bouncy}
                               className={cn(
-                                "absolute top-full mt-2 z-50 glass-card rounded-lg p-2 flex gap-1",
+                                "absolute top-full mt-2 z-50 bg-popover border border-border shadow-lg rounded-xl p-2 flex flex-wrap gap-1 max-w-[200px]",
                                 isOwnMessage ? "right-0" : "left-0"
                               )}
                             >
@@ -888,7 +939,7 @@ export function ChatTab() {
                                 <motion.button
                                   key={emoji}
                                   onClick={() => handleReaction(message.id, emoji)}
-                                  className="w-8 h-8 hover:bg-secondary rounded transition-colors text-lg"
+                                  className="w-8 h-8 hover:bg-secondary rounded-lg transition-colors text-lg"
                                   whileHover={{ scale: 1.2 }}
                                   whileTap={{ scale: 0.9 }}
                                   transition={springPresets.button}
@@ -896,6 +947,12 @@ export function ChatTab() {
                                   {emoji}
                                 </motion.button>
                               ))}
+                              <button
+                                onClick={() => setShowEmojiPicker(null)}
+                                className="w-8 h-8 hover:bg-secondary rounded-lg transition-colors text-sm text-muted-foreground"
+                              >
+                                <X className="w-4 h-4 mx-auto" />
+                              </button>
                             </motion.div>
                           )}
                         </AnimatePresence>
