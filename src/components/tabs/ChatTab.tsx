@@ -805,60 +805,64 @@ export function ChatTab() {
                       )}
 
                       <div className="relative">
-                        <motion.div 
-                          className={cn(
-                            "px-4 py-2.5 rounded-2xl",
-                            isOwnMessage
-                              ? "bg-primary text-primary-foreground rounded-tr-md"
-                              : "glass-card rounded-tl-md"
-                          )}
-                          whileHover={{ scale: 1.01 }}
-                          transition={springPresets.button}
-                        >
-                          <p className="text-sm leading-relaxed">{message.text}</p>
-                          
-                          {/* Read receipt for own messages */}
-                          {isOwnMessage && readStatus && (
-                            <motion.div 
-                              className="flex items-center justify-end gap-1 mt-1"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={springPresets.snappy}
-                            >
-                              {readStatus.status === 'sent' ? (
-                                <Check className="w-4 h-4 text-primary-foreground/50" />
-                              ) : readStatus.status === 'read_all' ? (
-                                <>
-                                  <CheckCheck className="w-4 h-4 text-cyan-300" />
-                                  <span className="text-[10px] text-cyan-300">Read by all</span>
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCheck className="w-4 h-4 text-primary-foreground/70" />
-                                  <span className="text-[10px] text-primary-foreground/60">
-                                    Read by {readStatus.count}
-                                  </span>
-                                </>
-                              )}
-                            </motion.div>
-                          )}
-                        </motion.div>
-
-                        {/* Context Menu - Dropdown with smart positioning */}
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <motion.button
-                              className={cn(
-                                "absolute top-1 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm",
-                                isOwnMessage ? "right-1" : "left-1"
+                          <motion.div 
+                            className={cn(
+                              "flex items-center gap-1 rounded-2xl",
+                              isOwnMessage
+                                ? "bg-primary text-primary-foreground rounded-tr-md"
+                                : "glass-card rounded-tl-md"
+                            )}
+                            whileHover={{ scale: 1.01 }}
+                            transition={springPresets.button}
+                          >
+                            {/* Message text */}
+                            <div className="flex-1 min-w-0 px-4 py-2.5">
+                              <p className="text-sm leading-relaxed">{message.text}</p>
+                              
+                              {/* Read receipt for own messages */}
+                              {isOwnMessage && readStatus && (
+                                <motion.div 
+                                  className="flex items-center justify-end gap-1 mt-1"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={springPresets.snappy}
+                                >
+                                  {readStatus.status === 'sent' ? (
+                                    <Check className="w-4 h-4 text-primary-foreground/50" />
+                                  ) : readStatus.status === 'read_all' ? (
+                                    <>
+                                      <CheckCheck className="w-4 h-4 text-cyan-300" />
+                                      <span className="text-[10px] text-cyan-300">Read by all</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCheck className="w-4 h-4 text-primary-foreground/70" />
+                                      <span className="text-[10px] text-primary-foreground/60">
+                                        Read by {readStatus.count}
+                                      </span>
+                                    </>
+                                  )}
+                                </motion.div>
                               )}
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              transition={springPresets.button}
-                            >
-                              <MoreVertical className="w-3.5 h-3.5" />
-                            </motion.button>
-                          </DropdownMenuTrigger>
+                            </div>
+
+                            {/* Three-dots button INSIDE the bubble */}
+                            <DropdownMenuTrigger asChild>
+                              <motion.button
+                                className={cn(
+                                  "flex-shrink-0 self-start mt-2 mr-1.5 p-1.5 rounded-full opacity-0 group-hover:opacity-70 focus:opacity-70 hover:opacity-100 transition-opacity",
+                                  isOwnMessage
+                                    ? "text-primary-foreground hover:bg-primary-foreground/15"
+                                    : "text-foreground hover:bg-foreground/10"
+                                )}
+                                whileTap={{ scale: 0.85 }}
+                                transition={springPresets.button}
+                              >
+                                <MoreVertical className="w-3.5 h-3.5" />
+                              </motion.button>
+                            </DropdownMenuTrigger>
+                          </motion.div>
                           <DropdownMenuContent 
                             side={isOwnMessage ? "left" : "right"}
                             align="start"
