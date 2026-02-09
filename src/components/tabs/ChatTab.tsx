@@ -776,13 +776,16 @@ export function ChatTab() {
                     </div>
 
                     {/* Message Content */}
-                    <div className={cn("max-w-[85%] space-y-1", isOwnMessage && "items-end")}>
+                    <div className={cn("max-w-[70%] space-y-1", isOwnMessage && "items-end")}>
                       {showAvatar && (
                         <div className={cn("flex items-center gap-2 text-sm", isOwnMessage && "flex-row-reverse")}>
                           <span className="font-medium">{message.user_name}</span>
                           {senderRole && senderRole !== 'team' && (
                             <RoleBadge role={senderRole} size="sm" showIcon={false} />
                           )}
+                          <span className="text-muted-foreground text-xs">
+                            {formatTime(message.created_at)}
+                          </span>
                         </div>
                       )}
 
@@ -805,7 +808,7 @@ export function ChatTab() {
                         <DropdownMenu>
                           <motion.div 
                             className={cn(
-                              "flex flex-row items-center gap-2 w-fit rounded-3xl px-4 py-2.5",
+                              "flex flex-row items-center gap-3 w-fit max-w-[85%] rounded-3xl px-5 py-3",
                               isOwnMessage
                                 ? "bg-primary text-primary-foreground"
                                 : "glass-card"
@@ -813,41 +816,48 @@ export function ChatTab() {
                             whileHover={{ scale: 1.01 }}
                             transition={springPresets.button}
                           >
-                            {/* Message text + time/ticks */}
+                            {/* Message text */}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{message.text}</p>
+                              <p className="text-sm leading-relaxed break-words">{message.text}</p>
                               
-                              {/* Time + Tick row at bottom-right */}
-                              <div className="flex items-center justify-end gap-1 mt-1">
-                                <span className={cn(
-                                  "text-[10px]",
-                                  isOwnMessage ? "text-primary-foreground/50" : "text-muted-foreground"
-                                )}>
-                                  {formatTime(message.created_at)}
-                                </span>
-                                {isOwnMessage && readStatus && (
-                                  readStatus.status === 'sent' ? (
-                                    <Check className="w-3.5 h-3.5 text-gray-300" />
+                              {/* Read receipt for own messages */}
+                              {isOwnMessage && readStatus && (
+                                <motion.div 
+                                  className="flex items-center justify-end gap-1 mt-1"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={springPresets.snappy}
+                                >
+                                  {readStatus.status === 'sent' ? (
+                                    <Check className="w-4 h-4 text-primary-foreground/50" />
                                   ) : readStatus.status === 'read_all' ? (
-                                    <CheckCheck className="w-3.5 h-3.5 text-cyan-400" />
+                                    <>
+                                      <CheckCheck className="w-4 h-4 text-cyan-300" />
+                                      <span className="text-[10px] text-cyan-300">Read by all</span>
+                                    </>
                                   ) : (
-                                    <CheckCheck className="w-3.5 h-3.5 text-gray-300" />
-                                  )
-                                )}
-                              </div>
+                                    <>
+                                      <CheckCheck className="w-4 h-4 text-primary-foreground/70" />
+                                      <span className="text-[10px] text-primary-foreground/60">
+                                        Read by {readStatus.count}
+                                      </span>
+                                    </>
+                                  )}
+                                </motion.div>
+                              )}
                             </div>
 
-                            {/* Three-dots button — static flex child */}
+                            {/* Three-dots button — static flex child, always visible but subtle */}
                             <DropdownMenuTrigger asChild>
                               <button
                                 className={cn(
-                                  "flex-shrink-0 p-2 -mr-1 rounded-full transition-opacity opacity-70 hover:opacity-100",
+                                  "flex-shrink-0 p-2 -mr-2 rounded-full transition-opacity",
                                   isOwnMessage
-                                    ? "text-primary-foreground hover:bg-primary-foreground/15"
-                                    : "text-foreground hover:bg-foreground/10"
+                                    ? "text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/15"
+                                    : "text-foreground/70 hover:text-foreground hover:bg-foreground/10"
                                 )}
                               >
-                                <MoreVertical className="w-4 h-4" />
+                                <MoreVertical className="w-5 h-5" />
                               </button>
                             </DropdownMenuTrigger>
                           </motion.div>
