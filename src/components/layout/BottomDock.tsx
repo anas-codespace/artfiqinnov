@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Home, LayoutGrid, Calendar, FolderLock, MessageSquare } from 'lucide-react';
+import { Home, LayoutGrid, Calendar, FolderLock, MessageSquare, BarChart3, Lightbulb, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -12,8 +12,11 @@ const navItems = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'tasks', label: 'Tasks', icon: LayoutGrid },
   { id: 'timeline', label: 'Timeline', icon: Calendar },
+  { id: 'performance', label: 'Perf', icon: BarChart3 },
   { id: 'vault', label: 'Vault', icon: FolderLock },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
+  { id: 'analytics', label: 'Insights', icon: Activity },
+  { id: 'innovation', label: 'Lab', icon: Lightbulb },
 ];
 
 export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
@@ -42,7 +45,7 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
       className="fixed bottom-0 left-0 right-0 z-50 flex justify-center items-end pb-safe"
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0.75rem), 0.75rem)' }}
     >
-      <div className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-full bg-card/60 backdrop-blur-xl border border-border/50 shadow-2xl shadow-black/50 mx-4 mb-2">
+      <div className="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full bg-card/60 backdrop-blur-xl border border-border/50 shadow-2xl shadow-black/50 mx-2 mb-2">
         {navItems.map((item, index) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -61,7 +64,7 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
               }}
               whileTap={{ scale: 0.95 }}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-0.5 px-3 sm:px-5 py-2 rounded-full transition-all duration-300 overflow-hidden min-w-[48px] sm:min-w-[56px]",
+                "relative flex flex-col items-center justify-center gap-0.5 px-2 sm:px-3 py-1.5 rounded-full transition-all duration-300 overflow-hidden min-w-[40px] sm:min-w-[48px]",
                 isActive
                   ? "bg-primary/20 text-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -106,10 +109,10 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
               )}
               
               <Icon className={cn(
-                "w-4 h-4 sm:w-5 sm:h-5 relative z-10 flex-shrink-0", 
+                "w-4 h-4 relative z-10 flex-shrink-0", 
                 isActive && "drop-shadow-[0_0_8px_hsl(var(--primary))]"
               )} />
-              <span className="text-[9px] sm:text-[10px] font-medium relative z-10 whitespace-nowrap leading-tight">
+              <span className="text-[8px] sm:text-[9px] font-medium relative z-10 whitespace-nowrap leading-tight">
                 {item.label}
               </span>
               

@@ -10,6 +10,9 @@ import { VaultTab } from '@/components/tabs/VaultTab';
 import { ChatTab } from '@/components/tabs/ChatTab';
 import { TaskMatrixTab } from '@/components/tabs/TaskMatrixTab';
 import { TimelineTab } from '@/components/tabs/TimelineTab';
+import { PerformanceTab } from '@/components/tabs/PerformanceTab';
+import { AnalyticsTab } from '@/components/tabs/AnalyticsTab';
+import { InnovationLabTab } from '@/components/tabs/InnovationLabTab';
 import { AnimatedBackground } from '@/components/ui/animated-background';
 import { AccessWarningToast } from '@/components/AccessWarningToast';
 import { Loader2 } from 'lucide-react';
@@ -35,18 +38,15 @@ function WorkspaceContent() {
 
   const renderTab = () => {
     switch (activeTab) {
-      case 'home':
-        return <HomeTab />;
-      case 'tasks':
-        return <TaskMatrixTab />;
-      case 'timeline':
-        return <TimelineTab />;
-      case 'vault':
-        return <VaultTab />;
-      case 'chat':
-        return <ChatTab />;
-      default:
-        return <HomeTab />;
+      case 'home': return <HomeTab />;
+      case 'tasks': return <TaskMatrixTab />;
+      case 'timeline': return <TimelineTab />;
+      case 'performance': return <PerformanceTab />;
+      case 'vault': return <VaultTab />;
+      case 'chat': return <ChatTab />;
+      case 'analytics': return <AnalyticsTab />;
+      case 'innovation': return <InnovationLabTab />;
+      default: return <HomeTab />;
     }
   };
 
