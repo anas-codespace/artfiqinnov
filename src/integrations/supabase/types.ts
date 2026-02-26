@@ -367,6 +367,39 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string
+          description: string | null
+          icon: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          icon?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           assigned_to: string | null
@@ -376,6 +409,7 @@ export type Database = {
           description: string | null
           id: string
           priority: string | null
+          project_id: string | null
           status: string
           title: string
           updated_at: string
@@ -388,6 +422,7 @@ export type Database = {
           description?: string | null
           id?: string
           priority?: string | null
+          project_id?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -400,11 +435,20 @@ export type Database = {
           description?: string | null
           id?: string
           priority?: string | null
+          project_id?: string | null
           status?: string
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_presence: {
         Row: {
