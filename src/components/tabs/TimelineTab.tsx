@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Plus, X, Calendar, Lock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Calendar, Lock, Users, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { springPresets } from '@/components/ui/spring-config';
 import { useUserStatus } from '@/hooks/useUserStatus';
+import defaultAvatar from '@/assets/default-avatar.webp';
 import {
   Dialog,
   DialogContent,
@@ -30,19 +31,34 @@ interface CalendarEvent {
   created_at: string;
 }
 
+interface TeamMember {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  department: string | null;
+}
+
+interface Presence {
+  user_id: string;
+  is_online: boolean;
+  last_seen: string;
+}
+
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-// Validation constants
+const DEPT_FILTERS = ['All', 'TD', 'MO', 'CM', 'ES'];
 const MAX_TITLE_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 2000;
 
 export function TimelineTab() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  const { isMember, isAdmin, isVisitor, isPending } = useUserStatus();
+  const { isMember, isVisitor, isPending } = useUserStatus();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [presence, setPresence] = useState<Presence[]>([]);
+  const [deptFilter, setDeptFilter] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -54,94 +70,70 @@ export function TimelineTab() {
     endDate: '',
     isUrgent: false,
   });
-  
+
   const isRestricted = isVisitor || isPending;
 
-  // Fetch events
   useEffect(() => {
-    const fetchEvents = async () => {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .order('start_date', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching events:', error);
-      } else {
-        setEvents((data as CalendarEvent[]) || []);
-      }
+    const fetchData = async () => {
+      const [eventsRes, membersRes, presenceRes] = await Promise.all([
+        supabase.from('events').select('*').order('start_date', { ascending: true }),
+        supabase.from('profiles_safe').select('user_id, display_name, avatar_url, department'),
+        supabase.from('user_presence').select('user_id, is_online, last_seen'),
+      ]);
+      if (!eventsRes.error) setEvents((eventsRes.data as CalendarEvent[]) || []);
+      if (!membersRes.error) setTeamMembers((membersRes.data as unknown as TeamMember[]) || []);
+      if (!presenceRes.error) setPresence(presenceRes.data || []);
       setIsLoading(false);
     };
+    fetchData();
 
-    fetchEvents();
-
-    // Real-time subscription
     const channel = supabase
-      .channel('events-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'events' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setEvents(prev => [...prev, payload.new as CalendarEvent]);
-          } else if (payload.eventType === 'UPDATE') {
-            setEvents(prev => prev.map(e => e.id === payload.new.id ? payload.new as CalendarEvent : e));
-          } else if (payload.eventType === 'DELETE') {
-            setEvents(prev => prev.filter(e => e.id !== payload.old.id));
-          }
-        }
-      )
+      .channel('timeline-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, (payload) => {
+        if (payload.eventType === 'INSERT') setEvents(prev => [...prev, payload.new as CalendarEvent]);
+        else if (payload.eventType === 'UPDATE') setEvents(prev => prev.map(e => e.id === payload.new.id ? payload.new as CalendarEvent : e));
+        else if (payload.eventType === 'DELETE') setEvents(prev => prev.filter(e => e.id !== payload.old.id));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_presence' }, (payload) => {
+        if (payload.eventType === 'INSERT') setPresence(prev => [...prev, payload.new as Presence]);
+        else if (payload.eventType === 'UPDATE') setPresence(prev => prev.map(p => p.user_id === payload.new.user_id ? payload.new as Presence : p));
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
+
+  const getPresence = (userId: string) => {
+    const p = presence.find(pr => pr.user_id === userId);
+    return p?.is_online ?? false;
+  };
+
+  const filteredMembers = deptFilter === 'All'
+    ? teamMembers
+    : teamMembers.filter(m => m.department === deptFilter);
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDay = firstDay.getDay();
-
     const days: (number | null)[] = [];
-    
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < startingDay; i++) {
-      days.push(null);
-    }
-    
-    // Add the days of the month
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(i);
-    }
-
+    for (let i = 0; i < firstDay.getDay(); i++) days.push(null);
+    for (let i = 1; i <= lastDay.getDate(); i++) days.push(i);
     return days;
   };
 
   const isToday = (day: number) => {
     const today = new Date();
-    return (
-      day === today.getDate() &&
-      currentDate.getMonth() === today.getMonth() &&
-      currentDate.getFullYear() === today.getFullYear()
-    );
+    return day === today.getDate() && currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
   };
 
-  // Filter events for visitors (only show past/today events)
   const getEventsForDay = (day: number) => {
     const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
-    const isVisitorOrPending = isVisitor || isPending;
-    
     return events.filter(event => {
-      const start = event.start_date;
-      const end = event.end_date;
-      const inRange = dateStr >= start && dateStr <= end;
-      // Visitors can only see events that have started
-      if (isVisitorOrPending && start > today) return false;
+      const inRange = dateStr >= event.start_date && dateStr <= event.end_date;
+      if (isRestricted && event.start_date > today) return false;
       return inRange;
     });
   };
@@ -153,16 +145,8 @@ export function TimelineTab() {
 
   const handleNextMonth = () => {
     const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-    const today = new Date();
-    
-    // Check if trying to go to a future month (visitors/pending only)
-    if (isRestricted && nextMonth > today) {
-      setShowFutureWarning(true);
-      // Still allow navigation but show warning
-    } else {
-      setShowFutureWarning(false);
-    }
-    
+    if (isRestricted && nextMonth > new Date()) setShowFutureWarning(true);
+    else setShowFutureWarning(false);
     setCurrentDate(nextMonth);
   };
 
@@ -176,29 +160,12 @@ export function TimelineTab() {
 
   const handleAddEvent = async () => {
     if (!newEvent.title.trim() || !newEvent.startDate || !newEvent.endDate || !user) return;
-
-    // Input validation
     const trimmedTitle = newEvent.title.trim();
     const trimmedDescription = newEvent.description.trim();
-    
-    if (trimmedTitle.length > MAX_TITLE_LENGTH) {
-      toast({
-        title: 'Title too long',
-        description: `Maximum ${MAX_TITLE_LENGTH} characters allowed`,
-        variant: 'destructive',
-      });
+    if (trimmedTitle.length > MAX_TITLE_LENGTH || trimmedDescription.length > MAX_DESCRIPTION_LENGTH) {
+      toast({ title: 'Input too long', variant: 'destructive' });
       return;
     }
-    
-    if (trimmedDescription.length > MAX_DESCRIPTION_LENGTH) {
-      toast({
-        title: 'Description too long',
-        description: `Maximum ${MAX_DESCRIPTION_LENGTH} characters allowed`,
-        variant: 'destructive',
-      });
-      return;
-    }
-
     const { error } = await supabase.from('events').insert({
       title: trimmedTitle,
       description: trimmedDescription || null,
@@ -208,13 +175,8 @@ export function TimelineTab() {
       created_by: user.id,
       created_by_name: profile?.display_name || user.email?.split('@')[0] || 'Unknown',
     });
-
     if (error) {
-      toast({
-        title: 'Failed to create event',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Failed to create event', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Event created!' });
       setNewEvent({ title: '', description: '', startDate: '', endDate: '', isUrgent: false });
@@ -224,190 +186,175 @@ export function TimelineTab() {
 
   const handleDeleteEvent = async (eventId: string) => {
     const { error } = await supabase.from('events').delete().eq('id', eventId);
-
-    if (error) {
-      toast({
-        title: 'Failed to delete event',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
+    if (error) toast({ title: 'Failed to delete event', description: error.message, variant: 'destructive' });
   };
 
   const days = getDaysInMonth(currentDate);
 
+  if (isLoading) {
+    return (
+      <div className="p-8 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={springPresets.snappy}
-        className="flex items-center justify-between"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={springPresets.snappy} className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Timeline</h1>
-          <p className="text-muted-foreground">Team calendar and events</p>
+          <h1 className="text-2xl sm:text-3xl font-bold font-['Orbitron']">Timeline</h1>
+          <p className="text-muted-foreground text-sm">Team calendar & availability</p>
         </div>
-        <Button onClick={() => setShowAddModal(true)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Add Event
-        </Button>
+        {isMember && (
+          <Button onClick={() => setShowAddModal(true)} className="gap-2" size="sm">
+            <Plus className="w-4 h-4" /> Add Event
+          </Button>
+        )}
       </motion.div>
 
-      {/* Calendar */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...springPresets.snappy, delay: 0.1 }}
-        className="glass-card rounded-2xl p-6 relative overflow-hidden"
-      >
-        {/* Future Operations Classified Overlay */}
-        <AnimatePresence>
-          {showFutureWarning && isRestricted && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-20 backdrop-blur-md bg-background/60 flex flex-col items-center justify-center gap-4"
-            >
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="flex flex-col items-center gap-3"
-              >
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Calendar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass-card rounded-2xl p-4 sm:p-6 flex-1 relative overflow-hidden"
+        >
+          {/* Future warning overlay */}
+          <AnimatePresence>
+            {showFutureWarning && isRestricted && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-20 backdrop-blur-md bg-background/60 flex flex-col items-center justify-center gap-4">
                 <div className="p-4 rounded-full bg-destructive/20 border border-destructive/30">
                   <Lock className="w-8 h-8 text-destructive" />
                 </div>
                 <h3 className="text-xl font-bold text-destructive">CLASSIFIED</h3>
-                <p className="text-muted-foreground text-center max-w-xs">
-                  Future Operations are restricted to approved team members only.
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setShowFutureWarning(false);
-                    setCurrentDate(new Date());
-                  }}
-                  className="mt-2"
-                >
-                  Return to Current Month
-                </Button>
+                <p className="text-muted-foreground text-center max-w-xs">Future operations restricted to approved members.</p>
+                <Button variant="outline" size="sm" onClick={() => { setShowFutureWarning(false); setCurrentDate(new Date()); }}>Return to Current Month</Button>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {/* Month Navigation */}
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-          <h2 className="text-xl font-semibold">
-            {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={handleNextMonth}>
-            <ChevronRight className="w-5 h-5" />
-          </Button>
-        </div>
+            )}
+          </AnimatePresence>
 
-        {/* Day Headers */}
-        <div className="grid grid-cols-7 gap-2 mb-2">
-          {DAYS.map(day => (
-            <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
-              {day}
-            </div>
-          ))}
-        </div>
+          <div className="flex items-center justify-between mb-4">
+            <Button variant="ghost" size="icon" onClick={handlePrevMonth}><ChevronLeft className="w-5 h-5" /></Button>
+            <h2 className="text-lg font-semibold">{MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}</h2>
+            <Button variant="ghost" size="icon" onClick={handleNextMonth}><ChevronRight className="w-5 h-5" /></Button>
+          </div>
 
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-2">
-          {days.map((day, index) => {
-            if (day === null) {
-              return <div key={`empty-${index}`} className="aspect-square" />;
-            }
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
+            {DAYS.map(day => (
+              <div key={day} className="text-center text-xs font-medium text-muted-foreground py-1">{day}</div>
+            ))}
+          </div>
 
-            const dayEvents = getEventsForDay(day);
-            const hasUrgent = dayEvents.some(e => e.is_urgent);
-            const today = isToday(day);
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+            {days.map((day, index) => {
+              if (day === null) return <div key={`empty-${index}`} className="aspect-square" />;
+              const dayEvents = getEventsForDay(day);
+              const today = isToday(day);
+              return (
+                <motion.button
+                  key={day}
+                  onClick={() => handleDayClick(day)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={cn(
+                    "aspect-square rounded-xl flex flex-col items-center justify-start p-1 sm:p-2 relative transition-all border border-transparent",
+                    "hover:bg-card/80 hover:border-primary/30",
+                    today && "ring-2 ring-primary"
+                  )}
+                >
+                  <span className={cn("text-xs sm:text-sm font-medium", today && "text-primary")}>{day}</span>
+                  {dayEvents.length > 0 && (
+                    <div className="flex flex-wrap gap-0.5 mt-0.5 justify-center">
+                      {dayEvents.slice(0, 3).map(event => (
+                        <div
+                          key={event.id}
+                          className={cn("w-1.5 h-1.5 rounded-full", event.is_urgent ? "bg-destructive" : "bg-primary")}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+        </motion.div>
 
-            return (
-              <motion.button
-                key={day}
-                onClick={() => handleDayClick(day)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={springPresets.button}
+        {/* Availability Sidebar */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="glass-card rounded-2xl p-4 lg:w-72"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold">Team Availability</h3>
+          </div>
+
+          {/* Department Filters */}
+          <div className="flex flex-wrap gap-1 mb-3">
+            {DEPT_FILTERS.map(d => (
+              <button
+                key={d}
+                onClick={() => setDeptFilter(d)}
                 className={cn(
-                  "aspect-square rounded-xl flex flex-col items-center justify-start p-2 relative transition-all border border-transparent",
-                  "hover:bg-card/80 hover:border-primary/30",
-                  today && "ring-2 ring-primary animate-pulse-glow"
+                  "px-2 py-1 rounded-full text-[10px] font-medium border transition-all",
+                  deptFilter === d ? "bg-primary/20 border-primary/50 text-primary" : "bg-card/50 border-border/50 text-muted-foreground"
                 )}
               >
-                <span className={cn(
-                  "text-sm font-medium",
-                  today && "text-primary"
-                )}>
-                  {day}
-                </span>
-                
-                {dayEvents.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1 justify-center">
-                    {dayEvents.slice(0, 3).map((event, i) => (
-                      <motion.div
-                        key={event.id}
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className={cn(
-                          "w-2 h-2 rounded-full",
-                          event.is_urgent 
-                            ? "bg-destructive shadow-[0_0_10px_#ff3b30]" 
-                            : "bg-primary shadow-[0_0_10px_#00d2ff]"
-                        )}
-                      />
-                    ))}
-                  </div>
-                )}
+                {d}
+              </button>
+            ))}
+          </div>
 
-                {/* Today indicator */}
-                {today && (
-                  <motion.div
-                    className="absolute inset-0 rounded-xl border-2 border-primary"
-                    animate={{ 
-                      boxShadow: ['0 0 10px hsl(187 100% 50% / 0.3)', '0 0 20px hsl(187 100% 50% / 0.5)', '0 0 10px hsl(187 100% 50% / 0.3)']
-                    }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                )}
-              </motion.button>
-            );
-          })}
-        </div>
-      </motion.div>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            {filteredMembers.length > 0 ? filteredMembers.map(member => {
+              const online = getPresence(member.user_id);
+              return (
+                <div key={member.user_id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-card/50 transition-colors">
+                  <div className="relative">
+                    <img
+                      src={member.avatar_url || defaultAvatar}
+                      alt=""
+                      className="w-7 h-7 rounded-full object-cover"
+                    />
+                    <div className={cn(
+                      "absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background",
+                      online ? "bg-emerald-500" : "bg-destructive"
+                    )} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{member.display_name || 'Unknown'}</p>
+                    {member.department && (
+                      <p className="text-[10px] text-muted-foreground">{member.department}</p>
+                    )}
+                  </div>
+                  <span className={cn("text-[10px] font-medium", online ? "text-emerald-400" : "text-muted-foreground")}>
+                    {online ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+              );
+            }) : (
+              <p className="text-xs text-muted-foreground text-center py-4">No team members found</p>
+            )}
+          </div>
+        </motion.div>
+      </div>
 
       {/* Events List */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...springPresets.snappy, delay: 0.2 }}
-        className="space-y-3"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-6 space-y-3">
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-primary" />
-          Upcoming Events
+          <Calendar className="w-5 h-5 text-primary" /> Upcoming Events
         </h3>
-        
         <AnimatePresence mode="popLayout">
           {events.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="glass-card rounded-xl p-8 text-center"
-            >
+            <div className="glass-card rounded-xl p-8 text-center">
               <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground">No events scheduled</p>
-            </motion.div>
+            </div>
           ) : (
             <div className="space-y-2">
               {events.map((event, index) => (
@@ -416,32 +363,26 @@ export function TimelineTab() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  transition={{ ...springPresets.snappy, delay: index * 0.05 }}
+                  transition={{ delay: index * 0.03 }}
                   className={cn(
                     "glass-card rounded-xl p-4 flex items-center gap-4 group",
-                    event.is_urgent 
-                      ? "border-l-4 border-l-destructive shadow-[0_0_10px_hsl(4_90%_58%/0.2)]" 
-                      : "border-l-4 border-l-primary shadow-[0_0_10px_hsl(187_100%_50%/0.1)]"
+                    event.is_urgent ? "border-l-4 border-l-destructive" : "border-l-4 border-l-primary"
                   )}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium">{event.title}</p>
-                    {event.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-1">{event.description}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(event.start_date).toLocaleDateString()} 
+                    <p className="font-medium text-sm">{event.title}</p>
+                    {event.description && <p className="text-xs text-muted-foreground line-clamp-1">{event.description}</p>}
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {new Date(event.start_date).toLocaleDateString()}
                       {event.start_date !== event.end_date && ` - ${new Date(event.end_date).toLocaleDateString()}`}
+                      {' · '}{event.created_by_name}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteEvent(event.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+                  {isMember && (
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteEvent(event.id)} className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8">
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -452,67 +393,31 @@ export function TimelineTab() {
       {/* Add Event Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
         <DialogContent className="glass-card border-border">
-          <DialogHeader>
-            <DialogTitle>Add Event</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Add Event</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Title</label>
-              <Input
-                value={newEvent.title}
-                onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Event title..."
-                className="bg-background/50"
-                maxLength={MAX_TITLE_LENGTH}
-              />
-              <span className="text-xs text-muted-foreground">{newEvent.title.length}/{MAX_TITLE_LENGTH}</span>
+              <Input value={newEvent.title} onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))} placeholder="Event title..." className="bg-background/50" maxLength={MAX_TITLE_LENGTH} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Description</label>
-              <Textarea
-                value={newEvent.description}
-                onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Event description..."
-                className="bg-background/50 min-h-[80px]"
-                maxLength={MAX_DESCRIPTION_LENGTH}
-              />
-              <span className="text-xs text-muted-foreground">{newEvent.description.length}/{MAX_DESCRIPTION_LENGTH}</span>
+              <Textarea value={newEvent.description} onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))} placeholder="Event description..." className="bg-background/50 min-h-[80px]" maxLength={MAX_DESCRIPTION_LENGTH} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Start Date</label>
-                <Input
-                  type="date"
-                  value={newEvent.startDate}
-                  onChange={(e) => setNewEvent(prev => ({ ...prev, startDate: e.target.value }))}
-                  className="bg-background/50"
-                />
+                <Input type="date" value={newEvent.startDate} onChange={e => setNewEvent(prev => ({ ...prev, startDate: e.target.value }))} className="bg-background/50" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">End Date</label>
-                <Input
-                  type="date"
-                  value={newEvent.endDate}
-                  onChange={(e) => setNewEvent(prev => ({ ...prev, endDate: e.target.value }))}
-                  className="bg-background/50"
-                />
+                <Input type="date" value={newEvent.endDate} onChange={e => setNewEvent(prev => ({ ...prev, endDate: e.target.value }))} className="bg-background/50" />
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Urgent Event</label>
-              <Switch
-                checked={newEvent.isUrgent}
-                onCheckedChange={(checked) => setNewEvent(prev => ({ ...prev, isUrgent: checked }))}
-              />
+            <div className="flex items-center gap-3">
+              <Switch checked={newEvent.isUrgent} onCheckedChange={v => setNewEvent(prev => ({ ...prev, isUrgent: v }))} />
+              <label className="text-sm">Mark as urgent</label>
             </div>
-            <div className="flex gap-3 pt-2">
-              <Button variant="outline" onClick={() => setShowAddModal(false)} className="flex-1">
-                Cancel
-              </Button>
-              <Button onClick={handleAddEvent} className="flex-1">
-                Create Event
-              </Button>
-            </div>
+            <Button onClick={handleAddEvent} disabled={!newEvent.title.trim() || !newEvent.startDate || !newEvent.endDate} className="w-full">Create Event</Button>
           </div>
         </DialogContent>
       </Dialog>
