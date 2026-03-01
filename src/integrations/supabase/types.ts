@@ -334,11 +334,54 @@ export type Database = {
         }
         Relationships: []
       }
+      pitches: {
+        Row: {
+          author_id: string
+          created_at: string
+          description: string | null
+          feedback: string | null
+          id: string
+          reviewed_by: string | null
+          status: string
+          title: string
+          updated_at: string
+          votes_down: number
+          votes_up: number
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          description?: string | null
+          feedback?: string | null
+          id?: string
+          reviewed_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          votes_down?: number
+          votes_up?: number
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          description?: string | null
+          feedback?: string | null
+          id?: string
+          reviewed_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          votes_down?: number
+          votes_up?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           access_status: string | null
           avatar_url: string | null
           created_at: string
+          department: string | null
           display_name: string | null
           email: string | null
           id: string
@@ -349,6 +392,7 @@ export type Database = {
           access_status?: string | null
           avatar_url?: string | null
           created_at?: string
+          department?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
@@ -359,6 +403,7 @@ export type Database = {
           access_status?: string | null
           avatar_url?: string | null
           created_at?: string
+          department?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
@@ -505,6 +550,7 @@ export type Database = {
           access_status: string | null
           avatar_url: string | null
           created_at: string | null
+          department: string | null
           display_name: string | null
           email: string | null
           id: string | null
@@ -515,8 +561,9 @@ export type Database = {
           access_status?: string | null
           avatar_url?: string | null
           created_at?: string | null
+          department?: string | null
           display_name?: string | null
-          email?: never
+          email?: string | null
           id?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -525,8 +572,9 @@ export type Database = {
           access_status?: string | null
           avatar_url?: string | null
           created_at?: string | null
+          department?: string | null
           display_name?: string | null
-          email?: never
+          email?: string | null
           id?: string | null
           updated_at?: string | null
           user_id?: string | null
