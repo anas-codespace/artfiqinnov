@@ -65,18 +65,24 @@ export function PerformanceTab() {
 
     return filteredTasks.map(t => {
       const start = new Date(t.created_at);
-      const end = t.status === 'deployed' ? new Date(t.updated_at) : now;
+      const end = (t.status === 'deployed' || t.status === 'verified') ? new Date(t.updated_at) : now;
       const duration = end.getTime() - start.getTime();
       const offset = ((start.getTime() - earliest.getTime()) / totalSpan) * 100;
       const width = Math.max((duration / totalSpan) * 100, 2);
-      const isOverdue = t.status !== 'deployed' && t.priority === 'urgent';
+      const isOverdue = !['deployed', 'verified', 'pending-verification'].includes(t.status) && t.priority === 'urgent';
+
+      let statusColor = 'bg-primary/70';
+      if (t.status === 'verified') statusColor = 'bg-emerald-500/70';
+      else if (t.status === 'deployed') statusColor = 'bg-emerald-500/50';
+      else if (t.status === 'pending-verification') statusColor = 'bg-purple-500/70';
+      else if (isOverdue) statusColor = 'bg-destructive/70';
 
       return {
         ...t,
         offset: Math.min(offset, 98),
         width: Math.min(width, 100 - offset),
         isOverdue,
-        statusColor: t.status === 'deployed' ? 'bg-emerald-500/70' : isOverdue ? 'bg-destructive/70' : 'bg-primary/70',
+        statusColor,
       };
     });
   }, [filteredTasks]);
@@ -153,10 +159,11 @@ export function PerformanceTab() {
               </motion.div>
             ))}
 
-            <div className="flex items-center gap-2 pt-3 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-2 pt-3 text-[10px] text-muted-foreground flex-wrap">
               <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-primary/70" /> Active</div>
+              <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-purple-500/70" /> Pending Verification</div>
               <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-destructive/70" /> Urgent</div>
-              <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500/70" /> Deployed</div>
+              <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500/70" /> Verified</div>
               <div className="flex items-center gap-1 ml-auto"><Milestone className="w-3 h-3" /> Milestone</div>
             </div>
           </>

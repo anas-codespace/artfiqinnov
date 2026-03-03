@@ -638,7 +638,7 @@ export function ChatTab() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-11rem)] relative overflow-hidden max-w-5xl mx-auto pb-24">
+    <div className="flex flex-col h-[calc(100vh-4rem)] relative overflow-hidden max-w-5xl mx-auto">
       {/* Watermark Background */}
       <div 
         className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
@@ -1066,7 +1066,7 @@ export function ChatTab() {
         </AnimatePresence>
 
         {/* Input */}
-        <SoftFloat delay={0.3} className="flex-shrink-0 p-4 lg:p-6 border-t border-border bg-background/80 backdrop-blur-xl">
+        <SoftFloat delay={0.3} className="flex-shrink-0 p-4 lg:p-6 pb-24 border-t border-border bg-background/80 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <motion.div 
               className="flex-1 relative"
