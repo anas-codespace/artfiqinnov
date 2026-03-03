@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, ThumbsUp, ThumbsDown, MessageCircle, ArrowRight, Plus, Loader2, Check, X } from 'lucide-react';
+import { Lightbulb, ThumbsUp, ThumbsDown, MessageCircle, ArrowRight, Plus, Loader2, Check, X, RotateCcw } from 'lucide-react';
 import { springPresets } from '@/components/ui/spring-config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,13 @@ interface Pitch {
   updated_at: string;
 }
 
+interface PitchVote {
+  id: string;
+  pitch_id: string;
+  user_id: string;
+  vote_type: string;
+}
+
 interface ProfileSafe {
   user_id: string;
   display_name: string | null;
@@ -54,6 +61,7 @@ export function InnovationLabTab() {
   const { toast } = useToast();
 
   const [pitches, setPitches] = useState<Pitch[]>([]);
+  const [votes, setVotes] = useState<PitchVote[]>([]);
   const [profiles, setProfiles] = useState<ProfileSafe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -63,12 +71,14 @@ export function InnovationLabTab() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [pitchRes, profRes] = await Promise.all([
+      const [pitchRes, profRes, votesRes] = await Promise.all([
         supabase.from('pitches').select('*').order('created_at', { ascending: false }),
         supabase.from('profiles_safe').select('user_id, display_name, avatar_url'),
+        supabase.from('pitch_votes').select('*'),
       ]);
       if (!pitchRes.error) setPitches(pitchRes.data || []);
       if (!profRes.error) setProfiles((profRes.data as ProfileSafe[]) || []);
+      if (!votesRes.error) setVotes((votesRes.data as PitchVote[]) || []);
       setIsLoading(false);
     };
     fetchData();
@@ -80,6 +90,10 @@ export function InnovationLabTab() {
         else if (payload.eventType === 'UPDATE') setPitches(prev => prev.map(p => p.id === payload.new.id ? payload.new as Pitch : p));
         else if (payload.eventType === 'DELETE') setPitches(prev => prev.filter(p => p.id !== payload.old.id));
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pitch_votes' }, (payload) => {
+        if (payload.eventType === 'INSERT') setVotes(prev => [...prev, payload.new as PitchVote]);
+        else if (payload.eventType === 'DELETE') setVotes(prev => prev.filter(v => v.id !== payload.old.id));
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -90,8 +104,40 @@ export function InnovationLabTab() {
     return { name: p?.display_name || 'Unknown', avatar: p?.avatar_url || defaultAvatar };
   };
 
+  const getVoteCounts = (pitchId: string) => {
+    const pitchVotes = votes.filter(v => v.pitch_id === pitchId);
+    return {
+      up: pitchVotes.filter(v => v.vote_type === 'up').length,
+      down: pitchVotes.filter(v => v.vote_type === 'down').length,
+      userVote: pitchVotes.find(v => v.user_id === user?.id)?.vote_type || null,
+    };
+  };
+
+  const handleVote = async (pitchId: string, voteType: 'up' | 'down') => {
+    if (!user) return;
+    const existing = votes.find(v => v.pitch_id === pitchId && v.user_id === user.id);
+    
+    if (existing) {
+      // Remove vote (toggle off)
+      const { error } = await supabase.from('pitch_votes').delete().eq('id', existing.id);
+      if (error) {
+        toast({ title: 'Failed to remove vote', description: error.message, variant: 'destructive' });
+      }
+    } else {
+      // Add vote
+      const { error } = await supabase.from('pitch_votes').insert({
+        pitch_id: pitchId,
+        user_id: user.id,
+        vote_type: voteType,
+      });
+      if (error) {
+        toast({ title: 'Failed to vote', description: error.message, variant: 'destructive' });
+      }
+    }
+  };
+
   const handleSubmitPitch = async () => {
-    if (!newPitch.title.trim() || !user) return;
+    if (!newPitch.title.trim() || !user || !profile) return;
     const { error } = await supabase.from('pitches').insert({
       title: newPitch.title.trim(),
       description: newPitch.description.trim() || null,
@@ -101,6 +147,27 @@ export function InnovationLabTab() {
     if (error) {
       toast({ title: 'Failed to submit pitch', description: error.message, variant: 'destructive' });
     } else {
+      // Notify all founders about the new pitch
+      const { data: founderRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .in('role', ['ceo', 'cto']);
+      
+      if (founderRoles) {
+        const notifications = founderRoles
+          .filter(f => f.user_id !== user.id)
+          .map(f => ({
+            user_id: f.user_id,
+            title: 'New Pitch Submitted',
+            message: `${profile.display_name || 'A team member'} pitched: "${newPitch.title.trim()}"`,
+            type: 'pitch',
+            link: '/innovation',
+          }));
+        if (notifications.length > 0) {
+          await supabase.from('notifications').insert(notifications);
+        }
+      }
+
       toast({ title: 'Pitch submitted!' });
       setNewPitch({ title: '', description: '' });
       setShowAddModal(false);
@@ -120,6 +187,16 @@ export function InnovationLabTab() {
       toast({ title: `Pitch ${newStatus}!` });
       setFeedbackPitchId(null);
       setFeedbackText('');
+    }
+  };
+
+  const handleRevoke = async (pitchId: string) => {
+    if (!user) return;
+    const { error } = await supabase.from('pitches').update({ status: 'review', reviewed_by: null }).eq('id', pitchId);
+    if (error) {
+      toast({ title: 'Failed to revoke', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Decision revoked — pitch is back under review.' });
     }
   };
 
@@ -180,6 +257,7 @@ export function InnovationLabTab() {
           {pitches.map((pitch, i) => {
             const author = getAuthor(pitch.author_id);
             const cfg = statusConfig[pitch.status] || statusConfig.pending;
+            const voteCounts = getVoteCounts(pitch.id);
             return (
               <motion.div
                 key={pitch.id}
@@ -205,18 +283,29 @@ export function InnovationLabTab() {
                       </div>
                     )}
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${cfg.className}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${cfg.className}`}>
                     {cfg.label}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3 mt-3">
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <ThumbsUp className="w-3 h-3" /> {pitch.votes_up}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <ThumbsDown className="w-3 h-3" /> {pitch.votes_down}
-                  </span>
+                <div className="flex items-center gap-3 mt-3 flex-wrap">
+                  {/* Like button - functional toggle */}
+                  <button
+                    onClick={() => handleVote(pitch.id, 'up')}
+                    className={`flex items-center gap-1 text-xs transition-colors ${
+                      voteCounts.userVote === 'up' ? 'text-emerald-400' : 'text-muted-foreground hover:text-emerald-400'
+                    }`}
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5" /> {voteCounts.up}
+                  </button>
+                  <button
+                    onClick={() => handleVote(pitch.id, 'down')}
+                    className={`flex items-center gap-1 text-xs transition-colors ${
+                      voteCounts.userVote === 'down' ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'
+                    }`}
+                  >
+                    <ThumbsDown className="w-3.5 h-3.5" /> {voteCounts.down}
+                  </button>
 
                   {/* Founder-only review controls */}
                   {isFounder && pitch.status !== 'approved' && pitch.status !== 'rejected' && (
@@ -248,6 +337,18 @@ export function InnovationLabTab() {
                         <X className="w-3 h-3" />
                       </Button>
                     </div>
+                  )}
+
+                  {/* Revoke button for founders on approved/rejected pitches */}
+                  {isFounder && (pitch.status === 'approved' || pitch.status === 'rejected') && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 ml-auto text-amber-400 hover:text-amber-300 gap-1"
+                      onClick={() => handleRevoke(pitch.id)}
+                    >
+                      <RotateCcw className="w-3 h-3" /> Revoke
+                    </Button>
                   )}
                 </div>
               </motion.div>

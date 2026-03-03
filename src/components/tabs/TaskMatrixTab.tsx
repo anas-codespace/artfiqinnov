@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, User, Users, UserCheck, Lock, MessageSquare, FolderPlus, Filter } from 'lucide-react';
+import { Plus, Trash2, User, Users, UserCheck, Lock, MessageSquare, FolderPlus, Filter, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,7 +40,7 @@ interface Task {
   id: string;
   title: string;
   description: string | null;
-  status: 'backlog' | 'in-dev' | 'quality-check' | 'deployed';
+  status: 'backlog' | 'in-dev' | 'quality-check' | 'deployed' | 'pending-verification' | 'verified';
   assigned_to: string | null;
   created_by: string;
   created_by_name: string;
@@ -61,7 +61,8 @@ const columns = [
   { id: 'backlog', label: 'Backlog', color: 'from-slate-500/20 to-slate-600/10', dotColor: 'bg-slate-500' },
   { id: 'in-dev', label: 'In-Dev', color: 'from-blue-500/20 to-blue-600/10', dotColor: 'bg-blue-500' },
   { id: 'quality-check', label: 'QC', color: 'from-amber-500/20 to-amber-600/10', dotColor: 'bg-amber-500' },
-  { id: 'deployed', label: 'Deployed', color: 'from-emerald-500/20 to-emerald-600/10', dotColor: 'bg-emerald-500' },
+  { id: 'pending-verification', label: 'Pending ✓', color: 'from-purple-500/20 to-purple-600/10', dotColor: 'bg-purple-500' },
+  { id: 'verified', label: 'Verified', color: 'from-emerald-500/20 to-emerald-600/10', dotColor: 'bg-emerald-500' },
 ] as const;
 
 const priorityConfig = {
@@ -163,8 +164,8 @@ export function TaskMatrixTab() {
   // Overall project progress
   const getProjectProgress = () => {
     if (filteredTasks.length === 0) return 0;
-    const deployed = filteredTasks.filter(t => t.status === 'deployed').length;
-    return Math.round((deployed / filteredTasks.length) * 100);
+    const verified = filteredTasks.filter(t => t.status === 'verified').length;
+    return Math.round((verified / filteredTasks.length) * 100);
   };
 
   const getAssigneeName = (assignedTo: string | null) => {
@@ -267,10 +268,12 @@ export function TaskMatrixTab() {
     const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
     if (error) {
       toast({ title: 'Failed to update task', description: error.message, variant: 'destructive' });
-    } else if (newStatus === 'deployed') {
+    } else if (newStatus === 'verified') {
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 3000);
-      toast({ title: '🎉 Task Deployed!', description: 'Great work!' });
+      toast({ title: '🎉 Task Verified!', description: 'Great work!' });
+    } else if (newStatus === 'pending-verification') {
+      toast({ title: '✅ Marked as completed — awaiting verification.' });
     }
   };
 
@@ -308,7 +311,7 @@ export function TaskMatrixTab() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-['Orbitron']">Task Matrix</h1>
           <p className="text-muted-foreground text-sm">
-            {activeProject ? `${activeProject.icon} ${activeProject.name}` : 'All Projects'} — {getProjectProgress()}% Deployed
+            {activeProject ? `${activeProject.icon} ${activeProject.name}` : 'All Projects'} — {getProjectProgress()}% Verified
           </p>
         </div>
 
@@ -391,7 +394,7 @@ export function TaskMatrixTab() {
       </motion.div>
 
       {/* Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {columns.map((column, colIndex) => {
           const columnTasks = getTasksByStatus(column.id);
           return (
@@ -514,6 +517,34 @@ export function TaskMatrixTab() {
                             )}
                           </div>
                         </div>
+
+                        {/* Action Buttons: Mark Completed / Verify */}
+                        {!isRestricted && (
+                          <div className="mt-2.5">
+                            {/* Any member can mark their task as completed when in QC */}
+                            {task.status === 'quality-check' && (task.assigned_to === user?.id || !task.assigned_to) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full h-7 text-xs gap-1.5 border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                                onClick={() => handleStatusChange(task.id, 'pending-verification')}
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Mark as Completed
+                              </Button>
+                            )}
+                            {/* Founders verify pending tasks */}
+                            {task.status === 'pending-verification' && isFounder && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full h-7 text-xs gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                                onClick={() => handleStatusChange(task.id, 'verified')}
+                              >
+                                <ShieldCheck className="w-3 h-3" /> Verify & Approve
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </motion.div>
                     );
                   })}

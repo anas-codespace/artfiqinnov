@@ -6,6 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -18,6 +25,7 @@ interface UserProfile {
   email: string | null;
   avatar_url: string | null;
   access_status: string | null;
+  department: string | null;
 }
 
 interface AdminDashboardProps {
@@ -36,7 +44,7 @@ export function AdminDashboard({ open, onOpenChange }: AdminDashboardProps) {
     setLoading(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, user_id, display_name, email, avatar_url, access_status')
+      .select('id, user_id, display_name, email, avatar_url, access_status, department')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -94,6 +102,22 @@ export function AdminDashboard({ open, onOpenChange }: AdminDashboardProps) {
     return null;
   }
 
+  const departments = ['Tech', 'Operations', 'Creative', 'Executive Support', 'Marketing'];
+
+  const handleDepartmentChange = async (userId: string, department: string) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ department })
+      .eq('user_id', userId);
+
+    if (error) {
+      toast({ title: 'Failed to update department', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Department updated' });
+      await fetchUsers();
+    }
+  };
+
   const UserCard = ({ user, showApprove = false, showRemove = false }: { 
     user: UserProfile; 
     showApprove?: boolean;
@@ -102,58 +126,79 @@ export function AdminDashboard({ open, onOpenChange }: AdminDashboardProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/50"
+      className="flex flex-col gap-2 p-3 rounded-lg bg-secondary/30 border border-border/50"
     >
-      <div className="flex items-center gap-3">
-        <Avatar className="w-10 h-10">
-          <AvatarImage src={user.avatar_url || defaultAvatar} alt={user.display_name || 'User'} />
-          <AvatarFallback>{(user.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <div>
-          <p className="font-medium text-sm">{user.display_name || 'Unknown'}</p>
-          <p className="text-xs text-muted-foreground">{user.email}</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <Avatar className="w-10 h-10 flex-shrink-0">
+            <AvatarImage src={user.avatar_url || defaultAvatar} alt={user.display_name || 'User'} />
+            <AvatarFallback>{(user.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="font-medium text-sm truncate">{user.display_name || 'Unknown'}</p>
+            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Badge 
+            variant={user.access_status === 'approved_member' ? 'default' : user.access_status === 'pending' ? 'secondary' : 'outline'}
+            className="text-xs"
+          >
+            {user.access_status === 'approved_member' ? 'Member' : user.access_status === 'pending' ? 'Pending' : 'Visitor'}
+          </Badge>
+          
+          {showApprove && (
+            <Button
+              size="sm"
+              variant="default"
+              disabled={actionLoading === user.user_id}
+              onClick={() => updateUserStatus(user.user_id, 'approved_member')}
+              className="h-8 px-2"
+            >
+              {actionLoading === user.user_id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UserCheck className="w-4 h-4" />
+              )}
+            </Button>
+          )}
+          
+          {showRemove && (
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={actionLoading === user.user_id}
+              onClick={() => updateUserStatus(user.user_id, 'visitor')}
+              className="h-8 px-2"
+            >
+              {actionLoading === user.user_id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UserX className="w-4 h-4" />
+              )}
+            </Button>
+          )}
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Badge 
-          variant={user.access_status === 'approved_member' ? 'default' : user.access_status === 'pending' ? 'secondary' : 'outline'}
-          className="text-xs"
-        >
-          {user.access_status === 'approved_member' ? 'Member' : user.access_status === 'pending' ? 'Pending' : 'Visitor'}
-        </Badge>
-        
-        {showApprove && (
-          <Button
-            size="sm"
-            variant="default"
-            disabled={actionLoading === user.user_id}
-            onClick={() => updateUserStatus(user.user_id, 'approved_member')}
-            className="h-8 px-2"
+
+      {/* Department / Posting dropdown — founders only */}
+      {isFounder && user.access_status === 'approved_member' && (
+        <div className="pl-[52px]">
+          <Select
+            value={user.department || ''}
+            onValueChange={(val) => handleDepartmentChange(user.user_id, val)}
           >
-            {actionLoading === user.user_id ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <UserCheck className="w-4 h-4" />
-            )}
-          </Button>
-        )}
-        
-        {showRemove && (
-          <Button
-            size="sm"
-            variant="destructive"
-            disabled={actionLoading === user.user_id}
-            onClick={() => updateUserStatus(user.user_id, 'visitor')}
-            className="h-8 px-2"
-          >
-            {actionLoading === user.user_id ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <UserX className="w-4 h-4" />
-            )}
-          </Button>
-        )}
-      </div>
+            <SelectTrigger className="h-7 text-xs w-40">
+              <SelectValue placeholder="Assign dept..." />
+            </SelectTrigger>
+            <SelectContent>
+              {departments.map(d => (
+                <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     </motion.div>
   );
 

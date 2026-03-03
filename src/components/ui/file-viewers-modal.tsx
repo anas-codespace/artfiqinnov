@@ -41,7 +41,7 @@ export function FileViewersModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100]"
             onClick={onClose}
           />
           
@@ -51,7 +51,7 @@ export function FileViewersModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 50 }}
             transition={springPresets.modal}
-            className="fixed inset-4 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 z-50 w-auto sm:w-full sm:max-w-md flex items-center justify-center sm:block"
+            className="fixed inset-4 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 z-[100] w-auto sm:w-full sm:max-w-[95%] sm:max-w-md flex items-center justify-center sm:block"
           >
             <div className="glass-card rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-6 w-full max-h-[80vh] overflow-y-auto">
               {/* Header */}
