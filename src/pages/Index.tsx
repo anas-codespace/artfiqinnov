@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { AccessWarningProvider } from '@/contexts/AccessWarningContext';
+import { ChatInputProvider } from '@/contexts/ChatInputContext';
 import { LoginScreen } from '@/components/LoginScreen';
 import { BottomDock } from '@/components/layout/BottomDock';
 import { TopHeader } from '@/components/layout/TopHeader';
@@ -52,32 +53,30 @@ function WorkspaceContent() {
 
   return (
     <AccessWarningProvider>
-      <div className="min-h-screen bg-background relative">
-        {/* Animated gradient orbs background */}
-        <AnimatedBackground />
-        
-        {/* Floating Access Warning Toast */}
-        <AccessWarningToast />
-        
-        <TopHeader onNavigate={setActiveTab} />
-        
-        <main className="pt-16 pb-28">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="h-full"
-            >
-              {renderTab()}
-            </motion.div>
-          </AnimatePresence>
-        </main>
+      <ChatInputProvider>
+        <div className="min-h-screen bg-background relative">
+          <AnimatedBackground />
+          <AccessWarningToast />
+          <TopHeader onNavigate={setActiveTab} />
+          
+          <main className="pt-16 pb-28">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                className="h-full"
+              >
+                {renderTab()}
+              </motion.div>
+            </AnimatePresence>
+          </main>
 
-        <BottomDock activeTab={activeTab} onTabChange={setActiveTab} />
-      </div>
+          <BottomDock activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
+      </ChatInputProvider>
     </AccessWarningProvider>
   );
 }

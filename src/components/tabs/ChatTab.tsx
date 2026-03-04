@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Smile, Reply, X, CheckCheck, Check, Info, Bell, Trash2, MoreVertical, Copy } from 'lucide-react';
+import { Smile, Reply, X, CheckCheck, Check, Info, Bell, Trash2, MoreVertical, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +14,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useUserStatus } from '@/hooks/useUserStatus';
 import { RestrictedContent } from '@/components/RestrictedContent';
 import { useAccessWarning } from '@/contexts/AccessWarningContext';
+import { useChatInput } from '@/contexts/ChatInputContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,14 +79,12 @@ export function ChatTab() {
   const { role, isFounder } = useUserRole();
   const { isMember, isAdmin, isLoading: statusLoading } = useUserStatus();
   const { showWarning } = useAccessWarning();
+  const chatInput = useChatInput();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
   const [messageReads, setMessageReads] = useState<Record<string, MessageRead[]>>({});
-  const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isSending, setIsSending] = useState(false);
-  const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
@@ -446,12 +444,11 @@ export function ChatTab() {
 
   const MAX_MESSAGE_LENGTH = 5000;
 
-  const handleSend = async () => {
-    if (!newMessage.trim() || !user) return;
+  const handleSend = useCallback(async () => {
+    if (!chatInput.newMessage.trim() || !user) return;
 
-    const messageText = newMessage.trim();
+    const messageText = chatInput.newMessage.trim();
 
-    // Validate message length
     if (messageText.length > MAX_MESSAGE_LENGTH) {
       toast({
         title: 'Message too long',
@@ -461,12 +458,12 @@ export function ChatTab() {
       return;
     }
 
-    setIsSending(true);
+    chatInput.setIsSending(true);
     updatePresence(false);
     
-    setNewMessage('');
-    const replyToId = replyTo?.id || null;
-    setReplyTo(null);
+    chatInput.setNewMessage('');
+    const replyToId = chatInput.replyTo?.id || null;
+    chatInput.setReplyTo(null);
 
     try {
       const { error } = await supabase.from('messages').insert({
@@ -484,11 +481,20 @@ export function ChatTab() {
         description: 'Unable to send your message. Please try again.',
         variant: 'destructive',
       });
-      setNewMessage(messageText);
+      chatInput.setNewMessage(messageText);
     }
 
-    setIsSending(false);
-  };
+    chatInput.setIsSending(false);
+  }, [chatInput, user, profile, toast, updatePresence]);
+
+  // Register send and typing handlers for the dock input
+  useEffect(() => {
+    chatInput.registerSendHandler(handleSend);
+  }, [handleSend, chatInput]);
+
+  useEffect(() => {
+    chatInput.registerTypingHandler(handleTyping);
+  }, [handleTyping, chatInput]);
 
   const handleReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
@@ -557,12 +563,8 @@ export function ChatTab() {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+
+
 
   const getReactionCounts = (messageId: string) => {
     const messageReactions = reactions[messageId] || [];
@@ -890,7 +892,7 @@ export function ChatTab() {
                             </DropdownMenuItem>
                             
                             <DropdownMenuItem 
-                              onClick={() => setReplyTo(message)}
+                              onClick={() => chatInput.setReplyTo({ id: message.id, user_name: message.user_name, text: message.text })}
                               className="gap-2 cursor-pointer"
                             >
                               <Reply className="w-4 h-4" />
@@ -1036,72 +1038,37 @@ export function ChatTab() {
 
         {/* Reply Preview */}
         <AnimatePresence>
-          {replyTo && (
+          {chatInput.replyTo && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={springPresets.snappy}
-              className="border-t border-border bg-secondary/50 px-4 py-2"
+              className="border-t border-border bg-secondary/50 px-4 py-2 pb-24"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Reply className="w-4 h-4 text-primary" />
                   <span className="text-sm">
-                    Replying to <span className="font-medium text-primary">{replyTo.user_name}</span>
+                    Replying to <span className="font-medium text-primary">{chatInput.replyTo.user_name}</span>
                   </span>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6"
-                  onClick={() => setReplyTo(null)}
+                  onClick={() => chatInput.setReplyTo(null)}
                 >
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground truncate pl-6">{replyTo.text}</p>
+              <p className="text-xs text-muted-foreground truncate pl-6">{chatInput.replyTo.text}</p>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Input */}
-        <SoftFloat delay={0.3} className="flex-shrink-0 p-4 lg:p-6 pb-24 border-t border-border bg-background/80 backdrop-blur-xl">
-          <div className="flex items-center gap-3">
-            <motion.div 
-              className="flex-1 relative"
-              whileFocus={{ scale: 1.01 }}
-            >
-              <Input
-                value={newMessage}
-                onChange={(e) => {
-                  setNewMessage(e.target.value);
-                  handleTyping();
-                }}
-                onKeyDown={handleKeyPress}
-                placeholder={replyTo ? `Reply to ${replyTo.user_name}...` : "Type a message..."}
-                className="bg-secondary border-0 focus-visible:ring-1 focus-visible:ring-primary"
-                disabled={isSending}
-              />
-            </motion.div>
-
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={springPresets.button}
-            >
-              <Button
-                variant="cyber"
-                size="icon"
-                onClick={handleSend}
-                disabled={!newMessage.trim() || isSending}
-                className="flex-shrink-0"
-              >
-                <Send className="w-5 h-5" />
-              </Button>
-            </motion.div>
-          </div>
-        </SoftFloat>
+        {/* Bottom spacing for dock */}
+        {!chatInput.replyTo && <div className="h-24 flex-shrink-0" />}
       </div>
 
       {/* Message Info Modal */}
