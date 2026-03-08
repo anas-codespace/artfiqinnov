@@ -147,8 +147,57 @@ export default function AdminConsole() {
     if (stage === 'unlocked') {
       fetchUsers();
       fetchTodayAttendance();
+      fetchVaultRequests();
     }
   }, [stage]);
+
+  const fetchVaultRequests = async () => {
+    setVaultLoading(true);
+    const { data } = await supabase
+      .from('vault_access_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    const requests = (data as Array<{ id: string; user_id: string; file_id: string; status: string; created_at: string }>) || [];
+    setVaultRequests(requests);
+
+    // Fetch profile names and file names
+    const userIds = [...new Set(requests.map(r => r.user_id))];
+    const fileIds = [...new Set(requests.map(r => r.file_id))];
+
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('user_id, display_name').in('user_id', userIds);
+      const map: Record<string, string> = {};
+      profiles?.forEach(p => { map[p.user_id] = p.display_name || 'Unknown'; });
+      setVaultRequestProfiles(map);
+    }
+
+    if (fileIds.length > 0) {
+      const { data: files } = await supabase.from('files').select('id, name').in('id', fileIds);
+      const map: Record<string, string> = {};
+      files?.forEach(f => { map[f.id] = f.name; });
+      setVaultRequestFiles(map);
+    }
+
+    setVaultLoading(false);
+  };
+
+  const handleVaultRequestAction = async (requestId: string, action: 'approved' | 'rejected') => {
+    setActionLoading(requestId);
+    const { error } = await supabase
+      .from('vault_access_requests')
+      .update({ status: action, reviewed_by: user!.id, updated_at: new Date().toISOString() })
+      .eq('id', requestId);
+
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: action === 'approved' ? '✅ Access Granted' : '❌ Access Denied' });
+      fetchVaultRequests();
+    }
+    setActionLoading(null);
+  };
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
