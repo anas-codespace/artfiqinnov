@@ -42,14 +42,16 @@ export function AttendanceCalendar() {
       const endOfMonth = new Date(year, month + 1, 0);
       const endStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(endOfMonth.getDate()).padStart(2, '0')}`;
 
-      const [{ data: logData }, { data: holidayData }, { data: profile }] = await Promise.all([
+      const [{ data: logData }, { data: holidayData }, { data: profile }, { data: leaveData }] = await Promise.all([
         supabase.from('attendance_logs').select('date, status').eq('user_id', user.id).gte('date', startOfMonth).lte('date', endStr),
         supabase.from('company_holidays').select('date, title').gte('date', startOfMonth).lte('date', endStr),
         supabase.from('profiles').select('created_at').eq('user_id', user.id).single(),
+        supabase.from('leave_requests').select('start_date, end_date').eq('user_id', user.id).eq('status', 'approved'),
       ]);
 
       setLogs(logData || []);
       setHolidays(holidayData || []);
+      setApprovedLeaves((leaveData as LeaveRange[]) || []);
       if (profile) setJoinDate(profile.created_at.split('T')[0]);
       setIsLoading(false);
     };
