@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, File, Users, Bell, Loader2, Image, FileType } from 'lucide-react';
+import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, File, Users, Bell, Loader2, Image, FileType, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -97,6 +98,8 @@ export function VaultTab() {
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [viewersModalFile, setViewersModalFile] = useState<UploadedFile | null>(null);
   const [restrictedFile, setRestrictedFile] = useState<UploadedFile | null>(null);
+  const [driveLink, setDriveLink] = useState('');
+  const [isDriveUploading, setIsDriveUploading] = useState(false);
 
   // Fetch files from database
   const fetchFiles = async () => {
@@ -170,6 +173,73 @@ export function VaultTab() {
       fetchFileViews();
     } catch (error) {
       console.error('Error tracking file view:', error);
+    }
+  };
+
+  const handleDriveUpload = async () => {
+    if (!driveLink.trim() || !user || !profile) return;
+    
+    setIsDriveUploading(true);
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('download-gdrive', {
+        body: { driveUrl: driveLink.trim() },
+      });
+
+      if (fnError) throw new Error(fnError.message || 'Failed to fetch from Google Drive');
+      if (fnData?.error) throw new Error(fnData.error);
+
+      const { base64, contentType, fileName, size } = fnData;
+      
+      if (size > MAX_FILE_SIZE) {
+        toast({ title: 'File too large', description: 'Max limit 10MB.', variant: 'destructive' });
+        return;
+      }
+
+      // Convert base64 to blob
+      const byteChars = atob(base64);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) {
+        byteNumbers[i] = byteChars.charCodeAt(i);
+      }
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: contentType });
+
+      // Upload to storage
+      const sanitizedName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `${user.id}/${Date.now()}_${sanitizedName}`;
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(storagePath, blob, {
+          contentType,
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Save metadata
+      const { error: dbError } = await supabase.from('files').insert({
+        name: fileName,
+        size,
+        url: '',
+        storage_path: storagePath,
+        uploaded_by: user.id,
+        uploader_name: profile.display_name || user.email?.split('@')[0] || 'Unknown',
+      });
+
+      if (dbError) throw dbError;
+
+      toast({ title: 'File uploaded from Google Drive!', description: `${fileName} added to the vault.` });
+      setDriveLink('');
+      fetchFiles();
+    } catch (error: any) {
+      console.error('Drive upload error:', error);
+      toast({
+        title: 'Google Drive upload failed',
+        description: error?.message || 'Make sure the file is shared publicly.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDriveUploading(false);
     }
   };
 
@@ -575,6 +645,42 @@ export function VaultTab() {
           </motion.div>
         </label>
       </motion.div>
+      )}
+
+      {/* Google Drive Link Paste */}
+      {isMember && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springPresets.snappy, delay: 0.15 }}
+          className="glass-card rounded-2xl p-5 space-y-3"
+        >
+          <div className="flex items-center gap-2">
+            <Link2 className="w-5 h-5 text-primary" />
+            <h3 className="text-sm font-medium">Upload from Google Drive</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Paste a Google Drive share link. The file must be shared as "Anyone with the link".
+          </p>
+          <div className="flex gap-2">
+            <Input
+              placeholder="https://drive.google.com/file/d/..."
+              value={driveLink}
+              onChange={(e) => setDriveLink(e.target.value)}
+              disabled={isDriveUploading}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleDriveUpload}
+              disabled={!driveLink.trim() || isDriveUploading}
+              size="sm"
+              className="shrink-0"
+            >
+              {isDriveUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {isDriveUploading ? 'Uploading...' : 'Upload'}
+            </Button>
+          </div>
+        </motion.div>
       )}
 
       {/* File List */}
