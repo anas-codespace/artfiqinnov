@@ -13,7 +13,6 @@ import {
 import { springPresets } from '@/components/ui/spring-config';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 import { PunchInCard } from '@/components/PunchInCard';
-import { AttendanceCalendar } from '@/components/AttendanceCalendar';
 import { LeaveRequestCard } from '@/components/LeaveRequestCard';
 
 // Founder emails for fetching dynamic avatars
@@ -206,11 +205,8 @@ export function HomeTab() {
         </motion.div>
       </motion.section>
 
-      {/* Punch-In Card */}
+      {/* Punch-In Card + Collapsible Calendar */}
       <PunchInCard />
-
-      {/* Attendance Calendar */}
-      <AttendanceCalendar />
 
       {/* Leave Requests */}
       <LeaveRequestCard />

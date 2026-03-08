@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { Clock, CheckCircle2, Loader2, PartyPopper } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Clock, CheckCircle2, Loader2, PartyPopper, CalendarDays, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useUserStatus } from '@/hooks/useUserStatus';
@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { springPresets } from '@/components/ui/spring-config';
 import { supabase } from '@/integrations/supabase/client';
+import { AttendanceCalendar } from '@/components/AttendanceCalendar';
 
 export function PunchInCard() {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ export function PunchInCard() {
   const { toast } = useToast();
   const [joinDate, setJoinDate] = useState<string | undefined>();
   const [punching, setPunching] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -146,7 +148,38 @@ export function PunchInCard() {
             {percentage > 90 ? 'Excellent' : percentage >= 75 ? 'Good' : 'Needs Improvement'}
           </span>
         </div>
+
+        {/* Calendar Toggle */}
+        <motion.button
+          onClick={() => setShowCalendar(!showCalendar)}
+          className="w-full mt-3 py-2 rounded-xl bg-secondary/30 border border-border/30 text-muted-foreground text-xs font-medium
+            hover:bg-secondary/50 transition-colors flex items-center justify-center gap-1.5"
+          whileTap={{ scale: 0.98 }}
+        >
+          <CalendarDays className="w-3.5 h-3.5" />
+          {showCalendar ? 'Hide Calendar' : 'View Calendar / Details'}
+          <motion.div animate={{ rotate: showCalendar ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <ChevronDown className="w-3.5 h-3.5" />
+          </motion.div>
+        </motion.button>
       </div>
+
+      {/* Collapsible Attendance Calendar */}
+      <AnimatePresence>
+        {showCalendar && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-2">
+              <AttendanceCalendar />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
