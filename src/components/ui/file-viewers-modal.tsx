@@ -1,12 +1,14 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, Clock, User } from 'lucide-react';
 import { springPresets } from './spring-config';
+import defaultAvatar from '@/assets/default-avatar.webp';
 
 interface FileView {
   id: string;
   user_id: string;
   user_name: string;
   viewed_at: string;
+  avatar_url?: string | null;
 }
 
 interface FileViewersModalProps {
@@ -95,9 +97,10 @@ export function FileViewersModal({
                     >
                       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         <img
-                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${viewer.user_id}`}
+                          src={viewer.avatar_url || defaultAvatar}
                           alt={viewer.user_name}
-                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0"
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0 object-cover border border-border/50"
+                          onError={(e) => { (e.target as HTMLImageElement).src = defaultAvatar; }}
                         />
                         <span className="font-medium text-sm truncate">{viewer.user_name}</span>
                       </div>
