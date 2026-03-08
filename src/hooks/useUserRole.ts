@@ -12,13 +12,13 @@ interface UserRoleData {
 }
 
 export function useUserRole(): UserRoleData {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const [role, setRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchRole = async () => {
-      if (!user) {
+      if (!user || isGuest) {
         setRole(null);
         setIsLoading(false);
         return;
