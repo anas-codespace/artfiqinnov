@@ -240,7 +240,7 @@ export function VaultTab() {
         // Upload to storage with correct content-type
         const fileName = `${user.id}/${Date.now()}_${file.name}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('files')
+          .from('documents')
           .upload(fileName, file, {
             contentType: file.type || 'application/octet-stream',
             cacheControl: '3600',
