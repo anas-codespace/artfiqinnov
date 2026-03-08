@@ -49,7 +49,7 @@ const MAX_DESCRIPTION_LENGTH = 2000;
 
 export function TimelineTab() {
   const { isUserOnline } = usePresence();
-  const { toast } = useToast();
+  const { user, profile } = useAuth();
   const { isMember, isVisitor, isPending } = useUserStatus();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
