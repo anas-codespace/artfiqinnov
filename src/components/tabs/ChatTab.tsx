@@ -693,31 +693,36 @@ export function ChatTab() {
                 </Button>
               </motion.div>
               {/* Online participants avatars with status dot */}
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
-                {onlineParticipants.slice(0, 5).map((p) => (
-                  <motion.div
-                    key={p.id}
-                    className="relative"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={springPresets.bouncy}
-                  >
-                    <img
-                      src={p.avatar_url || defaultAvatarImg}
-                      alt={p.display_name || 'User'}
-                      className="w-8 h-8 rounded-full border-2 border-background"
-                    />
-                    {/* Green online dot */}
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
-                  </motion.div>
-                ))}
-              </div>
-              {onlineParticipants.length > 5 && (
-                <span className="text-xs text-muted-foreground">
-                  +{onlineParticipants.length - 5} more
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {participants.slice(0, 5).map((p) => {
+                    const online = isUserOnline(p.user_id);
+                    return (
+                      <motion.div
+                        key={p.id}
+                        className="relative"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={springPresets.bouncy}
+                      >
+                        <img
+                          src={p.avatar_url || defaultAvatarImg}
+                          alt={p.display_name || 'User'}
+                          className="w-8 h-8 rounded-full border-2 border-background"
+                        />
+                        <span className={cn(
+                          "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-background",
+                          online ? "bg-emerald-500" : "bg-muted-foreground/40"
+                        )} />
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                {participants.length > 5 && (
+                  <span className="text-xs text-muted-foreground">
+                    +{participants.length - 5} more
+                  </span>
+                )}
               </div>
             </div>
           </div>
