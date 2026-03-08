@@ -588,6 +588,8 @@ export default function AdminConsole() {
     showRemove?: boolean;
   }) => {
     const isEditingThis = editingPosting === user.user_id;
+    const memberRole = userRoles[user.user_id] || 'team';
+    const isFounder = isFounderRole(memberRole);
 
     return (
       <motion.div
@@ -606,7 +608,7 @@ export default function AdminConsole() {
             <p className="text-xs sm:text-sm text-muted-foreground truncate">{user.email}</p>
             {/* Posting Badge + Edit */}
             <div className="flex items-center gap-1.5 mt-1">
-              {isEditingThis ? (
+              {isEditingThis && !isFounder ? (
                 <div className="flex items-center gap-1">
                   <Input
                     value={postingValue}
@@ -631,16 +633,18 @@ export default function AdminConsole() {
                 </div>
               ) : (
                 <>
-                  <PostingBadge posting={user.posting} />
-                  <button
-                    onClick={() => {
-                      setEditingPosting(user.user_id);
-                      setPostingValue(user.posting || '');
-                    }}
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <Pencil className="w-3 h-3" />
-                  </button>
+                  <PostingBadge posting={user.posting} role={memberRole} />
+                  {!isFounder && (
+                    <button
+                      onClick={() => {
+                        setEditingPosting(user.user_id);
+                        setPostingValue(user.posting || '');
+                      }}
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  )}
                 </>
               )}
             </div>
