@@ -668,6 +668,44 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_access_requests: {
+        Row: {
+          created_at: string
+          file_id: string
+          id: string
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_id: string
+          id?: string
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_id?: string
+          id?: string
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_access_requests_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       profiles_safe: {
