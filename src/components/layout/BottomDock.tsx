@@ -28,8 +28,8 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
   const { isMember } = useUserStatus();
   const isOnChat = activeTab === 'chat';
 
-  // Visitors/pending only see Home
-  const visibleItems = isMember ? navItems : navItems.filter(i => i.id === 'home');
+  // Visitors/pending see Home + Vault only
+  const visibleItems = isMember ? navItems : navItems.filter(i => i.id === 'home' || i.id === 'vault');
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>, itemId: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
