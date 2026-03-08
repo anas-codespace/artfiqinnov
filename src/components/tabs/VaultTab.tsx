@@ -128,12 +128,23 @@ export function VaultTab() {
     if (error) {
       console.error('Error fetching file views:', error);
     } else if (data) {
+      // Fetch avatar_url for all unique viewer user_ids
+      const userIds = [...new Set(data.map(v => v.user_id))];
+      const avatarMap: Record<string, string | null> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, avatar_url')
+          .in('user_id', userIds);
+        profiles?.forEach(p => { avatarMap[p.user_id] = p.avatar_url; });
+      }
+
       const grouped: Record<string, FileView[]> = {};
       data.forEach((view) => {
         if (!grouped[view.file_id]) {
           grouped[view.file_id] = [];
         }
-        grouped[view.file_id].push(view);
+        grouped[view.file_id].push({ ...view, avatar_url: avatarMap[view.user_id] || null });
       });
       setFileViews(grouped);
     }
