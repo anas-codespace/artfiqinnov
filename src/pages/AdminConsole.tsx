@@ -832,20 +832,29 @@ export default function AdminConsole() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-full overflow-x-hidden">
         <Tabs defaultValue="team" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
-            <TabsTrigger value="team" className="gap-1 text-xs sm:text-sm">
+          <TabsList className="grid w-full grid-cols-5 mb-8">
+            <TabsTrigger value="team" className="gap-1 text-[10px] sm:text-sm">
               <UserCheck className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Team</span> ({approvedMembers.length})
+              <span className="hidden sm:inline">Team</span>
             </TabsTrigger>
-            <TabsTrigger value="requests" className="gap-1 text-xs sm:text-sm">
+            <TabsTrigger value="requests" className="gap-1 text-[10px] sm:text-sm">
               <Users className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Requests</span> ({visitorsAndPending.length})
+              <span className="hidden sm:inline">Requests</span>
             </TabsTrigger>
-            <TabsTrigger value="attendance" className="gap-1 text-xs sm:text-sm">
+            <TabsTrigger value="attendance" className="gap-1 text-[10px] sm:text-sm">
               <Clock className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Attendance</span>
             </TabsTrigger>
-            <TabsTrigger value="holidays" className="gap-1 text-xs sm:text-sm">
+            <TabsTrigger value="leaves" className="gap-1 text-[10px] sm:text-sm relative">
+              <CalendarDays className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Leaves</span>
+              {allLeaves.filter(l => l.status === 'pending').length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
+                  {allLeaves.filter(l => l.status === 'pending').length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="holidays" className="gap-1 text-[10px] sm:text-sm">
               <PartyPopper className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Holidays</span>
             </TabsTrigger>
