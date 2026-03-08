@@ -632,7 +632,7 @@ export function ChatTab() {
     return participant?.posting || null;
   };
 
-  const onlineParticipants = participants.filter(p => p.isOnline || presenceData[p.user_id]?.is_online);
+  const onlineParticipants = participants.filter(p => isUserOnline(p.user_id));
 
   // Show restricted content for non-members
   if (!statusLoading && !isMember && !isAdmin) {
