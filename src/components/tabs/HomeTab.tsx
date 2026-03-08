@@ -284,6 +284,9 @@ export function HomeTab() {
         })}
       </motion.section>
 
+      {/* Notice Board */}
+      <NoticeBoard />
+
       {/* Visitor/Pending Banner */}
       {!isMember && (
         <motion.div
