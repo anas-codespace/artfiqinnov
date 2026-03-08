@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import artfiqLogo from '@/assets/artfiq-logo.jpeg';
+import artfiqLogo from '@/assets/artfiq-logo.png';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 
 interface Message {

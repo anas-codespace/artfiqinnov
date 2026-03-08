@@ -8,7 +8,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { ProfileSettings } from '@/components/ProfileSettings';
 import { RoleBadge } from '@/components/ui/role-badge';
 import { useUserRole } from '@/hooks/useUserRole';
-import artfiqLogo from '@/assets/artfiq-logo.jpeg';
+import artfiqLogo from '@/assets/artfiq-logo.png';
 
 interface TopHeaderProps {
   onNavigate: (tab: string) => void;
