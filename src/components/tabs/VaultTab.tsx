@@ -98,6 +98,8 @@ export function VaultTab() {
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [viewersModalFile, setViewersModalFile] = useState<UploadedFile | null>(null);
   const [restrictedFile, setRestrictedFile] = useState<UploadedFile | null>(null);
+  const [driveLink, setDriveLink] = useState('');
+  const [isDriveUploading, setIsDriveUploading] = useState(false);
 
   // Fetch files from database
   const fetchFiles = async () => {
