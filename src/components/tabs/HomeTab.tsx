@@ -315,8 +315,8 @@ export function HomeTab() {
       {/* Notice Board */}
       <NoticeBoard />
 
-      {/* Visitor/Pending Banner */}
-      {!isMember && (
+      {/* Visitor/Pending Banner - hidden for guests (they have their own banner) */}
+      {!isMember && !isGuest && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -354,10 +354,12 @@ export function HomeTab() {
         </motion.div>
       )}
 
-      {/* Punch-In Card + Collapsible Calendar */}
-      <div className="mb-8">
-        <PunchInCard />
-      </div>
+      {/* Punch-In Card + Collapsible Calendar - Hidden for guests */}
+      {!isGuest && (
+        <div className="mb-8">
+          <PunchInCard />
+        </div>
+      )}
 
       {/* Founders Section - Profile Photos with Social Links */}
       <motion.section
