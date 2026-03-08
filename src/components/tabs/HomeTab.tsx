@@ -18,8 +18,8 @@ import { useUserStatus } from '@/hooks/useUserStatus';
 
 // Founder emails for fetching dynamic avatars
 const FOUNDER_EMAILS = {
-  ceo: 'mohammedsulaimanofficial@gmail.com',
-  cto: 'anas.m77581@gmail.com',
+  ceo: 'sulaiman.artfiqceo@gmail.com',
+  cto: 'anas.md.artfiq@gmail.com',
 };
 
 interface FounderData {

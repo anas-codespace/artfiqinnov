@@ -16,8 +16,8 @@ interface UserStatusData {
   refreshStatus: () => Promise<void>;
 }
 
-const CEO_EMAIL = 'mohammedsulaimanofficial@gmail.com';
-const CTO_EMAIL = 'anas.m77581@gmail.com';
+const CEO_EMAIL = 'sulaiman.artfiqceo@gmail.com';
+const CTO_EMAIL = 'anas.md.artfiq@gmail.com';
 
 export function useUserStatus(): UserStatusData {
   const { user, profile } = useAuth();
