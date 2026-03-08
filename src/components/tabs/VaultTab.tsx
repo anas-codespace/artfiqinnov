@@ -612,10 +612,10 @@ export function VaultTab() {
                       exit={{ opacity: 0, x: 20, height: 0 }}
                       transition={{ ...springPresets.snappy, delay: index * 0.05 }}
                       layout
-                      className="glass-card rounded-xl p-4 flex items-center gap-4 group"
+                      className="glass-card rounded-xl p-4 flex items-center gap-4 group w-full"
                     >
                       <motion.div 
-                        className={cn("w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0", fileStyle.bg)}
+                        className={cn("w-12 h-12 rounded-lg flex items-center justify-center shrink-0", fileStyle.bg)}
                         whileHover={{ scale: 1.05 }}
                         transition={springPresets.button}
                       >
@@ -623,17 +623,17 @@ export function VaultTab() {
                       </motion.div>
                       
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{file.name}</p>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <span>{formatFileSize(file.size)}</span>
-                          <span className="flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            {file.uploader_name}
+                        <p className="text-sm font-medium text-secondary-foreground truncate">{file.name}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                          <span className="shrink-0">{formatFileSize(file.size)}</span>
+                          <span className="truncate flex items-center gap-1 min-w-0">
+                            <User className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{file.uploader_name}</span>
                           </span>
                           {showViewers && viewCount > 0 && (
-                            <span className="flex items-center gap-1 text-primary">
+                            <span className="flex items-center gap-1 text-primary shrink-0">
                               <Eye className="w-3 h-3" />
-                              {viewCount} view{viewCount !== 1 ? 's' : ''}
+                              {viewCount}
                             </span>
                           )}
                         </div>
@@ -644,7 +644,7 @@ export function VaultTab() {
                               <>
                                 <Progress value={downloadProgress} className="h-2 flex-1" />
                                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                  Downloading... {Math.round(downloadProgress)}%
+                                  {Math.round(downloadProgress)}%
                                 </span>
                               </>
                             ) : (
@@ -657,25 +657,25 @@ export function VaultTab() {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                         {isMember ? (
                           <>
                             {showViewers && (
-                              <Button variant="ghost" size="icon" onClick={() => setViewersModalFile(file)} className="h-9 w-9" title="View who accessed this file">
+                              <Button variant="ghost" size="icon" onClick={() => setViewersModalFile(file)} className="h-8 w-8" title="View who accessed this file">
                                 <Users className="w-4 h-4" />
                               </Button>
                             )}
-                            <Button variant="ghost" size="icon" onClick={() => handlePreview(file)} className="h-9 w-9" title="Preview">
+                            <Button variant="ghost" size="icon" onClick={() => handlePreview(file)} className="h-8 w-8" title="Preview">
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDownload(file)} className="h-9 w-9" title={isDownloadingThis ? 'Downloading...' : 'Download'} disabled={isDownloadingThis}>
+                            <Button variant="ghost" size="icon" onClick={() => handleDownload(file)} className="h-8 w-8" title={isDownloadingThis ? 'Downloading...' : 'Download'} disabled={isDownloadingThis}>
                               {isDownloadingThis ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleRequestReview(file)} className="h-9 w-9 hover:text-amber-500" title="Request founder review">
+                            <Button variant="ghost" size="icon" onClick={() => handleRequestReview(file)} className="h-8 w-8 hover:text-amber-500" title="Request founder review">
                               <Bell className="w-4 h-4" />
                             </Button>
                             {file.uploaded_by === user?.id && (
-                              <Button variant="ghost" size="icon" onClick={() => handleDelete(file)} className="h-9 w-9 hover:text-destructive" title="Delete">
+                              <Button variant="ghost" size="icon" onClick={() => handleDelete(file)} className="h-8 w-8 hover:text-destructive" title="Delete">
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             )}
