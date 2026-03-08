@@ -53,7 +53,7 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
   };
 
   // When on chat tab, show compressed nav + input
-  const displayedItems = isOnChat ? navItems.slice(0, 5) : navItems;
+  const displayedItems = isOnChat && isMember ? visibleItems.slice(0, 5) : visibleItems;
 
   return (
     <motion.nav
