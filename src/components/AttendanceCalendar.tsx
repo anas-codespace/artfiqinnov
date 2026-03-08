@@ -143,6 +143,7 @@ export function AttendanceCalendar() {
       case 'present': return 'bg-emerald-400';
       case 'absent': return 'bg-rose-500';
       case 'holiday': return 'bg-amber-400';
+      case 'leave': return 'bg-blue-400';
       case 'weekend': return 'bg-muted-foreground/30';
       default: return '';
     }
