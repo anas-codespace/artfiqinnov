@@ -3,6 +3,7 @@ import { Home, LayoutGrid, Calendar, FolderLock, MessageSquare, BarChart3, Light
 import { cn } from '@/lib/utils';
 import { useState, useRef } from 'react';
 import { useChatInput } from '@/contexts/ChatInputContext';
+import { useUserStatus } from '@/hooks/useUserStatus';
 
 interface BottomDockProps {
   activeTab: string;
