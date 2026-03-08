@@ -292,7 +292,7 @@ export function VaultTab() {
     }
   };
 
-  const STORAGE_BUCKET = 'vault' as const;
+  const STORAGE_BUCKET = 'files' as const;
 
   // Generate signed URL for secure file access (short expiry)
   const getSignedUrl = async (
