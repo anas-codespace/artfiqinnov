@@ -212,6 +212,17 @@ export function InnovationLabTab() {
     }
   };
 
+  const handleDeletePitch = async () => {
+    if (!deletePitchId) return;
+    const { error } = await supabase.from('pitches').delete().eq('id', deletePitchId);
+    if (error) {
+      toast({ title: 'Failed to delete pitch', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Pitch permanently deleted.' });
+    }
+    setDeletePitchId(null);
+  };
+
   const handleSaveFeedback = async (pitchId: string) => {
     if (!feedbackText.trim()) return;
     const { error } = await supabase.from('pitches').update({ feedback: feedbackText.trim(), status: 'review' }).eq('id', pitchId);
