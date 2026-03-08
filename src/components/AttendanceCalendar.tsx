@@ -71,6 +71,20 @@ export function AttendanceCalendar() {
     return map;
   }, [holidays]);
 
+  // Build approved leave dates set
+  const leaveDates = useMemo(() => {
+    const set = new Set<string>();
+    approvedLeaves.forEach(l => {
+      const current = new Date(l.start_date + 'T00:00:00');
+      const end = new Date(l.end_date + 'T00:00:00');
+      while (current <= end) {
+        set.add(current.toISOString().split('T')[0]);
+        current.setDate(current.getDate() + 1);
+      }
+    });
+    return set;
+  }, [approvedLeaves]);
+
   // Build calendar grid
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month, 1).getDay();
