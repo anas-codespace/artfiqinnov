@@ -85,6 +85,7 @@ function getFileIcon(filename: string) {
 export function VaultTab() {
   const { user, profile } = useAuth();
   const { isFounder } = useUserRole();
+  const { isMember } = useUserStatus();
   const { toast } = useToast();
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [fileViews, setFileViews] = useState<Record<string, FileView[]>>({});
@@ -94,6 +95,7 @@ export function VaultTab() {
   const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [viewersModalFile, setViewersModalFile] = useState<UploadedFile | null>(null);
+  const [restrictedFile, setRestrictedFile] = useState<UploadedFile | null>(null);
 
   // Fetch files from database
   const fetchFiles = async () => {
