@@ -256,7 +256,7 @@ export default function AdminConsole() {
     }
   };
 
-
+  const handleSetupPin = async () => {
     if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
       toast({ title: 'Error', description: 'PIN must be exactly 4 digits', variant: 'destructive' });
       return;
