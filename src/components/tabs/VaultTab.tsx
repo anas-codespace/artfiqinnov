@@ -6,9 +6,11 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useUserStatus } from '@/hooks/useUserStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { FileViewersModal } from '@/components/ui/file-viewers-modal';
+import { VaultAccessModal } from '@/components/VaultAccessModal';
 import { springPresets } from '@/components/ui/spring-config';
 
 interface UploadedFile {
