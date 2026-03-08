@@ -887,7 +887,7 @@ export default function AdminConsole() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-full overflow-x-hidden">
         <Tabs defaultValue="team" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-8">
+          <TabsList className="grid w-full grid-cols-6 mb-8">
             <TabsTrigger value="team" className="gap-1 text-[10px] sm:text-sm">
               <UserCheck className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Team</span>
