@@ -25,7 +25,11 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
   const [ripples, setRipples] = useState<{ id: number; x: number; y: number; itemId: string }[]>([]);
   const chatInput = useChatInput();
   const inputRef = useRef<HTMLInputElement>(null);
+  const { isMember } = useUserStatus();
   const isOnChat = activeTab === 'chat';
+
+  // Visitors/pending only see Home
+  const visibleItems = isMember ? navItems : navItems.filter(i => i.id === 'home');
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>, itemId: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
