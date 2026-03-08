@@ -388,6 +388,25 @@ export function LoginScreen() {
                 <p className="text-center text-xs text-muted-foreground">
                   By signing in, you agree to our Terms of Service and Privacy Policy
                 </p>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">or</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
+                {/* Guest Login */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="w-full gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={loginAsGuest}
+                >
+                  <UserRound className="w-4 h-4" />
+                  Continue as Guest
+                </Button>
               </motion.div>
             ) : !signUpSuccess && view === 'forgot-password' ? (
               <motion.div
