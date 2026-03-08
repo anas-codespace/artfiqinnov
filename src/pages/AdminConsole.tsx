@@ -959,6 +959,84 @@ export default function AdminConsole() {
             )}
           </TabsContent>
 
+          {/* Leave Requests Tab */}
+          <TabsContent value="leaves" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Leave Requests</h2>
+              <Badge variant="secondary">{allLeaves.filter(l => l.status === 'pending').length} pending</Badge>
+            </div>
+
+            {leavesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : allLeaves.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <CalendarDays className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No leave requests yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {allLeaves.map((leave) => {
+                  const profile = leaveProfiles[leave.user_id];
+                  return (
+                    <motion.div
+                      key={leave.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 rounded-xl bg-secondary/30 border border-border/50 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-9 h-9 flex-shrink-0">
+                            <AvatarImage src={profile?.avatar_url || defaultAvatar} />
+                            <AvatarFallback>{(profile?.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-medium">{profile?.display_name || 'Unknown'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(leave.start_date + 'T00:00:00'), 'MMM d')} — {format(new Date(leave.end_date + 'T00:00:00'), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          leave.status === 'approved' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' :
+                          leave.status === 'rejected' ? 'bg-rose-500/10 border border-rose-500/20 text-rose-400' :
+                          'bg-amber-500/10 border border-amber-500/20 text-amber-400'
+                        }`}>
+                          {leave.status.toUpperCase()}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground bg-card/50 rounded-lg p-2">{leave.reason}</p>
+
+                      {leave.status === 'pending' && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="flex-1 gap-1.5 text-xs bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30"
+                            variant="outline"
+                            onClick={() => handleLeaveAction(leave.id, 'approved')}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="flex-1 gap-1.5 text-xs"
+                            variant="destructive"
+                            onClick={() => handleLeaveAction(leave.id, 'rejected')}
+                          >
+                            <XCircle className="w-3.5 h-3.5" /> Reject
+                          </Button>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
           {/* Holidays Tab */}
           <TabsContent value="holidays" className="space-y-4">
             <div className="flex items-center justify-between mb-4">
