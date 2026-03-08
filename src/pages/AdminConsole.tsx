@@ -913,6 +913,15 @@ export default function AdminConsole() {
               <PartyPopper className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Holidays</span>
             </TabsTrigger>
+            <TabsTrigger value="vault-access" className="gap-1 text-[10px] sm:text-sm relative">
+              <FolderLock className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Vault</span>
+              {vaultRequests.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
+                  {vaultRequests.length}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="team" className="space-y-4">
