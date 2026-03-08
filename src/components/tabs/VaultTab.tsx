@@ -550,6 +550,7 @@ export function VaultTab() {
           </motion.div>
         </label>
       </motion.div>
+      )}
 
       {/* File List */}
       <motion.div
