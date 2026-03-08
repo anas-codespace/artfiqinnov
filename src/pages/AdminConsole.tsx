@@ -127,7 +127,7 @@ export default function AdminConsole() {
     setLoadingUsers(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, user_id, display_name, email, avatar_url, access_status')
+      .select('id, user_id, display_name, email, avatar_url, access_status, posting')
       .order('created_at', { ascending: false });
 
     if (error) {
