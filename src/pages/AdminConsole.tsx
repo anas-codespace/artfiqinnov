@@ -69,6 +69,7 @@ export default function AdminConsole() {
 
   // Dashboard state
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [userRoles, setUserRoles] = useState<Record<string, 'ceo' | 'cto' | 'team'>>({});
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editingPosting, setEditingPosting] = useState<string | null>(null);
