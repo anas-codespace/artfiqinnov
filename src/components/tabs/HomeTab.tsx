@@ -208,9 +208,6 @@ export function HomeTab() {
       {/* Punch-In Card + Collapsible Calendar */}
       <PunchInCard />
 
-      {/* Leave Requests */}
-      <LeaveRequestCard />
-
       {/* Mission Card with parallax */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}

@@ -175,8 +175,11 @@ export function PunchInCard() {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="pt-2">
+            <div className="pt-2 space-y-4">
               <AttendanceCalendar />
+              <div className="border-t border-border/50 pt-4">
+                <LeaveRequestCard embedded />
+              </div>
             </div>
           </motion.div>
         )}
