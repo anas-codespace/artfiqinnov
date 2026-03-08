@@ -136,7 +136,7 @@ export function AdminDashboard({ open, onOpenChange }: AdminDashboardProps) {
           </Avatar>
           <div className="min-w-0">
             <p className="font-medium text-sm truncate">{user.display_name || 'Unknown'}</p>
-            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            <p className="text-xs text-muted-foreground break-all whitespace-normal leading-tight">{user.email}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
