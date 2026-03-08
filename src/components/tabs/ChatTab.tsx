@@ -194,8 +194,8 @@ export function ChatTab() {
     const fetchParticipants = async () => {
       // Use profiles_safe view instead of profiles table to protect email privacy
       const { data: profiles } = await supabase
-        .from('profiles_safe')
-        .select('id, user_id, display_name, avatar_url')
+        .from('profiles')
+        .select('id, user_id, display_name, avatar_url, posting')
         .order('created_at', { ascending: true });
 
       const { data: presence } = await supabase
