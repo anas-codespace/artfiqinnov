@@ -646,59 +646,32 @@ export function VaultTab() {
                       </div>
 
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {showViewers && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setViewersModalFile(file)}
-                            className="h-9 w-9"
-                            title="View who accessed this file"
-                          >
-                            <Users className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handlePreview(file)}
-                          className="h-9 w-9"
-                          title="Preview"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDownload(file)}
-                          className="h-9 w-9"
-                          title={isDownloadingThis ? 'Downloading...' : 'Download'}
-                          disabled={isDownloadingThis}
-                        >
-                          {isDownloadingThis ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Download className="w-4 h-4" />
-                          )}
-                        </Button>
-                        {/* Request Review Button */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRequestReview(file)}
-                          className="h-9 w-9 hover:text-amber-500"
-                          title="Request founder review"
-                        >
-                          <Bell className="w-4 h-4" />
-                        </Button>
-                        {file.uploaded_by === user?.id && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(file)}
-                            className="h-9 w-9 hover:text-destructive"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
+                        {isMember ? (
+                          <>
+                            {showViewers && (
+                              <Button variant="ghost" size="icon" onClick={() => setViewersModalFile(file)} className="h-9 w-9" title="View who accessed this file">
+                                <Users className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" onClick={() => handlePreview(file)} className="h-9 w-9" title="Preview">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDownload(file)} className="h-9 w-9" title={isDownloadingThis ? 'Downloading...' : 'Download'} disabled={isDownloadingThis}>
+                              {isDownloadingThis ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleRequestReview(file)} className="h-9 w-9 hover:text-amber-500" title="Request founder review">
+                              <Bell className="w-4 h-4" />
+                            </Button>
+                            {file.uploaded_by === user?.id && (
+                              <Button variant="ghost" size="icon" onClick={() => handleDelete(file)} className="h-9 w-9 hover:text-destructive" title="Delete">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <Button variant="ghost" size="sm" onClick={() => setRestrictedFile(file)} className="text-xs gap-1.5">
+                            <Eye className="w-3.5 h-3.5" />
+                            Request Access
                           </Button>
                         )}
                       </div>
