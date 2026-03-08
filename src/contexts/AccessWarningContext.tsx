@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { useUserStatus } from '@/hooks/useUserStatus';
 
+const DISMISS_KEY = 'guestBannerDismissed';
+
 interface AccessWarningContextType {
   isVisible: boolean;
   showWarning: () => void;
@@ -9,7 +11,7 @@ interface AccessWarningContextType {
 
 const AccessWarningContext = createContext<AccessWarningContextType | undefined>(undefined);
 
-const AUTO_DISMISS_MS = 10000; // 10 seconds
+const AUTO_DISMISS_MS = 10000;
 
 export function AccessWarningProvider({ children }: { children: ReactNode }) {
   const { isVisitor, isPending, isMember, isAdmin, isLoading } = useUserStatus();
@@ -24,8 +26,9 @@ export function AccessWarningProvider({ children }: { children: ReactNode }) {
   }, [timeoutId]);
 
   const showWarning = useCallback(() => {
-    // Only show for visitors/pending users
     if (isMember || isAdmin) return;
+    // Respect sessionStorage dismissal
+    if (sessionStorage.getItem(DISMISS_KEY) === 'true') return;
 
     clearExistingTimeout();
     setIsVisible(true);
@@ -40,26 +43,22 @@ export function AccessWarningProvider({ children }: { children: ReactNode }) {
   const hideWarning = useCallback(() => {
     clearExistingTimeout();
     setIsVisible(false);
+    sessionStorage.setItem(DISMISS_KEY, 'true');
   }, [clearExistingTimeout]);
 
-  // Show warning on initial load for visitors/pending
   useEffect(() => {
     if (!isLoading && (isVisitor || isPending)) {
-      // Small delay to ensure smooth page load
+      if (sessionStorage.getItem(DISMISS_KEY) === 'true') return;
       const initialTimeout = setTimeout(() => {
         showWarning();
       }, 500);
-
       return () => clearTimeout(initialTimeout);
     }
   }, [isLoading, isVisitor, isPending, showWarning]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [timeoutId]);
 
