@@ -15,6 +15,11 @@ interface Holiday {
   title: string;
 }
 
+interface LeaveRange {
+  start_date: string;
+  end_date: string;
+}
+
 export function AttendanceCalendar() {
   const { user } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
