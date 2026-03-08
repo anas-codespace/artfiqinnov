@@ -81,6 +81,17 @@ export default function AdminConsole() {
   const [editingPosting, setEditingPosting] = useState<string | null>(null);
   const [postingValue, setPostingValue] = useState('');
 
+  // Today's attendance state
+  const [todayAttendance, setTodayAttendance] = useState<Array<{ user_id: string; punch_in_time: string; display_name: string | null; avatar_url: string | null }>>([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
+
+  // Holiday declaration state
+  const [holidayModalOpen, setHolidayModalOpen] = useState(false);
+  const [holidayDate, setHolidayDate] = useState<Date | undefined>();
+  const [holidayTitle, setHolidayTitle] = useState('');
+  const [declaringHoliday, setDeclaringHoliday] = useState(false);
+  const { holidays, refetch: refetchHolidays } = useCompanyHolidays();
+
   // Check access and PIN status on mount
   useEffect(() => {
     const checkAccess = async () => {
