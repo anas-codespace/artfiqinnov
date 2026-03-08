@@ -1290,6 +1290,13 @@ export default function AdminConsole() {
           </DialogContent>
         </Dialog>
       </main>
+
+      {/* Member Insight Modal */}
+      <MemberInsightModal
+        open={insightOpen}
+        onOpenChange={setInsightOpen}
+        member={insightMember}
+      />
     </div>
   );
 }
