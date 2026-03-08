@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Target, Users, Zap, Globe, Mail, Linkedin, Instagram, Lock, Shield } from 'lucide-react';
+import { Target, Users, Zap, Globe, Mail, Linkedin, Instagram, Lock, Shield, X as XIcon, Eye } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { FluidButton } from '@/components/ui/fluid-button';
@@ -15,6 +15,7 @@ import defaultAvatarImg from '@/assets/default-avatar.webp';
 import { PunchInCard } from '@/components/PunchInCard';
 import { NoticeBoard } from '@/components/NoticeBoard';
 import { useUserStatus } from '@/hooks/useUserStatus';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 // Founder emails for fetching dynamic avatars
