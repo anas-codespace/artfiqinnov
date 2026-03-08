@@ -491,7 +491,8 @@ export function VaultTab() {
         </p>
       </motion.div>
 
-      {/* Upload Zone */}
+      {/* Upload Zone - members only */}
+      {isMember && (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
