@@ -1,12 +1,14 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, Clock, User } from 'lucide-react';
 import { springPresets } from './spring-config';
+import defaultAvatar from '@/assets/default-avatar.webp';
 
 interface FileView {
   id: string;
   user_id: string;
   user_name: string;
   viewed_at: string;
+  avatar_url?: string | null;
 }
 
 interface FileViewersModalProps {
