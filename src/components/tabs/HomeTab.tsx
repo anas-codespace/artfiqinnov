@@ -204,6 +204,9 @@ export function HomeTab() {
         </motion.div>
       </motion.section>
 
+      {/* Punch-In Card */}
+      <PunchInCard />
+
       {/* Mission Card with parallax */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
