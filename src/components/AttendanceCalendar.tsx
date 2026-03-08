@@ -210,10 +210,11 @@ export function AttendanceCalendar() {
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground pt-2">
+          <div className="flex items-center justify-center gap-3 flex-wrap text-[10px] text-muted-foreground pt-2">
             <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-400" /> Present</div>
             <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-rose-500" /> Absent</div>
             <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-400" /> Holiday</div>
+            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-400" /> Leave</div>
           </div>
         </>
       )}
