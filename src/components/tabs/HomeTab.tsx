@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { springPresets } from '@/components/ui/spring-config';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
+import { PunchInCard } from '@/components/PunchInCard';
 
 // Founder emails for fetching dynamic avatars
 const FOUNDER_EMAILS = {
@@ -202,6 +203,9 @@ export function HomeTab() {
           </p>
         </motion.div>
       </motion.section>
+
+      {/* Punch-In Card */}
+      <PunchInCard />
 
       {/* Mission Card with parallax */}
       <motion.section

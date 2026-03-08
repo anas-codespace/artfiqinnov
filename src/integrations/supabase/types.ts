@@ -44,6 +44,33 @@ export type Database = {
         }
         Relationships: []
       }
+      attendance_logs: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          punch_in_time: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          punch_in_time?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          punch_in_time?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cleanup_log: {
         Row: {
           executed_at: string

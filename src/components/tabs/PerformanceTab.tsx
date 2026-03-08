@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Clock, Milestone, Loader2 } from 'lucide-react';
+import { BarChart3, Clock, Milestone, Loader2, Users } from 'lucide-react';
 import { springPresets } from '@/components/ui/spring-config';
 import { supabase } from '@/integrations/supabase/client';
+import { AttendanceRing } from '@/components/ui/attendance-ring';
+import { fetchTeamAttendance } from '@/hooks/useAttendance';
+import defaultAvatarImg from '@/assets/default-avatar.webp';
 
 interface Task {
   id: string;
@@ -21,11 +24,27 @@ interface Project {
   color: string;
 }
 
+interface TeamMember {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+}
+
+interface AttendanceStat {
+  percentage: number;
+  daysPresent: number;
+  totalDays: number;
+}
+
 export function PerformanceTab() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterProject, setFilterProject] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [attendanceMap, setAttendanceMap] = useState<Record<string, AttendanceStat>>({});
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,6 +64,38 @@ export function PerformanceTab() {
         supabase.from('tasks').select('id, title, status, priority, created_at, updated_at, project_id').order('created_at', { ascending: true }).then(({ data }) => {
           if (data) setTasks(data);
         });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // Fetch team members + attendance
+  useEffect(() => {
+    const fetchTeam = async () => {
+      setAttendanceLoading(true);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url, created_at')
+        .eq('access_status', 'approved_member')
+        .order('display_name', { ascending: true });
+
+      if (profiles && profiles.length > 0) {
+        setTeamMembers(profiles);
+        const joinDates: Record<string, string> = {};
+        profiles.forEach(p => { joinDates[p.user_id] = p.created_at; });
+        const attendance = await fetchTeamAttendance(profiles.map(p => p.user_id), joinDates);
+        setAttendanceMap(attendance);
+      }
+      setAttendanceLoading(false);
+    };
+    fetchTeam();
+
+    // Real-time attendance updates
+    const channel = supabase
+      .channel('attendance-performance')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_logs' }, () => {
+        fetchTeam();
       })
       .subscribe();
 
@@ -100,6 +151,57 @@ export function PerformanceTab() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={springPresets.snappy}>
         <h1 className="text-2xl sm:text-3xl font-bold font-['Orbitron']">Performance Timeline</h1>
         <p className="text-muted-foreground text-sm">Gantt chart view — live task data</p>
+      </motion.div>
+
+      {/* Attendance Health Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...springPresets.snappy, delay: 0.1 }}
+        className="glass-card rounded-2xl p-5 space-y-4"
+      >
+        <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
+          <Users className="w-4 h-4" />
+          <span>Attendance Health</span>
+        </div>
+
+        {attendanceLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+          </div>
+        ) : teamMembers.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">No team members found.</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {teamMembers.map((member, i) => {
+              const stat = attendanceMap[member.user_id];
+              const pct = stat?.percentage ?? 100;
+
+              return (
+                <motion.div
+                  key={member.user_id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50"
+                >
+                  <img
+                    src={member.avatar_url || defaultAvatarImg}
+                    alt={member.display_name || 'User'}
+                    className="w-8 h-8 rounded-full border border-border flex-shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium truncate">{member.display_name || 'User'}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {stat ? `${stat.daysPresent}/${stat.totalDays} days` : '—'}
+                    </p>
+                  </div>
+                  <AttendanceRing percentage={pct} size={36} strokeWidth={3} />
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </motion.div>
 
       {/* Project Filters */}
