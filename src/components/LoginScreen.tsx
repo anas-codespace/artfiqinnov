@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Check, X, Clock, AlertTriangle } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Check, X, Clock, AlertTriangle, UserRound } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
