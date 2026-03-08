@@ -195,7 +195,7 @@ export function HomeTab() {
           transition={{ delay: 0.2, duration: 0.5 }}
         >
           <h1 className="text-4xl lg:text-6xl font-bold mb-4">
-            About <span className="text-primary">ARTFIQ</span>
+            <span className="text-primary">ARTFIQ</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Bridging human needs with digital efficiency.
