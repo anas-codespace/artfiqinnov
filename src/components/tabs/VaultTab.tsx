@@ -710,7 +710,6 @@ export function VaultTab() {
           </AnimatePresence>
         )}
       </motion.div>
-      )}
 
 
       {/* File Viewers Modal */}
@@ -719,6 +718,20 @@ export function VaultTab() {
         onClose={() => setViewersModalFile(null)}
         fileName={viewersModalFile?.name || ''}
         viewers={viewersModalFile ? (fileViews[viewersModalFile.id] || []) : []}
+      />
+
+      {/* Vault Access Restriction Modal (for non-members) */}
+      <VaultAccessModal
+        open={!!restrictedFile}
+        onOpenChange={(open) => !open && setRestrictedFile(null)}
+        fileName={restrictedFile?.name || ''}
+        fileId={restrictedFile?.id || ''}
+        onAccessGranted={() => {
+          if (restrictedFile) {
+            setRestrictedFile(null);
+            handlePreview(restrictedFile);
+          }
+        }}
       />
     </div>
   );
