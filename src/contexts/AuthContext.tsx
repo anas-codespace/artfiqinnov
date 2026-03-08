@@ -165,9 +165,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    if (isGuest) {
+      setIsGuest(false);
+      setUser(null);
+      setProfile(null);
+      return;
+    }
     await supabase.auth.signOut();
     setProfile(null);
     setIsPasswordRecovery(false);
+  };
+
+  const loginAsGuest = () => {
+    setIsGuest(true);
+    // Create a minimal fake user object so the app renders the dashboard
+    setUser({ id: 'guest', email: 'guest@artfiq.com' } as User);
+    setProfile({
+      id: 'guest',
+      user_id: 'guest',
+      display_name: 'Guest User',
+      avatar_url: null,
+      email: 'guest@artfiq.com',
+      access_status: 'visitor',
+    });
+    setIsLoading(false);
   };
 
   return (
@@ -177,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile, 
       isLoading,
       isPasswordRecovery,
+      isGuest,
       authEvent,
       signInWithEmail,
       signUpWithEmail,
@@ -184,6 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updatePassword,
       resendVerificationEmail,
       signOut,
+      loginAsGuest,
       clearPasswordRecovery,
     }}>
       {children}
