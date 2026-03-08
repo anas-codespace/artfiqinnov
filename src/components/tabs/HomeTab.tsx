@@ -180,6 +180,31 @@ export function HomeTab() {
 
   return (
     <div ref={containerRef} className="p-6 lg:p-8 space-y-12 max-w-5xl mx-auto relative">
+      {/* Guest Mode Banner */}
+      {isGuest && !guestBannerDismissed && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-20 flex items-center justify-between gap-3 backdrop-blur-xl bg-primary/10 border border-primary/30 rounded-xl px-4 py-3"
+        >
+          <div className="flex items-center gap-3">
+            <Eye className="w-5 h-5 text-primary flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Guest Mode Active</p>
+              <p className="text-xs text-muted-foreground">You're viewing a read-only preview. Sign up to unlock all features.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              sessionStorage.setItem('guestBannerDismissed', 'true');
+              setGuestBannerDismissed(true);
+            }}
+            className="p-1 rounded-full hover:bg-secondary transition-colors flex-shrink-0"
+          >
+            <XIcon className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </motion.div>
+      )}
       {/* Deep parallax background layer */}
       <motion.div 
         className="fixed inset-0 pointer-events-none z-0"
