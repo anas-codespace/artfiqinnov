@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { PostingBadge } from '@/components/ui/posting-badge';
+import { PostingBadge, isFounderRole } from '@/components/ui/posting-badge';
 import defaultAvatar from '@/assets/default-avatar.webp';
 
 // Allowed admin emails
@@ -69,6 +69,7 @@ export default function AdminConsole() {
 
   // Dashboard state
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [userRoles, setUserRoles] = useState<Record<string, 'ceo' | 'cto' | 'team'>>({});
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editingPosting, setEditingPosting] = useState<string | null>(null);
@@ -125,20 +126,21 @@ export default function AdminConsole() {
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, user_id, display_name, email, avatar_url, access_status, posting')
-      .order('created_at', { ascending: false });
+    const [{ data, error }, { data: roles }] = await Promise.all([
+      supabase.from('profiles').select('id, user_id, display_name, email, avatar_url, access_status, posting').order('created_at', { ascending: false }),
+      supabase.from('user_roles').select('user_id, role'),
+    ]);
 
     if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load users',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to load users', variant: 'destructive' });
     } else {
       setUsers(data || []);
     }
+
+    const rolesMap: Record<string, 'ceo' | 'cto' | 'team'> = {};
+    roles?.forEach(r => { rolesMap[r.user_id] = r.role as 'ceo' | 'cto' | 'team'; });
+    setUserRoles(rolesMap);
+
     setLoadingUsers(false);
   };
 
@@ -586,6 +588,8 @@ export default function AdminConsole() {
     showRemove?: boolean;
   }) => {
     const isEditingThis = editingPosting === user.user_id;
+    const memberRole = userRoles[user.user_id] || 'team';
+    const isFounder = isFounderRole(memberRole);
 
     return (
       <motion.div
@@ -604,7 +608,7 @@ export default function AdminConsole() {
             <p className="text-xs sm:text-sm text-muted-foreground truncate">{user.email}</p>
             {/* Posting Badge + Edit */}
             <div className="flex items-center gap-1.5 mt-1">
-              {isEditingThis ? (
+              {isEditingThis && !isFounder ? (
                 <div className="flex items-center gap-1">
                   <Input
                     value={postingValue}
@@ -629,16 +633,18 @@ export default function AdminConsole() {
                 </div>
               ) : (
                 <>
-                  <PostingBadge posting={user.posting} />
-                  <button
-                    onClick={() => {
-                      setEditingPosting(user.user_id);
-                      setPostingValue(user.posting || '');
-                    }}
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <Pencil className="w-3 h-3" />
-                  </button>
+                  <PostingBadge posting={user.posting} role={memberRole} />
+                  {!isFounder && (
+                    <button
+                      onClick={() => {
+                        setEditingPosting(user.user_id);
+                        setPostingValue(user.posting || '');
+                      }}
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  )}
                 </>
               )}
             </div>
