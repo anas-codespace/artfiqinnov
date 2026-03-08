@@ -93,6 +93,12 @@ export default function AdminConsole() {
   const { holidays, refetch: refetchHolidays } = useCompanyHolidays();
   const { leaves: allLeaves, isLoading: leavesLoading, refetch: refetchLeaves } = useAllLeaveRequests();
   const [leaveProfiles, setLeaveProfiles] = useState<Record<string, { display_name: string | null; avatar_url: string | null }>>({});
+  
+  // Vault access requests state
+  const [vaultRequests, setVaultRequests] = useState<Array<{ id: string; user_id: string; file_id: string; status: string; created_at: string }>>([]);
+  const [vaultRequestProfiles, setVaultRequestProfiles] = useState<Record<string, string>>({});
+  const [vaultRequestFiles, setVaultRequestFiles] = useState<Record<string, string>>({});
+  const [vaultLoading, setVaultLoading] = useState(true);
 
   // Check access and PIN status on mount
   useEffect(() => {
