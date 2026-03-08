@@ -8,7 +8,7 @@ interface PostingBadgeProps {
 
 function getBadgeText(role?: 'ceo' | 'cto' | 'team' | null, posting?: string | null): string {
   if (role === 'ceo') return 'CEO';
-  if (role === 'cto') return 'Co-Founder, CTO & MD';
+  if (role === 'cto') return 'Managing Director';
   return posting?.trim() ? posting.toUpperCase() : 'TEAM MEMBER';
 }
 

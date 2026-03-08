@@ -32,7 +32,7 @@ export function RoleBadge({ role, className, size = 'md', showIcon = true }: Rol
         };
       case 'cto':
         return {
-          label: 'CTO',
+          label: 'MD',
           icon: Code2,
           gradient: 'from-cyan-500/20 via-blue-500/20 to-cyan-400/20',
           border: 'border-cyan-500/50',
