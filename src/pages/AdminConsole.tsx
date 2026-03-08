@@ -23,8 +23,8 @@ import defaultAvatar from '@/assets/default-avatar.webp';
 
 // Allowed admin emails
 const ADMIN_EMAILS = [
-  'mohammedsulaimanofficial@gmail.com',
-  'anas.m77581@gmail.com'
+  'sulaiman.artfiqceo@gmail.com',
+  'anas.md.artfiq@gmail.com'
 ];
 
 import { OFFICIAL_POSTINGS, getDepartmentCode } from '@/lib/department-mapping';
