@@ -71,6 +71,8 @@ export default function AdminConsole() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [editingPosting, setEditingPosting] = useState<string | null>(null);
+  const [postingValue, setPostingValue] = useState('');
 
   // Check access and PIN status on mount
   useEffect(() => {
