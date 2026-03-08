@@ -362,15 +362,39 @@ export function InnovationLabTab() {
                     </div>
                   )}
 
-                  {/* Revoke button for founders on approved/rejected pitches */}
+                  {/* Revoke & Delete for founders on decided pitches */}
                   {isFounder && (pitch.status === 'approved' || pitch.status === 'rejected') && (
+                    <div className="flex items-center gap-1 ml-auto">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-amber-400 hover:text-amber-300 gap-1"
+                        onClick={() => handleRevoke(pitch.id)}
+                      >
+                        <RotateCcw className="w-3 h-3" /> Revoke
+                      </Button>
+                      {isFounderEmail && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-destructive hover:text-destructive/80"
+                          onClick={() => setDeletePitchId(pitch.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Delete button on pending/review pitches for founder emails */}
+                  {isFounderEmail && !isFounder && pitch.status !== 'approved' && pitch.status !== 'rejected' && (
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 px-2 ml-auto text-amber-400 hover:text-amber-300 gap-1"
-                      onClick={() => handleRevoke(pitch.id)}
+                      className="h-7 px-2 ml-auto text-destructive hover:text-destructive/80"
+                      onClick={() => setDeletePitchId(pitch.id)}
                     >
-                      <RotateCcw className="w-3 h-3" /> Revoke
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   )}
                 </div>
