@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { springPresets } from '@/components/ui/spring-config';
 import { supabase } from '@/integrations/supabase/client';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
+import { LeaveRequestCard } from '@/components/LeaveRequestCard';
 
 export function PunchInCard() {
   const { user } = useAuth();
