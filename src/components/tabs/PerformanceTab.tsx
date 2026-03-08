@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Clock, Milestone, Loader2, Users } from 'lucide-react';
+import { BarChart3, Clock, Milestone, Loader2, Users, TrendingUp } from 'lucide-react';
 import { springPresets } from '@/components/ui/spring-config';
 import { supabase } from '@/integrations/supabase/client';
 import { AttendanceRing } from '@/components/ui/attendance-ring';
-import { fetchTeamAttendance } from '@/hooks/useAttendance';
+import { fetchTeamAttendance, fetchUserWorkLogs } from '@/hooks/useAttendance';
+import { useAuth } from '@/contexts/AuthContext';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 
 interface Task {
@@ -37,7 +38,15 @@ interface AttendanceStat {
   totalDays: number;
 }
 
+function formatDuration(minutes: number): string {
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hrs === 0) return `${mins}m`;
+  return `${hrs}h ${mins}m`;
+}
+
 export function PerformanceTab() {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +54,10 @@ export function PerformanceTab() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [attendanceMap, setAttendanceMap] = useState<Record<string, AttendanceStat>>({});
   const [attendanceLoading, setAttendanceLoading] = useState(true);
+  
+  // Personal work stats
+  const [myAvgMinutes, setMyAvgMinutes] = useState<number | null>(null);
+  const [myRecentLogs, setMyRecentLogs] = useState<Array<{ date: string; work_duration_minutes: number | null }>>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,6 +83,19 @@ export function PerformanceTab() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  // Fetch personal work logs
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchUserWorkLogs(user.id).then(logs => {
+      setMyRecentLogs(logs);
+      const withDuration = logs.filter(l => l.work_duration_minutes && l.work_duration_minutes > 0);
+      if (withDuration.length > 0) {
+        const total = withDuration.reduce((s, l) => s + (l.work_duration_minutes || 0), 0);
+        setMyAvgMinutes(Math.round(total / withDuration.length));
+      }
+    });
+  }, [user?.id]);
+
   // Fetch team members + attendance
   useEffect(() => {
     const fetchTeam = async () => {
@@ -91,7 +117,6 @@ export function PerformanceTab() {
     };
     fetchTeam();
 
-    // Real-time attendance updates
     const channel = supabase
       .channel('attendance-performance')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_logs' }, () => {
@@ -151,6 +176,46 @@ export function PerformanceTab() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={springPresets.snappy}>
         <h1 className="text-2xl sm:text-3xl font-bold font-['Orbitron']">Performance Timeline</h1>
         <p className="text-muted-foreground text-sm">Gantt chart view — live task data</p>
+      </motion.div>
+
+      {/* Personal Work Stats Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...springPresets.snappy, delay: 0.05 }}
+        className="glass-card rounded-2xl p-5"
+      >
+        <div className="flex items-center gap-3 mb-3 text-sm font-medium text-muted-foreground">
+          <TrendingUp className="w-4 h-4" />
+          <span>Your Work Stats</span>
+        </div>
+        <div className="flex items-center gap-6 flex-wrap">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-primary">
+              {myAvgMinutes !== null ? formatDuration(myAvgMinutes) : '—'}
+            </p>
+            <p className="text-[10px] text-muted-foreground">Avg Work Time / Day</p>
+          </div>
+          {/* Mini bar chart of recent days */}
+          {myRecentLogs.filter(l => l.work_duration_minutes).length > 0 && (
+            <div className="flex items-end gap-1 h-10">
+              {myRecentLogs.filter(l => l.work_duration_minutes).slice(0, 7).reverse().map((log, i) => {
+                const maxMins = Math.max(...myRecentLogs.filter(l => l.work_duration_minutes).map(l => l.work_duration_minutes || 1));
+                const pct = ((log.work_duration_minutes || 0) / maxMins) * 100;
+                return (
+                  <motion.div
+                    key={log.date}
+                    initial={{ height: 0 }}
+                    animate={{ height: `${Math.max(pct, 10)}%` }}
+                    transition={{ delay: i * 0.05 }}
+                    className="w-3 rounded-full bg-primary/50"
+                    title={`${log.date}: ${formatDuration(log.work_duration_minutes || 0)}`}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
       </motion.div>
 
       {/* Attendance Health Section */}
