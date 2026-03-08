@@ -72,14 +72,12 @@ export function TimelineTab() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [eventsRes, membersRes, presenceRes] = await Promise.all([
+      const [eventsRes, membersRes] = await Promise.all([
         supabase.from('events').select('*').order('start_date', { ascending: true }),
         supabase.from('profiles_safe').select('user_id, display_name, avatar_url, department'),
-        supabase.from('user_presence').select('user_id, is_online, last_seen'),
       ]);
       if (!eventsRes.error) setEvents((eventsRes.data as CalendarEvent[]) || []);
       if (!membersRes.error) setTeamMembers((membersRes.data as unknown as TeamMember[]) || []);
-      if (!presenceRes.error) setPresence(presenceRes.data || []);
       setIsLoading(false);
     };
     fetchData();
