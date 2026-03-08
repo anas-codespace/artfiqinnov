@@ -232,7 +232,7 @@ export function NotificationBell({ onNavigate, onOpenAdmin }: NotificationBellPr
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="absolute right-0 top-full mt-3 w-80 max-w-[90vw] bg-card border border-border/50 rounded-2xl shadow-2xl z-50 overflow-hidden origin-top-right"
+              className="fixed right-3 sm:right-6 top-14 sm:top-16 mt-1 w-80 max-w-[calc(100vw-1.5rem)] bg-card border border-border/50 rounded-2xl shadow-2xl z-[100] overflow-hidden origin-top-right"
             >
               <div className="p-4 border-b border-border flex items-center justify-between">
                 <h3 className="font-semibold">Notifications</h3>
