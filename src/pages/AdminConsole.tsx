@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Lock, KeyRound, Users, UserCheck, UserX, Loader2, AlertTriangle, CheckCircle, ArrowLeft, HelpCircle, Pencil, Save, Clock, CalendarPlus, PartyPopper, Trash2, CalendarDays, CheckCircle2, XCircle } from 'lucide-react';
+import { Shield, Lock, KeyRound, Users, UserCheck, UserX, Loader2, AlertTriangle, CheckCircle, ArrowLeft, HelpCircle, Pencil, Save, Clock, CalendarPlus, PartyPopper, Trash2, CalendarDays, CheckCircle2, XCircle, FolderLock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -93,6 +93,12 @@ export default function AdminConsole() {
   const { holidays, refetch: refetchHolidays } = useCompanyHolidays();
   const { leaves: allLeaves, isLoading: leavesLoading, refetch: refetchLeaves } = useAllLeaveRequests();
   const [leaveProfiles, setLeaveProfiles] = useState<Record<string, { display_name: string | null; avatar_url: string | null }>>({});
+  
+  // Vault access requests state
+  const [vaultRequests, setVaultRequests] = useState<Array<{ id: string; user_id: string; file_id: string; status: string; created_at: string }>>([]);
+  const [vaultRequestProfiles, setVaultRequestProfiles] = useState<Record<string, string>>({});
+  const [vaultRequestFiles, setVaultRequestFiles] = useState<Record<string, string>>({});
+  const [vaultLoading, setVaultLoading] = useState(true);
 
   // Check access and PIN status on mount
   useEffect(() => {
@@ -141,8 +147,57 @@ export default function AdminConsole() {
     if (stage === 'unlocked') {
       fetchUsers();
       fetchTodayAttendance();
+      fetchVaultRequests();
     }
   }, [stage]);
+
+  const fetchVaultRequests = async () => {
+    setVaultLoading(true);
+    const { data } = await supabase
+      .from('vault_access_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    const requests = (data as Array<{ id: string; user_id: string; file_id: string; status: string; created_at: string }>) || [];
+    setVaultRequests(requests);
+
+    // Fetch profile names and file names
+    const userIds = [...new Set(requests.map(r => r.user_id))];
+    const fileIds = [...new Set(requests.map(r => r.file_id))];
+
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('user_id, display_name').in('user_id', userIds);
+      const map: Record<string, string> = {};
+      profiles?.forEach(p => { map[p.user_id] = p.display_name || 'Unknown'; });
+      setVaultRequestProfiles(map);
+    }
+
+    if (fileIds.length > 0) {
+      const { data: files } = await supabase.from('files').select('id, name').in('id', fileIds);
+      const map: Record<string, string> = {};
+      files?.forEach(f => { map[f.id] = f.name; });
+      setVaultRequestFiles(map);
+    }
+
+    setVaultLoading(false);
+  };
+
+  const handleVaultRequestAction = async (requestId: string, action: 'approved' | 'rejected') => {
+    setActionLoading(requestId);
+    const { error } = await supabase
+      .from('vault_access_requests')
+      .update({ status: action, reviewed_by: user!.id, updated_at: new Date().toISOString() })
+      .eq('id', requestId);
+
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: action === 'approved' ? '✅ Access Granted' : '❌ Access Denied' });
+      fetchVaultRequests();
+    }
+    setActionLoading(null);
+  };
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -832,7 +887,7 @@ export default function AdminConsole() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-full overflow-x-hidden">
         <Tabs defaultValue="team" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-8">
+          <TabsList className="grid w-full grid-cols-6 mb-8">
             <TabsTrigger value="team" className="gap-1 text-[10px] sm:text-sm">
               <UserCheck className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Team</span>
@@ -857,6 +912,15 @@ export default function AdminConsole() {
             <TabsTrigger value="holidays" className="gap-1 text-[10px] sm:text-sm">
               <PartyPopper className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Holidays</span>
+            </TabsTrigger>
+            <TabsTrigger value="vault-access" className="gap-1 text-[10px] sm:text-sm relative">
+              <FolderLock className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Vault</span>
+              {vaultRequests.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
+                  {vaultRequests.length}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -1078,6 +1142,69 @@ export default function AdminConsole() {
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Vault Access Requests Tab */}
+          <TabsContent value="vault-access" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Vault Access Requests</h2>
+              <Badge variant="secondary">{vaultRequests.length} pending</Badge>
+            </div>
+
+            {vaultLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : vaultRequests.length === 0 ? (
+              <div className="glass-card rounded-xl p-8 text-center">
+                <FolderLock className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No pending vault access requests</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {vaultRequests.map((req) => (
+                  <motion.div
+                    key={req.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="glass-card rounded-xl p-4 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">
+                        👤 {vaultRequestProfiles[req.user_id] || 'Unknown'} requested access to:
+                      </p>
+                      <p className="text-xs text-primary mt-0.5 truncate">
+                        📄 {vaultRequestFiles[req.file_id] || 'Unknown File'}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {new Date(req.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={() => handleVaultRequestAction(req.id, 'approved')}
+                        disabled={actionLoading === req.id}
+                        className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-xs"
+                      >
+                        {actionLoading === req.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                        Grant
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleVaultRequestAction(req.id, 'rejected')}
+                        disabled={actionLoading === req.id}
+                        className="gap-1 text-xs"
+                      >
+                        <XCircle className="w-3 h-3" />
+                        Deny
+                      </Button>
+                    </div>
                   </motion.div>
                 ))}
               </div>

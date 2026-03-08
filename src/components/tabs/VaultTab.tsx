@@ -6,9 +6,11 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useUserStatus } from '@/hooks/useUserStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { FileViewersModal } from '@/components/ui/file-viewers-modal';
+import { VaultAccessModal } from '@/components/VaultAccessModal';
 import { springPresets } from '@/components/ui/spring-config';
 
 interface UploadedFile {
@@ -83,6 +85,7 @@ function getFileIcon(filename: string) {
 export function VaultTab() {
   const { user, profile } = useAuth();
   const { isFounder } = useUserRole();
+  const { isMember } = useUserStatus();
   const { toast } = useToast();
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [fileViews, setFileViews] = useState<Record<string, FileView[]>>({});
@@ -92,6 +95,7 @@ export function VaultTab() {
   const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [viewersModalFile, setViewersModalFile] = useState<UploadedFile | null>(null);
+  const [restrictedFile, setRestrictedFile] = useState<UploadedFile | null>(null);
 
   // Fetch files from database
   const fetchFiles = async () => {
@@ -487,7 +491,8 @@ export function VaultTab() {
         </p>
       </motion.div>
 
-      {/* Upload Zone */}
+      {/* Upload Zone - members only */}
+      {isMember && (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -545,6 +550,7 @@ export function VaultTab() {
           </motion.div>
         </label>
       </motion.div>
+      )}
 
       {/* File List */}
       <motion.div
@@ -640,59 +646,32 @@ export function VaultTab() {
                       </div>
 
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {showViewers && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setViewersModalFile(file)}
-                            className="h-9 w-9"
-                            title="View who accessed this file"
-                          >
-                            <Users className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handlePreview(file)}
-                          className="h-9 w-9"
-                          title="Preview"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDownload(file)}
-                          className="h-9 w-9"
-                          title={isDownloadingThis ? 'Downloading...' : 'Download'}
-                          disabled={isDownloadingThis}
-                        >
-                          {isDownloadingThis ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Download className="w-4 h-4" />
-                          )}
-                        </Button>
-                        {/* Request Review Button */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRequestReview(file)}
-                          className="h-9 w-9 hover:text-amber-500"
-                          title="Request founder review"
-                        >
-                          <Bell className="w-4 h-4" />
-                        </Button>
-                        {file.uploaded_by === user?.id && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(file)}
-                            className="h-9 w-9 hover:text-destructive"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
+                        {isMember ? (
+                          <>
+                            {showViewers && (
+                              <Button variant="ghost" size="icon" onClick={() => setViewersModalFile(file)} className="h-9 w-9" title="View who accessed this file">
+                                <Users className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" onClick={() => handlePreview(file)} className="h-9 w-9" title="Preview">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDownload(file)} className="h-9 w-9" title={isDownloadingThis ? 'Downloading...' : 'Download'} disabled={isDownloadingThis}>
+                              {isDownloadingThis ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleRequestReview(file)} className="h-9 w-9 hover:text-amber-500" title="Request founder review">
+                              <Bell className="w-4 h-4" />
+                            </Button>
+                            {file.uploaded_by === user?.id && (
+                              <Button variant="ghost" size="icon" onClick={() => handleDelete(file)} className="h-9 w-9 hover:text-destructive" title="Delete">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <Button variant="ghost" size="sm" onClick={() => setRestrictedFile(file)} className="text-xs gap-1.5">
+                            <Eye className="w-3.5 h-3.5" />
+                            Request Access
                           </Button>
                         )}
                       </div>
@@ -712,6 +691,20 @@ export function VaultTab() {
         onClose={() => setViewersModalFile(null)}
         fileName={viewersModalFile?.name || ''}
         viewers={viewersModalFile ? (fileViews[viewersModalFile.id] || []) : []}
+      />
+
+      {/* Vault Access Restriction Modal (for non-members) */}
+      <VaultAccessModal
+        open={!!restrictedFile}
+        onOpenChange={(open) => !open && setRestrictedFile(null)}
+        fileName={restrictedFile?.name || ''}
+        fileId={restrictedFile?.id || ''}
+        onAccessGranted={() => {
+          if (restrictedFile) {
+            setRestrictedFile(null);
+            handlePreview(restrictedFile);
+          }
+        }}
       />
     </div>
   );
