@@ -27,23 +27,7 @@ const ADMIN_EMAILS = [
   'anas.m77581@gmail.com'
 ];
 
-const OFFICIAL_POSTINGS = [
-  "Lead, AI & Technology Development",
-  "Technical Development Executive",
-  "Technology Development Executive",
-  "Web Development Executive",
-  "UI/UX & Web Development Executive",
-  "Operations & Administration Manager",
-  "Project Management & Technical Executive",
-  "Business Operations & Technical Lead",
-  "Business Operations Executive",
-  "Business Development & Strategy Executive",
-  "Technology & Digital Solutions Executive",
-  "AI Media & Creative Director (Associate)",
-  "Public Relations & Brand Communications Head",
-  "Advocate Legal & Compliance Advisor",
-  "Medical Adviser",
-];
+import { OFFICIAL_POSTINGS, getDepartmentCode } from '@/lib/department-mapping';
 
 // Security questions
 const SECURITY_QUESTIONS = [
