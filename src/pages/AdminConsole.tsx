@@ -138,6 +138,7 @@ export default function AdminConsole() {
   useEffect(() => {
     if (stage === 'unlocked') {
       fetchUsers();
+      fetchTodayAttendance();
     }
   }, [stage]);
 
@@ -159,6 +160,72 @@ export default function AdminConsole() {
     setUserRoles(rolesMap);
 
     setLoadingUsers(false);
+  };
+
+  const fetchTodayAttendance = async () => {
+    setAttendanceLoading(true);
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: logs } = await supabase
+      .from('attendance_logs')
+      .select('user_id, punch_in_time')
+      .eq('date', today);
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, display_name, avatar_url')
+      .eq('access_status', 'approved_member');
+
+    const logMap = new Map<string, string>();
+    (logs || []).forEach(l => logMap.set(l.user_id, l.punch_in_time));
+
+    const combined = (profiles || []).map(p => ({
+      user_id: p.user_id,
+      display_name: p.display_name,
+      avatar_url: p.avatar_url,
+      punch_in_time: logMap.get(p.user_id) || '',
+    }));
+
+    // Sort: punched in first, then not punched in
+    combined.sort((a, b) => {
+      if (a.punch_in_time && !b.punch_in_time) return -1;
+      if (!a.punch_in_time && b.punch_in_time) return 1;
+      return 0;
+    });
+
+    setTodayAttendance(combined);
+    setAttendanceLoading(false);
+  };
+
+  const handleDeclareHoliday = async () => {
+    if (!holidayDate || !holidayTitle.trim() || !user) return;
+    setDeclaringHoliday(true);
+
+    const dateStr = format(holidayDate, 'yyyy-MM-dd');
+    const { error } = await supabase
+      .from('company_holidays')
+      .insert({ date: dateStr, title: holidayTitle.trim(), declared_by: user.id });
+
+    if (error) {
+      toast({ title: 'Error', description: error.message.includes('duplicate') ? 'A holiday already exists on this date.' : 'Failed to declare holiday', variant: 'destructive' });
+    } else {
+      toast({ title: '🎉 Holiday Declared', description: `${holidayTitle.trim()} on ${format(holidayDate, 'PPP')}` });
+      setHolidayModalOpen(false);
+      setHolidayDate(undefined);
+      setHolidayTitle('');
+      refetchHolidays();
+    }
+    setDeclaringHoliday(false);
+  };
+
+  const handleDeleteHoliday = async (id: string) => {
+    const { error } = await supabase.from('company_holidays').delete().eq('id', id);
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to delete holiday', variant: 'destructive' });
+    } else {
+      toast({ title: 'Deleted', description: 'Holiday removed' });
+      refetchHolidays();
+    }
   };
 
   const handleSetupPin = async () => {
