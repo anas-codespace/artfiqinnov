@@ -17,6 +17,7 @@ interface AuthContextType {
   profile: Profile | null;
   isLoading: boolean;
   isPasswordRecovery: boolean;
+  isGuest: boolean;
   authEvent: AuthChangeEvent | null;
   signInWithEmail: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string, name: string) => Promise<{ error: Error | null; session: Session | null }>;
@@ -24,6 +25,7 @@ interface AuthContextType {
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   resendVerificationEmail: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  loginAsGuest: () => void;
   clearPasswordRecovery: () => void;
 }
 
@@ -35,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
   const [authEvent, setAuthEvent] = useState<AuthChangeEvent | null>(null);
 
   const fetchProfile = async (userId: string) => {
@@ -162,9 +165,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    if (isGuest) {
+      setIsGuest(false);
+      setUser(null);
+      setProfile(null);
+      return;
+    }
     await supabase.auth.signOut();
     setProfile(null);
     setIsPasswordRecovery(false);
+  };
+
+  const loginAsGuest = () => {
+    setIsGuest(true);
+    // Create a minimal fake user object so the app renders the dashboard
+    setUser({ id: 'guest', email: 'guest@artfiq.com' } as User);
+    setProfile({
+      id: 'guest',
+      user_id: 'guest',
+      display_name: 'Guest User',
+      avatar_url: null,
+      email: 'guest@artfiq.com',
+      access_status: 'visitor',
+    });
+    setIsLoading(false);
   };
 
   return (
@@ -174,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile, 
       isLoading,
       isPasswordRecovery,
+      isGuest,
       authEvent,
       signInWithEmail,
       signUpWithEmail,
@@ -181,6 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updatePassword,
       resendVerificationEmail,
       signOut,
+      loginAsGuest,
       clearPasswordRecovery,
     }}>
       {children}

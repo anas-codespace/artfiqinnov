@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Target, Users, Zap, Globe, Mail, Linkedin, Instagram, Lock, Shield } from 'lucide-react';
+import { Target, Users, Zap, Globe, Mail, Linkedin, Instagram, Lock, Shield, X as XIcon, Eye } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { FluidButton } from '@/components/ui/fluid-button';
@@ -15,6 +15,7 @@ import defaultAvatarImg from '@/assets/default-avatar.webp';
 import { PunchInCard } from '@/components/PunchInCard';
 import { NoticeBoard } from '@/components/NoticeBoard';
 import { useUserStatus } from '@/hooks/useUserStatus';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 // Founder emails for fetching dynamic avatars
@@ -75,10 +76,12 @@ interface TeamMember {
 }
 
 export function HomeTab() {
+  const { isGuest } = useAuth();
   const { isMember, isVisitor, isPending, requestAccess } = useUserStatus();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [founders, setFounders] = useState<Founder[]>([]);
   const [selectedFounder, setSelectedFounder] = useState<Founder | null>(null);
+  const [guestBannerDismissed, setGuestBannerDismissed] = useState(() => sessionStorage.getItem('guestBannerDismissed') === 'true');
   const containerRef = useRef<HTMLDivElement>(null);
   
   const { scrollYProgress } = useScroll({
@@ -177,6 +180,31 @@ export function HomeTab() {
 
   return (
     <div ref={containerRef} className="p-6 lg:p-8 space-y-12 max-w-5xl mx-auto relative">
+      {/* Guest Mode Banner */}
+      {isGuest && !guestBannerDismissed && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-20 flex items-center justify-between gap-3 backdrop-blur-xl bg-primary/10 border border-primary/30 rounded-xl px-4 py-3"
+        >
+          <div className="flex items-center gap-3">
+            <Eye className="w-5 h-5 text-primary flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Guest Mode Active</p>
+              <p className="text-xs text-muted-foreground">You're viewing a read-only preview. Sign up to unlock all features.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              sessionStorage.setItem('guestBannerDismissed', 'true');
+              setGuestBannerDismissed(true);
+            }}
+            className="p-1 rounded-full hover:bg-secondary transition-colors flex-shrink-0"
+          >
+            <XIcon className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </motion.div>
+      )}
       {/* Deep parallax background layer */}
       <motion.div 
         className="fixed inset-0 pointer-events-none z-0"
@@ -287,8 +315,8 @@ export function HomeTab() {
       {/* Notice Board */}
       <NoticeBoard />
 
-      {/* Visitor/Pending Banner */}
-      {!isMember && (
+      {/* Visitor/Pending Banner - hidden for guests (they have their own banner) */}
+      {!isMember && !isGuest && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -326,10 +354,12 @@ export function HomeTab() {
         </motion.div>
       )}
 
-      {/* Punch-In Card + Collapsible Calendar */}
-      <div className="mb-8">
-        <PunchInCard />
-      </div>
+      {/* Punch-In Card + Collapsible Calendar - Hidden for guests */}
+      {!isGuest && (
+        <div className="mb-8">
+          <PunchInCard />
+        </div>
+      )}
 
       {/* Founders Section - Profile Photos with Social Links */}
       <motion.section

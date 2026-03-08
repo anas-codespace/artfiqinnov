@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Check, X, Clock, AlertTriangle } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Check, X, Clock, AlertTriangle, UserRound } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +29,7 @@ const RESET_COOLDOWN_SECONDS = 60;
 type AuthView = 'login' | 'forgot-password';
 
 export function LoginScreen() {
-  const { signInWithEmail, signUpWithEmail, resetPassword, isLoading } = useAuth();
+  const { signInWithEmail, signUpWithEmail, resetPassword, isLoading, loginAsGuest } = useAuth();
   const { toast } = useToast();
   const [view, setView] = useState<AuthView>('login');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -388,6 +388,25 @@ export function LoginScreen() {
                 <p className="text-center text-xs text-muted-foreground">
                   By signing in, you agree to our Terms of Service and Privacy Policy
                 </p>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">or</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
+                {/* Guest Login */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="w-full gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={loginAsGuest}
+                >
+                  <UserRound className="w-4 h-4" />
+                  Continue as Guest
+                </Button>
               </motion.div>
             ) : !signUpSuccess && view === 'forgot-password' ? (
               <motion.div

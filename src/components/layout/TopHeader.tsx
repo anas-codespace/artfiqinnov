@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { LogOut, Shield } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +16,7 @@ interface TopHeaderProps {
 }
 
 export function TopHeader({ onNavigate }: TopHeaderProps) {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isGuest } = useAuth();
   const { role, isFounder } = useUserRole();
   const navigate = useNavigate();
   const [showProfileSettings, setShowProfileSettings] = useState(false);
@@ -81,13 +82,16 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="flex items-center gap-1 sm:gap-3"
           >
-            <NotificationBell 
-              onNavigate={onNavigate} 
-              onOpenAdmin={() => navigate('/admin-console')}
-            />
+            {/* Notification Bell - Hidden for guests */}
+            {!isGuest && (
+              <NotificationBell 
+                onNavigate={onNavigate} 
+                onOpenAdmin={() => navigate('/admin-console')}
+              />
+            )}
             
-            {/* Admin Dashboard Button - Only for Founders */}
-            {isFounder && (
+            {/* Admin Dashboard Button - Only for Founders, hidden for guests */}
+            {!isGuest && isFounder && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -99,23 +103,28 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
               </Button>
             )}
             
-            {/* Role Badge - Hidden on very small screens */}
-            <div className="hidden xs:block">
-              <RoleBadge role={role} size="sm" />
-            </div>
+            {/* Role Badge - Hidden for guests */}
+            {!isGuest && (
+              <div className="hidden xs:block">
+                <RoleBadge role={role} size="sm" />
+              </div>
+            )}
             
+            {/* Profile area - non-clickable for guests */}
             <div 
-              className="flex items-center gap-1 sm:gap-3 cursor-pointer hover:bg-secondary/50 rounded-full pl-2 sm:pl-3 pr-1 py-1 transition-all"
-              onClick={() => setShowProfileSettings(true)}
+              className={cn(
+                "flex items-center gap-1 sm:gap-3 rounded-full pl-2 sm:pl-3 pr-1 py-1 transition-all",
+                isGuest ? "" : "cursor-pointer hover:bg-secondary/50"
+              )}
+              onClick={isGuest ? undefined : () => setShowProfileSettings(true)}
             >
               <span className="text-xs sm:text-sm font-medium hidden md:block truncate max-w-[100px]">
                 {displayName}
               </span>
-              <motion.img
+              <img
                 src={avatarUrl}
                 alt={displayName}
-                className="w-7 h-7 sm:w-9 sm:h-9 rounded-full border-2 border-primary/30 flex-shrink-0"
-                whileHover={{ scale: 1.05, borderColor: 'hsl(var(--primary))' }}
+                className="w-7 h-7 sm:w-9 sm:h-9 rounded-full border-2 border-border/30 flex-shrink-0"
               />
             </div>
 
@@ -131,11 +140,13 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
         )}
       </motion.header>
 
-      {/* Profile Settings Modal */}
-      <ProfileSettings 
-        open={showProfileSettings} 
-        onOpenChange={setShowProfileSettings} 
-      />
+      {/* Profile Settings Modal - Hidden for guests */}
+      {!isGuest && (
+        <ProfileSettings 
+          open={showProfileSettings} 
+          onOpenChange={setShowProfileSettings} 
+        />
+      )}
     </>
   );
 }

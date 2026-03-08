@@ -20,12 +20,17 @@ const CEO_EMAIL = 'sulaiman.artfiqceo@gmail.com';
 const CTO_EMAIL = 'anas.md.artfiq@gmail.com';
 
 export function useUserStatus(): UserStatusData {
-  const { user, profile } = useAuth();
+  const { user, profile, isGuest } = useAuth();
   const { isFounder, isLoading: roleLoading } = useUserRole();
   const [accessStatus, setAccessStatus] = useState<AccessStatus>('visitor');
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchStatus = useCallback(async () => {
+    if (isGuest) {
+      setAccessStatus('visitor');
+      setIsLoading(false);
+      return;
+    }
     if (!user) {
       setAccessStatus('visitor');
       setIsLoading(false);
@@ -72,7 +77,7 @@ export function useUserStatus(): UserStatusData {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, isGuest]);
 
   useEffect(() => {
     fetchStatus();
