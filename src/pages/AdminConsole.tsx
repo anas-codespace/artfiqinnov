@@ -772,7 +772,7 @@ export default function AdminConsole() {
           </Avatar>
           <div className="min-w-0 flex-1">
             <p className="font-medium truncate">{user.display_name || 'Unknown'}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">{user.email}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground break-all whitespace-normal leading-tight">{user.email}</p>
             {/* Posting Badge + Edit */}
             <div className="flex items-center gap-1.5 mt-1">
               {isEditingThis && !isFounder ? (

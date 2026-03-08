@@ -542,8 +542,8 @@ export function HomeTab() {
                     className="mt-2 text-xs text-muted-foreground hover:text-primary"
                     onClick={() => window.location.href = `mailto:${member.email}`}
                   >
-                    <Mail className="w-3 h-3 mr-1" />
-                    <span className="truncate max-w-[80px]">{member.email}</span>
+                    <Mail className="w-3 h-3 mr-1 shrink-0" />
+                    <span className="break-all whitespace-normal leading-tight text-left">{member.email}</span>
                   </FluidButton>
                 )}
               </div>
