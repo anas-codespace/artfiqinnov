@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Clock, CheckCircle2, Loader2 } from 'lucide-react';
+import { Clock, CheckCircle2, Loader2, PartyPopper } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useUserStatus } from '@/hooks/useUserStatus';
@@ -15,14 +15,13 @@ export function PunchInCard() {
   const [joinDate, setJoinDate] = useState<string | undefined>();
   const [punching, setPunching] = useState(false);
 
-  // Fetch join date from profiles
   useEffect(() => {
     if (!user?.id) return;
     supabase.from('profiles').select('created_at').eq('user_id', user.id).single()
       .then(({ data }) => { if (data) setJoinDate(data.created_at); });
   }, [user?.id]);
 
-  const { todayStatus, todayPunchTime, percentage, daysPresent, totalWorkingDays, isLoading, punchIn } = useAttendance(
+  const { todayStatus, todayPunchTime, todayHoliday, percentage, daysPresent, totalWorkingDays, isLoading, punchIn } = useAttendance(
     user?.id,
     joinDate
   );
@@ -44,7 +43,6 @@ export function PunchInCard() {
     ? new Date(todayPunchTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : null;
 
-  // Determine attendance health color
   const getHealthColor = () => {
     if (percentage > 90) return 'text-emerald-400';
     if (percentage >= 75) return 'text-amber-400';
@@ -56,6 +54,30 @@ export function PunchInCard() {
       <div className="glass-card rounded-2xl p-5 flex items-center justify-center">
         <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
       </div>
+    );
+  }
+
+  // Holiday card
+  if (todayHoliday) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={springPresets.snappy}
+        className="glass-card rounded-2xl p-5 relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent" />
+        <div className="relative z-10 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+            <PartyPopper className="w-6 h-6 text-amber-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-sm text-amber-400">🎉 Company Holiday</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">{todayHoliday}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Enjoy your day off!</p>
+          </div>
+        </div>
+      </motion.div>
     );
   }
 
@@ -80,7 +102,6 @@ export function PunchInCard() {
               </p>
             </div>
           </div>
-          {/* Attendance percentage pill */}
           <div className={`text-xs font-bold px-2.5 py-1 rounded-full bg-card/60 border border-border/50 backdrop-blur-md ${getHealthColor()}`}>
             {percentage}%
           </div>
@@ -119,7 +140,6 @@ export function PunchInCard() {
           </motion.button>
         )}
 
-        {/* Stats row */}
         <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
           <span>{daysPresent} / {totalWorkingDays} working days</span>
           <span className={getHealthColor()}>
