@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { springPresets } from '@/components/ui/spring-config';
 
-export function LeaveRequestCard() {
+export function LeaveRequestCard({ embedded }: { embedded?: boolean }) {
   const { user } = useAuth();
   const { isMember } = useUserStatus();
   const { toast } = useToast();
