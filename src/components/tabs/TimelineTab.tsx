@@ -55,7 +55,6 @@ export function TimelineTab() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [_presence, _setPresence] = useState<{user_id: string; is_online: boolean; last_seen: string}[]>([]);
   const [deptFilter, setDeptFilter] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
