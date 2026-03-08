@@ -625,6 +625,11 @@ export function ChatTab() {
     return participant?.role || null;
   };
 
+  const getParticipantPosting = (userId: string): string | null => {
+    const participant = participants.find(p => p.user_id === userId);
+    return participant?.posting || null;
+  };
+
   const onlineParticipants = participants.filter(p => p.isOnline || presenceData[p.user_id]?.is_online);
 
   // Show restricted content for non-members
