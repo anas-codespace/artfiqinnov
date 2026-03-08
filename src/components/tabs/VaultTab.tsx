@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, File, Users, Bell, Loader2, Image, FileType } from 'lucide-react';
+import { Upload, FileText, Download, Trash2, AlertCircle, User, Eye, File, Users, Bell, Loader2, Image, FileType, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
