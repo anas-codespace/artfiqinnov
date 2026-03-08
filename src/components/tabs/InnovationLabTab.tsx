@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, ThumbsUp, ThumbsDown, MessageCircle, ArrowRight, Plus, Loader2, Check, X, RotateCcw } from 'lucide-react';
+import { Lightbulb, ThumbsUp, ThumbsDown, MessageCircle, ArrowRight, Plus, Loader2, Check, X, RotateCcw, Trash2 } from 'lucide-react';
 import { springPresets } from '@/components/ui/spring-config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,16 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useUserStatus } from '@/hooks/useUserStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
@@ -68,7 +78,9 @@ export function InnovationLabTab() {
   const [feedbackPitchId, setFeedbackPitchId] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [newPitch, setNewPitch] = useState({ title: '', description: '' });
+  const [deletePitchId, setDeletePitchId] = useState<string | null>(null);
 
+  const isFounderEmail = user?.email === 'sulaiman.artfiqceo@gmail.com' || user?.email === 'anas.md.artfiq@gmail.com';
   useEffect(() => {
     const fetchData = async () => {
       const [pitchRes, profRes, votesRes] = await Promise.all([
@@ -198,6 +210,17 @@ export function InnovationLabTab() {
     } else {
       toast({ title: 'Decision revoked — pitch is back under review.' });
     }
+  };
+
+  const handleDeletePitch = async () => {
+    if (!deletePitchId) return;
+    const { error } = await supabase.from('pitches').delete().eq('id', deletePitchId);
+    if (error) {
+      toast({ title: 'Failed to delete pitch', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Pitch permanently deleted.' });
+    }
+    setDeletePitchId(null);
   };
 
   const handleSaveFeedback = async (pitchId: string) => {
@@ -333,21 +356,50 @@ export function InnovationLabTab() {
                       <Button size="sm" variant="ghost" className="h-7 px-2 text-emerald-400 hover:text-emerald-300" onClick={() => handleReview(pitch.id, 'approved')}>
                         <Check className="w-3 h-3" />
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive/80" onClick={() => handleReview(pitch.id, 'rejected')}>
+                       <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive/80" onClick={() => handleReview(pitch.id, 'rejected')}>
                         <X className="w-3 h-3" />
                       </Button>
+                      {isFounderEmail && (
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive/80" onClick={() => setDeletePitchId(pitch.id)}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
                     </div>
                   )}
 
-                  {/* Revoke button for founders on approved/rejected pitches */}
+                  {/* Revoke & Delete for founders on decided pitches */}
                   {isFounder && (pitch.status === 'approved' || pitch.status === 'rejected') && (
+                    <div className="flex items-center gap-1 ml-auto">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-amber-400 hover:text-amber-300 gap-1"
+                        onClick={() => handleRevoke(pitch.id)}
+                      >
+                        <RotateCcw className="w-3 h-3" /> Revoke
+                      </Button>
+                      {isFounderEmail && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-destructive hover:text-destructive/80"
+                          onClick={() => setDeletePitchId(pitch.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Delete button on pending/review pitches for founder emails */}
+                  {isFounderEmail && !isFounder && pitch.status !== 'approved' && pitch.status !== 'rejected' && (
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 px-2 ml-auto text-amber-400 hover:text-amber-300 gap-1"
-                      onClick={() => handleRevoke(pitch.id)}
+                      className="h-7 px-2 ml-auto text-destructive hover:text-destructive/80"
+                      onClick={() => setDeletePitchId(pitch.id)}
                     >
-                      <RotateCcw className="w-3 h-3" /> Revoke
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   )}
                 </div>
@@ -395,6 +447,24 @@ export function InnovationLabTab() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletePitchId} onOpenChange={(open) => !open && setDeletePitchId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently delete this pitch?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The pitch and all associated votes will be removed forever.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePitch} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
