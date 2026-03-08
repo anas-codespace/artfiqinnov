@@ -89,10 +89,6 @@ export function TimelineTab() {
         else if (payload.eventType === 'UPDATE') setEvents(prev => prev.map(e => e.id === payload.new.id ? payload.new as CalendarEvent : e));
         else if (payload.eventType === 'DELETE') setEvents(prev => prev.filter(e => e.id !== payload.old.id));
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_presence' }, (payload) => {
-        if (payload.eventType === 'INSERT') setPresence(prev => [...prev, payload.new as Presence]);
-        else if (payload.eventType === 'UPDATE') setPresence(prev => prev.map(p => p.user_id === payload.new.user_id ? payload.new as Presence : p));
-      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
