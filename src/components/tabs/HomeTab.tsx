@@ -206,11 +206,8 @@ export function HomeTab() {
         </motion.div>
       </motion.section>
 
-      {/* Punch-In Card */}
+      {/* Punch-In Card + Collapsible Calendar */}
       <PunchInCard />
-
-      {/* Attendance Calendar */}
-      <AttendanceCalendar />
 
       {/* Leave Requests */}
       <LeaveRequestCard />

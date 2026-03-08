@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { Clock, CheckCircle2, Loader2, PartyPopper } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Clock, CheckCircle2, Loader2, PartyPopper, CalendarDays, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useUserStatus } from '@/hooks/useUserStatus';
@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { springPresets } from '@/components/ui/spring-config';
 import { supabase } from '@/integrations/supabase/client';
+import { AttendanceCalendar } from '@/components/AttendanceCalendar';
 
 export function PunchInCard() {
   const { user } = useAuth();
