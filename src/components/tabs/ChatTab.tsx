@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { SoftFloat } from '@/components/ui/soft-float';
 import { RoleBadge } from '@/components/ui/role-badge';
+import { PostingBadge } from '@/components/ui/posting-badge';
 import { MessageInfoModal } from '@/components/ui/message-info-modal';
 import { springPresets } from '@/components/ui/spring-config';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -58,6 +59,7 @@ interface Participant {
   isOnline: boolean;
   isTyping: boolean;
   role?: 'ceo' | 'cto' | 'team' | null;
+  posting?: string | null;
 }
 
 interface UserPresence {
@@ -192,8 +194,8 @@ export function ChatTab() {
     const fetchParticipants = async () => {
       // Use profiles_safe view instead of profiles table to protect email privacy
       const { data: profiles } = await supabase
-        .from('profiles_safe')
-        .select('id, user_id, display_name, avatar_url')
+        .from('profiles')
+        .select('id, user_id, display_name, avatar_url, posting')
         .order('created_at', { ascending: true });
 
       const { data: presence } = await supabase
@@ -218,9 +220,10 @@ export function ChatTab() {
       if (profiles) {
         setParticipants(profiles.map(p => ({
           ...p,
-          isOnline: presenceMap[p.user_id]?.is_online ?? false,
-          isTyping: presenceMap[p.user_id]?.is_typing ?? false,
-          role: rolesMap[p.user_id] || 'team',
+          isOnline: presenceMap[p.user_id ?? '']?.is_online ?? false,
+          isTyping: presenceMap[p.user_id ?? '']?.is_typing ?? false,
+          role: rolesMap[p.user_id ?? ''] || 'team',
+          posting: (p as any).posting || null,
         })));
       }
     };
@@ -622,6 +625,11 @@ export function ChatTab() {
     return participant?.role || null;
   };
 
+  const getParticipantPosting = (userId: string): string | null => {
+    const participant = participants.find(p => p.user_id === userId);
+    return participant?.posting || null;
+  };
+
   const onlineParticipants = participants.filter(p => p.isOnline || presenceData[p.user_id]?.is_online);
 
   // Show restricted content for non-members
@@ -743,6 +751,7 @@ export function ChatTab() {
                 const reactionCounts = getReactionCounts(message.id);
                 const readStatus = getReadStatus(message);
                 const senderRole = getParticipantRole(message.user_id);
+                const senderPosting = getParticipantPosting(message.user_id);
 
                 return (
                   <motion.div
@@ -780,11 +789,12 @@ export function ChatTab() {
                     {/* Message Content */}
                     <div className={cn("max-w-[70%] space-y-1", isOwnMessage && "items-end")}>
                       {showAvatar && (
-                        <div className={cn("flex items-center gap-2 text-sm", isOwnMessage && "flex-row-reverse")}>
+                        <div className={cn("flex flex-wrap items-center gap-1.5 text-sm", isOwnMessage && "flex-row-reverse")}>
                           <span className="font-medium">{message.user_name}</span>
                           {senderRole && senderRole !== 'team' && (
                             <RoleBadge role={senderRole} size="sm" showIcon={false} />
                           )}
+                          <PostingBadge posting={senderPosting} role={senderRole} />
                           <span className="text-muted-foreground text-xs">
                             {formatTime(message.created_at)}
                           </span>

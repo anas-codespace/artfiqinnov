@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Lock, KeyRound, Users, UserCheck, UserX, Loader2, AlertTriangle, CheckCircle, ArrowLeft, HelpCircle } from 'lucide-react';
+import { Shield, Lock, KeyRound, Users, UserCheck, UserX, Loader2, AlertTriangle, CheckCircle, ArrowLeft, HelpCircle, Pencil, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { PostingBadge } from '@/components/ui/posting-badge';
 import defaultAvatar from '@/assets/default-avatar.webp';
 
 // Allowed admin emails
@@ -36,6 +37,7 @@ interface UserProfile {
   email: string | null;
   avatar_url: string | null;
   access_status: string | null;
+  posting: string | null;
 }
 
 type Stage = 'loading' | 'unauthorized' | 'setup' | 'locked' | 'forgot-pin' | 'unlocked';
@@ -69,6 +71,8 @@ export default function AdminConsole() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [editingPosting, setEditingPosting] = useState<string | null>(null);
+  const [postingValue, setPostingValue] = useState('');
 
   // Check access and PIN status on mount
   useEffect(() => {
@@ -123,7 +127,7 @@ export default function AdminConsole() {
     setLoadingUsers(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, user_id, display_name, email, avatar_url, access_status')
+      .select('id, user_id, display_name, email, avatar_url, access_status, posting')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -256,6 +260,24 @@ export default function AdminConsole() {
       await fetchUsers();
     }
     
+    setActionLoading(null);
+  };
+
+  const handleSavePosting = async (userId: string) => {
+    setActionLoading(userId);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ posting: postingValue.trim() || null })
+      .eq('user_id', userId);
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to update posting', variant: 'destructive' });
+    } else {
+      toast({ title: 'Success', description: 'Posting updated successfully!' });
+      await fetchUsers();
+    }
+    setEditingPosting(null);
+    setPostingValue('');
     setActionLoading(null);
   };
 
@@ -562,67 +584,111 @@ export default function AdminConsole() {
     user: UserProfile; 
     showApprove?: boolean;
     showRemove?: boolean;
-  }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex items-center justify-between gap-2 p-3 sm:p-4 rounded-xl bg-secondary/30 border border-border/50 w-full max-w-full overflow-hidden"
-    >
-      {/* Left side - Avatar & Text (must shrink) */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-        <Avatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
-          <AvatarImage src={user.avatar_url || defaultAvatar} alt={user.display_name || 'User'} />
-          <AvatarFallback>{(user.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <p className="font-medium truncate">{user.display_name || 'Unknown'}</p>
-          <p className="text-xs sm:text-sm text-muted-foreground truncate">{user.email}</p>
+  }) => {
+    const isEditingThis = editingPosting === user.user_id;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between gap-2 p-3 sm:p-4 rounded-xl bg-secondary/30 border border-border/50 w-full max-w-full overflow-hidden"
+      >
+        {/* Left side - Avatar & Text (must shrink) */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <Avatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
+            <AvatarImage src={user.avatar_url || defaultAvatar} alt={user.display_name || 'User'} />
+            <AvatarFallback>{(user.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium truncate">{user.display_name || 'Unknown'}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">{user.email}</p>
+            {/* Posting Badge + Edit */}
+            <div className="flex items-center gap-1.5 mt-1">
+              {isEditingThis ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    value={postingValue}
+                    onChange={(e) => setPostingValue(e.target.value)}
+                    placeholder="e.g. Tech Lead"
+                    className="h-6 text-[10px] w-28 sm:w-36 px-2 py-0"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSavePosting(user.user_id);
+                      if (e.key === 'Escape') { setEditingPosting(null); setPostingValue(''); }
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="w-5 h-5"
+                    onClick={() => handleSavePosting(user.user_id)}
+                    disabled={actionLoading === user.user_id}
+                  >
+                    <Save className="w-3 h-3 text-primary" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <PostingBadge posting={user.posting} />
+                  <button
+                    onClick={() => {
+                      setEditingPosting(user.user_id);
+                      setPostingValue(user.posting || '');
+                    }}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-      
-      {/* Right side - Badge & Actions (fixed size) */}
-      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-        <Badge 
-          variant={user.access_status === 'approved_member' ? 'default' : user.access_status === 'pending' ? 'secondary' : 'outline'}
-          className="hidden xs:inline-flex text-xs"
-        >
-          {user.access_status === 'approved_member' ? 'Member' : user.access_status === 'pending' ? 'Pending' : 'Visitor'}
-        </Badge>
         
-        {showApprove && (
-          <Button
-            size="sm"
-            variant="default"
-            disabled={actionLoading === user.user_id}
-            onClick={() => updateUserStatus(user.user_id, 'approved_member')}
-            className="flex-shrink-0"
+        {/* Right side - Badge & Actions (fixed size) */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <Badge 
+            variant={user.access_status === 'approved_member' ? 'default' : user.access_status === 'pending' ? 'secondary' : 'outline'}
+            className="hidden xs:inline-flex text-xs"
           >
-            {actionLoading === user.user_id ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <UserCheck className="w-4 h-4" />
-            )}
-          </Button>
-        )}
-        
-        {showRemove && (
-          <Button
-            size="sm"
-            variant="destructive"
-            disabled={actionLoading === user.user_id}
-            onClick={() => updateUserStatus(user.user_id, 'visitor')}
-            className="flex-shrink-0"
-          >
-            {actionLoading === user.user_id ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <UserX className="w-4 h-4" />
-            )}
-          </Button>
-        )}
-      </div>
-    </motion.div>
-  );
+            {user.access_status === 'approved_member' ? 'Member' : user.access_status === 'pending' ? 'Pending' : 'Visitor'}
+          </Badge>
+          
+          {showApprove && (
+            <Button
+              size="sm"
+              variant="default"
+              disabled={actionLoading === user.user_id}
+              onClick={() => updateUserStatus(user.user_id, 'approved_member')}
+              className="flex-shrink-0"
+            >
+              {actionLoading === user.user_id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UserCheck className="w-4 h-4" />
+              )}
+            </Button>
+          )}
+          
+          {showRemove && (
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={actionLoading === user.user_id}
+              onClick={() => updateUserStatus(user.user_id, 'visitor')}
+              className="flex-shrink-0"
+            >
+              {actionLoading === user.user_id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UserX className="w-4 h-4" />
+              )}
+            </Button>
+          )}
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
