@@ -205,8 +205,6 @@ export function HomeTab() {
         </motion.div>
       </motion.section>
 
-      {/* Punch-In Card + Collapsible Calendar */}
-      <PunchInCard />
 
       {/* Mission Card with parallax */}
       <motion.section
