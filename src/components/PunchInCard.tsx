@@ -4,18 +4,28 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useUserStatus } from '@/hooks/useUserStatus';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { springPresets } from '@/components/ui/spring-config';
+import { supabase } from '@/integrations/supabase/client';
 
 export function PunchInCard() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { isMember } = useUserStatus();
   const { toast } = useToast();
+  const [joinDate, setJoinDate] = useState<string | undefined>();
+  const [punching, setPunching] = useState(false);
+
+  // Fetch join date from profiles
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from('profiles').select('created_at').eq('user_id', user.id).single()
+      .then(({ data }) => { if (data) setJoinDate(data.created_at); });
+  }, [user?.id]);
+
   const { todayStatus, todayPunchTime, percentage, daysPresent, totalWorkingDays, isLoading, punchIn } = useAttendance(
     user?.id,
-    profile?.created_at
+    joinDate
   );
-  const [punching, setPunching] = useState(false);
 
   if (!isMember) return null;
 
