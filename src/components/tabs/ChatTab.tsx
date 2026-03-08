@@ -726,7 +726,7 @@ export function ChatTab() {
         </SoftFloat>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6 pb-[120px] space-y-4 scrollbar-cyber">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 scrollbar-cyber">
           {isLoading ? (
             <div className="text-center text-muted-foreground py-8">
               Loading messages...
