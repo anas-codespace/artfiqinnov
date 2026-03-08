@@ -780,7 +780,13 @@ export default function AdminConsole() {
             <AvatarFallback>{(user.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="font-medium truncate">{user.display_name || 'Unknown'}</p>
+            <p 
+              className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+              onClick={() => {
+                setInsightMember({ user_id: user.user_id, display_name: user.display_name, avatar_url: user.avatar_url });
+                setInsightOpen(true);
+              }}
+            >{user.display_name || 'Unknown'}</p>
             <p className="text-xs sm:text-sm text-muted-foreground break-all whitespace-normal leading-tight">{user.email}</p>
             {/* Posting Badge + Edit */}
             <div className="flex items-center gap-1.5 mt-1">
