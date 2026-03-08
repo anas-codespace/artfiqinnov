@@ -37,6 +37,7 @@ interface UserProfile {
   email: string | null;
   avatar_url: string | null;
   access_status: string | null;
+  posting: string | null;
 }
 
 type Stage = 'loading' | 'unauthorized' | 'setup' | 'locked' | 'forgot-pin' | 'unlocked';
