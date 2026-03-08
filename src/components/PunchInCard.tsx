@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, CheckCircle2, Loader2, PartyPopper, CalendarDays, ChevronDown } from 'lucide-react';
+import { Clock, CheckCircle2, Loader2, PartyPopper, CalendarDays, ChevronDown, LogOut as LogOutIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useUserStatus } from '@/hooks/useUserStatus';
@@ -10,6 +10,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
 import { LeaveRequestCard } from '@/components/LeaveRequestCard';
 
+function formatDuration(minutes: number): string {
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hrs === 0) return `${mins}m`;
+  return `${hrs}h ${mins}m`;
+}
+
 export function PunchInCard() {
   const { user } = useAuth();
   const { isMember } = useUserStatus();
@@ -17,6 +24,7 @@ export function PunchInCard() {
   const [joinDate, setJoinDate] = useState<string | undefined>();
   const [punching, setPunching] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [liveMinutes, setLiveMinutes] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -24,10 +32,25 @@ export function PunchInCard() {
       .then(({ data }) => { if (data) setJoinDate(data.created_at); });
   }, [user?.id]);
 
-  const { todayStatus, todayPunchTime, todayHoliday, percentage, daysPresent, totalWorkingDays, isLoading, punchIn } = useAttendance(
+  const { todayStatus, todayPunchTime, todayPunchOutTime, todayWorkMinutes, todayHoliday, percentage, daysPresent, totalWorkingDays, isLoading, punchIn, punchOut } = useAttendance(
     user?.id,
     joinDate
   );
+
+  // Live timer when checked in
+  useEffect(() => {
+    if (todayStatus !== 'present' || !todayPunchTime) {
+      setLiveMinutes(null);
+      return;
+    }
+    const update = () => {
+      const mins = Math.round((Date.now() - new Date(todayPunchTime).getTime()) / 60000);
+      setLiveMinutes(mins);
+    };
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [todayStatus, todayPunchTime]);
 
   if (!isMember) return null;
 
@@ -42,8 +65,23 @@ export function PunchInCard() {
     setPunching(false);
   };
 
+  const handlePunchOut = async () => {
+    setPunching(true);
+    const success = await punchOut();
+    if (success) {
+      toast({ title: '👋 Checked Out!', description: 'Great work today!' });
+    } else {
+      toast({ title: 'Error', description: 'Failed to check out.', variant: 'destructive' });
+    }
+    setPunching(false);
+  };
+
   const punchTime = todayPunchTime
     ? new Date(todayPunchTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  const punchOutTime = todayPunchOutTime
+    ? new Date(todayPunchOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : null;
 
   const getHealthColor = () => {
@@ -110,18 +148,54 @@ export function PunchInCard() {
           </div>
         </div>
 
-        {todayStatus === 'present' ? (
+        {todayStatus === 'checked_out' ? (
           <motion.div
             initial={{ scale: 0.95 }}
             animate={{ scale: 1 }}
-            className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20"
+            className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50"
           >
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-emerald-400">Checked In</p>
-              <p className="text-xs text-muted-foreground">at {punchTime}</p>
+            <CheckCircle2 className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-muted-foreground">Day Complete</p>
+              <p className="text-xs text-muted-foreground">
+                {punchTime} → {punchOutTime} · <span className="text-primary font-semibold">{todayWorkMinutes ? formatDuration(todayWorkMinutes) : '—'}</span>
+              </p>
             </div>
           </motion.div>
+        ) : todayStatus === 'present' ? (
+          <div className="space-y-2">
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20"
+            >
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-emerald-400">Checked In</p>
+                <p className="text-xs text-muted-foreground">
+                  at {punchTime} {liveMinutes !== null && <span className="text-primary">· {formatDuration(liveMinutes)} working</span>}
+                </p>
+              </div>
+            </motion.div>
+            <motion.button
+              onClick={handlePunchOut}
+              disabled={punching}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 font-semibold text-sm
+                hover:bg-amber-500/30 transition-all duration-300
+                disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {punching ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <LogOutIcon className="w-4 h-4" />
+                  Check Out
+                </>
+              )}
+            </motion.button>
+          </div>
         ) : (
           <motion.button
             onClick={handlePunchIn}
