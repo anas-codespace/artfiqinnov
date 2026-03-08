@@ -263,6 +263,24 @@ export default function AdminConsole() {
     setActionLoading(null);
   };
 
+  const handleSavePosting = async (userId: string) => {
+    setActionLoading(userId);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ posting: postingValue.trim() || null })
+      .eq('user_id', userId);
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to update posting', variant: 'destructive' });
+    } else {
+      toast({ title: 'Success', description: 'Posting updated successfully!' });
+      await fetchUsers();
+    }
+    setEditingPosting(null);
+    setPostingValue('');
+    setActionLoading(null);
+  };
+
   const handleKeypadPress = (digit: string) => {
     if (enteredPin.length < 4) {
       const newVal = enteredPin + digit;
