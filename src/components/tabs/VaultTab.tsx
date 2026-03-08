@@ -240,7 +240,7 @@ export function VaultTab() {
         // Upload to storage with correct content-type
         const fileName = `${user.id}/${Date.now()}_${file.name}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('files')
+          .from('documents')
           .upload(fileName, file, {
             contentType: file.type || 'application/octet-stream',
             cacheControl: '3600',
@@ -290,7 +290,7 @@ export function VaultTab() {
     }
   };
 
-  const STORAGE_BUCKET = 'files' as const;
+  const STORAGE_BUCKET = 'documents' as const;
 
   // Generate signed URL for secure file access (short expiry)
   const getSignedUrl = async (
