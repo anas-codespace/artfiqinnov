@@ -795,17 +795,25 @@ export default function AdminConsole() {
             <div className="flex items-center gap-1.5 mt-1">
               {isEditingThis && !isFounder ? (
                 <div className="flex items-center gap-1">
-                  <Input
-                    value={postingValue}
-                    onChange={(e) => setPostingValue(e.target.value)}
-                    placeholder="e.g. Tech Lead"
-                    className="h-6 text-[10px] w-28 sm:w-36 px-2 py-0"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSavePosting(user.user_id);
-                      if (e.key === 'Escape') { setEditingPosting(null); setPostingValue(''); }
-                    }}
-                  />
+                  <div className="relative">
+                    <Input
+                      value={postingValue}
+                      onChange={(e) => setPostingValue(e.target.value)}
+                      placeholder="Search or type a role..."
+                      className="h-6 text-[10px] w-32 sm:w-44 px-2 py-0"
+                      list={`postings-list-${user.user_id}`}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSavePosting(user.user_id);
+                        if (e.key === 'Escape') { setEditingPosting(null); setPostingValue(''); }
+                      }}
+                    />
+                    <datalist id={`postings-list-${user.user_id}`}>
+                      {OFFICIAL_POSTINGS.map((p) => (
+                        <option key={p} value={p} />
+                      ))}
+                    </datalist>
+                  </div>
                   <Button
                     size="icon"
                     variant="ghost"
