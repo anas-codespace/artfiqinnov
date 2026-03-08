@@ -237,21 +237,30 @@ export function VaultTab() {
       setIsUploading(true);
 
       try {
-        // Upload to storage
+        // Upload to storage with correct content-type
         const fileName = `${user.id}/${Date.now()}_${file.name}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('files')
-          .upload(fileName, file);
+          .upload(fileName, file, {
+            contentType: file.type || 'application/octet-stream',
+            cacheControl: '3600',
+            upsert: false,
+          });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          if (uploadError.message?.includes('Policy')) {
+            throw new Error('Storage policy denied the upload. Please contact an admin.');
+          }
+          throw uploadError;
+        }
 
-        // Save metadata to database (no public URL stored)
+        // Save metadata to database
         const { error: dbError } = await supabase
           .from('files')
           .insert({
             name: file.name,
             size: file.size,
-            url: '', // No longer storing public URLs
+            url: '',
             storage_path: fileName,
             uploaded_by: user.id,
             uploader_name: profile?.display_name || user.email?.split('@')[0] || 'Unknown',
@@ -264,13 +273,15 @@ export function VaultTab() {
           description: `${file.name} has been added to the vault.`,
         });
 
-        // Refresh file list
         fetchFiles();
       } catch (error: any) {
         console.error('Upload error:', error);
+        const msg = error?.message || 'Unknown error';
         toast({
           title: 'Upload failed',
-          description: error.message,
+          description: msg.includes('Failed to fetch')
+            ? 'Network error — check your connection or storage permissions.'
+            : msg,
           variant: 'destructive',
         });
       }
