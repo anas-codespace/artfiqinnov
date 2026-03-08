@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { springPresets } from '@/components/ui/spring-config';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
+import { PunchInCard } from '@/components/PunchInCard';
 
 // Founder emails for fetching dynamic avatars
 const FOUNDER_EMAILS = {
