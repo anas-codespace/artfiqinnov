@@ -205,8 +205,6 @@ export function HomeTab() {
         </motion.div>
       </motion.section>
 
-      {/* Punch-In Card + Collapsible Calendar */}
-      <PunchInCard />
 
       {/* Mission Card with parallax */}
       <motion.section
@@ -282,6 +280,11 @@ export function HomeTab() {
           );
         })}
       </motion.section>
+
+      {/* Punch-In Card + Collapsible Calendar */}
+      <div className="mb-8">
+        <PunchInCard />
+      </div>
 
       {/* Founders Section - Profile Photos with Social Links */}
       <motion.section
