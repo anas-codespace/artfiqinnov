@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { PostingBadge } from '@/components/ui/posting-badge';
+import { PostingBadge, isFounderRole } from '@/components/ui/posting-badge';
 import defaultAvatar from '@/assets/default-avatar.webp';
 
 // Allowed admin emails
