@@ -89,7 +89,7 @@ export function AttendanceCalendar() {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const today = new Date().toISOString().split('T')[0];
-    const days: Array<{ date: string; day: number; status: 'present' | 'absent' | 'holiday' | 'weekend' | 'future' | 'before_join' | null }> = [];
+    const days: Array<{ date: string; day: number; status: 'present' | 'absent' | 'holiday' | 'weekend' | 'future' | 'before_join' | 'leave' | null }> = [];
 
     // Empty cells for padding
     for (let i = 0; i < firstDay; i++) {
@@ -103,7 +103,7 @@ export function AttendanceCalendar() {
       const isFuture = dateStr > today;
       const isBeforeJoin = joinDate ? dateStr < joinDate : false;
 
-      let status: 'present' | 'absent' | 'holiday' | 'weekend' | 'future' | 'before_join';
+      let status: 'present' | 'absent' | 'holiday' | 'weekend' | 'future' | 'before_join' | 'leave';
 
       if (isFuture) {
         status = 'future';
@@ -115,6 +115,8 @@ export function AttendanceCalendar() {
         status = 'holiday';
       } else if (logMap.get(dateStr) === 'Present') {
         status = 'present';
+      } else if (leaveDates.has(dateStr)) {
+        status = 'leave';
       } else {
         status = 'absent';
       }
