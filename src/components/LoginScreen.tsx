@@ -29,7 +29,7 @@ const RESET_COOLDOWN_SECONDS = 60;
 type AuthView = 'login' | 'forgot-password';
 
 export function LoginScreen() {
-  const { signInWithEmail, signUpWithEmail, resetPassword, isLoading } = useAuth();
+  const { signInWithEmail, signUpWithEmail, resetPassword, isLoading, loginAsGuest } = useAuth();
   const { toast } = useToast();
   const [view, setView] = useState<AuthView>('login');
   const [isSignUp, setIsSignUp] = useState(false);
