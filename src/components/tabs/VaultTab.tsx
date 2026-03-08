@@ -30,6 +30,7 @@ interface FileView {
   user_id: string;
   user_name: string;
   viewed_at: string;
+  avatar_url?: string | null;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
