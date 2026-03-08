@@ -59,6 +59,7 @@ interface Participant {
   isOnline: boolean;
   isTyping: boolean;
   role?: 'ceo' | 'cto' | 'team' | null;
+  posting?: string | null;
 }
 
 interface UserPresence {
