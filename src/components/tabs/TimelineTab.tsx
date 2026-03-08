@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { usePresence } from '@/contexts/PresenceContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { springPresets } from '@/components/ui/spring-config';
@@ -38,11 +39,7 @@ interface TeamMember {
   department: string | null;
 }
 
-interface Presence {
-  user_id: string;
-  is_online: boolean;
-  last_seen: string;
-}
+// Presence interface no longer needed - using global PresenceContext
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -51,13 +48,13 @@ const MAX_TITLE_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 2000;
 
 export function TimelineTab() {
-  const { user, profile } = useAuth();
+  const { isUserOnline } = usePresence();
   const { toast } = useToast();
+  const { user, profile } = useAuth();
   const { isMember, isVisitor, isPending } = useUserStatus();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [presence, setPresence] = useState<Presence[]>([]);
   const [deptFilter, setDeptFilter] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -75,14 +72,12 @@ export function TimelineTab() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [eventsRes, membersRes, presenceRes] = await Promise.all([
+      const [eventsRes, membersRes] = await Promise.all([
         supabase.from('events').select('*').order('start_date', { ascending: true }),
         supabase.from('profiles_safe').select('user_id, display_name, avatar_url, department'),
-        supabase.from('user_presence').select('user_id, is_online, last_seen'),
       ]);
       if (!eventsRes.error) setEvents((eventsRes.data as CalendarEvent[]) || []);
       if (!membersRes.error) setTeamMembers((membersRes.data as unknown as TeamMember[]) || []);
-      if (!presenceRes.error) setPresence(presenceRes.data || []);
       setIsLoading(false);
     };
     fetchData();
@@ -94,19 +89,12 @@ export function TimelineTab() {
         else if (payload.eventType === 'UPDATE') setEvents(prev => prev.map(e => e.id === payload.new.id ? payload.new as CalendarEvent : e));
         else if (payload.eventType === 'DELETE') setEvents(prev => prev.filter(e => e.id !== payload.old.id));
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_presence' }, (payload) => {
-        if (payload.eventType === 'INSERT') setPresence(prev => [...prev, payload.new as Presence]);
-        else if (payload.eventType === 'UPDATE') setPresence(prev => prev.map(p => p.user_id === payload.new.user_id ? payload.new as Presence : p));
-      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const getPresence = (userId: string) => {
-    const p = presence.find(pr => pr.user_id === userId);
-    return p?.is_online ?? false;
-  };
+  // Use global presence context instead of DB-based presence
 
   const filteredMembers = deptFilter === 'All'
     ? teamMembers
@@ -312,7 +300,7 @@ export function TimelineTab() {
 
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {filteredMembers.length > 0 ? filteredMembers.map(member => {
-              const online = getPresence(member.user_id);
+              const online = isUserOnline(member.user_id);
               return (
                 <div key={member.user_id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-card/50 transition-colors">
                   <div className="relative">
