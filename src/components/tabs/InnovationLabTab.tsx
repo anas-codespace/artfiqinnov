@@ -356,9 +356,14 @@ export function InnovationLabTab() {
                       <Button size="sm" variant="ghost" className="h-7 px-2 text-emerald-400 hover:text-emerald-300" onClick={() => handleReview(pitch.id, 'approved')}>
                         <Check className="w-3 h-3" />
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive/80" onClick={() => handleReview(pitch.id, 'rejected')}>
+                       <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive/80" onClick={() => handleReview(pitch.id, 'rejected')}>
                         <X className="w-3 h-3" />
                       </Button>
+                      {isFounderEmail && (
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive/80" onClick={() => setDeletePitchId(pitch.id)}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
                     </div>
                   )}
 
