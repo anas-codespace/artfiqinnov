@@ -25,6 +25,8 @@ export function AttendanceCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [approvedLeaves, setApprovedLeaves] = useState<LeaveRange[]>([]);
+  const [joinDate, setJoinDate] = useState<string | null>(null);
   const [joinDate, setJoinDate] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
