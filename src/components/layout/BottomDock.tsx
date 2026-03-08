@@ -3,6 +3,7 @@ import { Home, LayoutGrid, Calendar, FolderLock, MessageSquare, BarChart3, Light
 import { cn } from '@/lib/utils';
 import { useState, useRef } from 'react';
 import { useChatInput } from '@/contexts/ChatInputContext';
+import { useUserStatus } from '@/hooks/useUserStatus';
 
 interface BottomDockProps {
   activeTab: string;
@@ -24,7 +25,11 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
   const [ripples, setRipples] = useState<{ id: number; x: number; y: number; itemId: string }[]>([]);
   const chatInput = useChatInput();
   const inputRef = useRef<HTMLInputElement>(null);
+  const { isMember } = useUserStatus();
   const isOnChat = activeTab === 'chat';
+
+  // Visitors/pending only see Home
+  const visibleItems = isMember ? navItems : navItems.filter(i => i.id === 'home');
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>, itemId: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -48,7 +53,7 @@ export function BottomDock({ activeTab, onTabChange }: BottomDockProps) {
   };
 
   // When on chat tab, show compressed nav + input
-  const displayedItems = isOnChat ? navItems.slice(0, 5) : navItems;
+  const displayedItems = isOnChat && isMember ? visibleItems.slice(0, 5) : visibleItems;
 
   return (
     <motion.nav
