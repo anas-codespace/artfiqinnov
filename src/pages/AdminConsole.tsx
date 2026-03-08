@@ -91,6 +91,8 @@ export default function AdminConsole() {
   const [holidayTitle, setHolidayTitle] = useState('');
   const [declaringHoliday, setDeclaringHoliday] = useState(false);
   const { holidays, refetch: refetchHolidays } = useCompanyHolidays();
+  const { leaves: allLeaves, isLoading: leavesLoading, refetch: refetchLeaves } = useAllLeaveRequests();
+  const [leaveProfiles, setLeaveProfiles] = useState<Record<string, { display_name: string | null; avatar_url: string | null }>>({});
 
   // Check access and PIN status on mount
   useEffect(() => {
