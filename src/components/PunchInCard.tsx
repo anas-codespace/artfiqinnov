@@ -15,6 +15,7 @@ export function PunchInCard() {
   const { toast } = useToast();
   const [joinDate, setJoinDate] = useState<string | undefined>();
   const [punching, setPunching] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
