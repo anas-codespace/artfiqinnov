@@ -300,7 +300,7 @@ export function TimelineTab() {
 
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {filteredMembers.length > 0 ? filteredMembers.map(member => {
-              const online = getPresence(member.user_id);
+              const online = isUserOnline(member.user_id);
               return (
                 <div key={member.user_id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-card/50 transition-colors">
                   <div className="relative">
