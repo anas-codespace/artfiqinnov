@@ -50,24 +50,30 @@ export type Database = {
           date: string
           id: string
           punch_in_time: string
+          punch_out_time: string | null
           status: string
           user_id: string
+          work_duration_minutes: number | null
         }
         Insert: {
           created_at?: string
           date?: string
           id?: string
           punch_in_time?: string
+          punch_out_time?: string | null
           status?: string
           user_id: string
+          work_duration_minutes?: number | null
         }
         Update: {
           created_at?: string
           date?: string
           id?: string
           punch_in_time?: string
+          punch_out_time?: string | null
           status?: string
           user_id?: string
+          work_duration_minutes?: number | null
         }
         Relationships: []
       }

@@ -169,11 +169,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsGuest(false);
       setUser(null);
       setProfile(null);
+      // Clear all storage
+      localStorage.clear();
+      sessionStorage.clear();
       return;
     }
     await supabase.auth.signOut();
     setProfile(null);
     setIsPasswordRecovery(false);
+    // Clear all storage to ensure clean state
+    localStorage.clear();
+    sessionStorage.clear();
   };
 
   const loginAsGuest = () => {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Lock, KeyRound, Users, UserCheck, UserX, Loader2, AlertTriangle, CheckCircle, ArrowLeft, HelpCircle, Pencil, Save, Clock, CalendarPlus, PartyPopper, Trash2, CalendarDays, CheckCircle2, XCircle, FolderLock } from 'lucide-react';
+import { Shield, Lock, KeyRound, Users, UserCheck, UserX, Loader2, AlertTriangle, CheckCircle, ArrowLeft, HelpCircle, Pencil, Save, Clock, CalendarPlus, PartyPopper, Trash2, CalendarDays, CheckCircle2, XCircle, FolderLock, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,7 @@ import { useCompanyHolidays, useAllLeaveRequests, type LeaveRequest } from '@/ho
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import defaultAvatar from '@/assets/default-avatar.webp';
+import { MemberInsightModal } from '@/components/MemberInsightModal';
 
 // Allowed admin emails
 const ADMIN_EMAILS = [
@@ -101,6 +102,10 @@ export default function AdminConsole() {
   const [vaultRequestProfiles, setVaultRequestProfiles] = useState<Record<string, string>>({});
   const [vaultRequestFiles, setVaultRequestFiles] = useState<Record<string, string>>({});
   const [vaultLoading, setVaultLoading] = useState(true);
+
+  // Member insight modal state
+  const [insightMember, setInsightMember] = useState<{ user_id: string; display_name: string | null; avatar_url: string | null } | null>(null);
+  const [insightOpen, setInsightOpen] = useState(false);
 
   // Check access and PIN status on mount
   useEffect(() => {
@@ -775,7 +780,13 @@ export default function AdminConsole() {
             <AvatarFallback>{(user.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="font-medium truncate">{user.display_name || 'Unknown'}</p>
+            <p 
+              className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+              onClick={() => {
+                setInsightMember({ user_id: user.user_id, display_name: user.display_name, avatar_url: user.avatar_url });
+                setInsightOpen(true);
+              }}
+            >{user.display_name || 'Unknown'}</p>
             <p className="text-xs sm:text-sm text-muted-foreground break-all whitespace-normal leading-tight">{user.email}</p>
             {/* Posting Badge + Edit */}
             <div className="flex items-center gap-1.5 mt-1">
@@ -1279,6 +1290,13 @@ export default function AdminConsole() {
           </DialogContent>
         </Dialog>
       </main>
+
+      {/* Member Insight Modal */}
+      <MemberInsightModal
+        open={insightOpen}
+        onOpenChange={setInsightOpen}
+        member={insightMember}
+      />
     </div>
   );
 }

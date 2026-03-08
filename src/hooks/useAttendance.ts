@@ -5,8 +5,10 @@ interface AttendanceStats {
   totalWorkingDays: number;
   daysPresent: number;
   percentage: number;
-  todayStatus: 'not_checked' | 'present' | 'leave';
+  todayStatus: 'not_checked' | 'present' | 'checked_out' | 'leave';
   todayPunchTime: string | null;
+  todayPunchOutTime: string | null;
+  todayWorkMinutes: number | null;
   todayHoliday: string | null;
   isLoading: boolean;
 }
@@ -158,6 +160,8 @@ export function useAttendance(userId: string | undefined, joinDate?: string) {
     percentage: 0,
     todayStatus: 'not_checked',
     todayPunchTime: null,
+    todayPunchOutTime: null,
+    todayWorkMinutes: null,
     todayHoliday: null,
     isLoading: true,
   });
@@ -196,16 +200,26 @@ export function useAttendance(userId: string | undefined, joinDate?: string) {
     const percentage = totalWorkingDays > 0 ? Math.round((daysPresent / totalWorkingDays) * 100) : 100;
 
     const todayLog = (logs || []).find(l => l.date === today);
-    const todayStatus = todayLog
-      ? todayLog.status === 'Present' ? 'present' : 'leave'
-      : 'not_checked';
+    
+    let todayStatus: AttendanceStats['todayStatus'] = 'not_checked';
+    if (todayLog) {
+      if (todayLog.punch_out_time) {
+        todayStatus = 'checked_out';
+      } else if (todayLog.status === 'Present') {
+        todayStatus = 'present';
+      } else {
+        todayStatus = 'leave';
+      }
+    }
 
     setStats({
       totalWorkingDays,
       daysPresent,
       percentage: Math.min(percentage, 100),
-      todayStatus: todayStatus as 'not_checked' | 'present' | 'leave',
+      todayStatus,
       todayPunchTime: todayLog?.punch_in_time || null,
+      todayPunchOutTime: todayLog?.punch_out_time || null,
+      todayWorkMinutes: todayLog?.work_duration_minutes || null,
       todayHoliday: todayHolidayEntry?.title || null,
       isLoading: false,
     });
@@ -239,7 +253,41 @@ export function useAttendance(userId: string | undefined, joinDate?: string) {
     return true;
   }, [userId, fetchAttendance]);
 
-  return { ...stats, punchIn, refetch: fetchAttendance };
+  const punchOut = useCallback(async () => {
+    if (!userId) return false;
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Get today's log to calculate duration
+    const { data: todayLog } = await supabase
+      .from('attendance_logs')
+      .select('id, punch_in_time')
+      .eq('user_id', userId)
+      .eq('date', today)
+      .single();
+
+    if (!todayLog) return false;
+
+    const punchInTime = new Date(todayLog.punch_in_time);
+    const now = new Date();
+    const durationMinutes = Math.round((now.getTime() - punchInTime.getTime()) / 60000);
+
+    const { error } = await supabase
+      .from('attendance_logs')
+      .update({ 
+        punch_out_time: now.toISOString(),
+        work_duration_minutes: durationMinutes
+      })
+      .eq('id', todayLog.id);
+
+    if (error) {
+      console.error('Punch out error:', error);
+      return false;
+    }
+    await fetchAttendance();
+    return true;
+  }, [userId, fetchAttendance]);
+
+  return { ...stats, punchIn, punchOut, refetch: fetchAttendance };
 }
 
 /**
@@ -278,4 +326,19 @@ export async function fetchTeamAttendance(
   });
 
   return result;
+}
+
+/**
+ * Fetch work duration logs for a specific user (for performance insights).
+ */
+export async function fetchUserWorkLogs(userId: string): Promise<Array<{ date: string; work_duration_minutes: number | null; punch_in_time: string; punch_out_time: string | null }>> {
+  const { data } = await supabase
+    .from('attendance_logs')
+    .select('date, work_duration_minutes, punch_in_time, punch_out_time')
+    .eq('user_id', userId)
+    .eq('status', 'Present')
+    .order('date', { ascending: false })
+    .limit(30);
+
+  return (data as Array<{ date: string; work_duration_minutes: number | null; punch_in_time: string; punch_out_time: string | null }>) || [];
 }
