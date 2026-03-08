@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Activity, Trophy, PieChart, Loader2 } from 'lucide-react';
 import { springPresets } from '@/components/ui/spring-config';
 import { supabase } from '@/integrations/supabase/client';
+import { DEPARTMENTS, DEPARTMENT_MAPPING } from '@/lib/department-mapping';
 
 interface Project {
   id: string;
@@ -24,14 +25,9 @@ interface ProfileSafe {
   user_id: string;
   display_name: string | null;
   department: string | null;
+  posting: string | null;
+  access_status: string | null;
 }
-
-const DEPARTMENTS = [
-  { code: 'TD', name: 'Tech Dev' },
-  { code: 'MO', name: 'Mgmt Ops' },
-  { code: 'CM', name: 'Creative' },
-  { code: 'ES', name: 'External' },
-];
 
 export function AnalyticsTab() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -44,7 +40,7 @@ export function AnalyticsTab() {
       const [projRes, taskRes, profRes] = await Promise.all([
         supabase.from('projects').select('id, name, icon, color'),
         supabase.from('tasks').select('id, status, project_id, updated_at, title, created_by_name').order('updated_at', { ascending: false }),
-        supabase.from('profiles_safe').select('user_id, display_name, department'),
+        supabase.from('profiles_safe').select('user_id, display_name, department, posting, access_status'),
       ]);
       if (!projRes.error) setProjects(projRes.data || []);
       if (!taskRes.error) setTasks(taskRes.data || []);
@@ -76,23 +72,22 @@ export function AnalyticsTab() {
     });
   }, [projects, tasks]);
 
-  // Compute department heatmap from real profiles + tasks
+  // Compute department heatmap from profiles + posting mapping
   const departmentScores = useMemo(() => {
+    const activeProfiles = profiles.filter(p => p.access_status === 'approved_member');
+    
     return DEPARTMENTS.map(dept => {
-      const deptMembers = profiles.filter(p => p.department === dept.code);
-      const memberIds = new Set(deptMembers.map(p => p.user_id));
-      // We can't directly map tasks to departments without assigned_to, so use a simple heuristic
-      // Count tasks created by department members
-      const deptTasks = tasks.filter(t => {
-        // Fallback: no direct link, show 0
+      const memberCount = activeProfiles.filter(p => {
+        // First check the stored department column
+        if (p.department === dept.code) return true;
+        // Fallback: derive from posting via mapping
+        if (p.posting && DEPARTMENT_MAPPING[p.posting] === dept.code) return true;
         return false;
-      });
-      const totalTasks = tasks.length;
-      const memberCount = deptMembers.length;
-      const score = memberCount > 0 ? Math.min(100, memberCount * 20) : 0; // placeholder until department assignment is used
-      return { ...dept, score, memberCount };
+      }).length;
+      
+      return { ...dept, memberCount };
     });
-  }, [profiles, tasks]);
+  }, [profiles]);
 
   // Recent achievements: last 5 deployed tasks
   const achievements = useMemo(() => {
@@ -167,12 +162,12 @@ export function AnalyticsTab() {
               key={dept.code}
               className="rounded-lg p-3 text-center border border-border/50"
               style={{
-                backgroundColor: `hsl(187 100% 50% / ${Math.max(dept.memberCount * 0.08, 0.05)})`,
+                backgroundColor: `hsl(187 100% 50% / ${Math.max(dept.memberCount * 0.12, 0.05)})`,
               }}
             >
               <p className="text-lg font-bold font-['Orbitron']">{dept.code}</p>
               <p className="text-[10px] text-muted-foreground">{dept.name}</p>
-              <p className="text-sm font-semibold mt-1">{dept.memberCount} members</p>
+              <p className="text-sm font-semibold mt-1">{dept.memberCount} {dept.memberCount === 1 ? 'member' : 'members'}</p>
             </div>
           ))}
         </div>

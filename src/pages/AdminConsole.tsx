@@ -436,9 +436,11 @@ export default function AdminConsole() {
 
   const handleSavePosting = async (userId: string) => {
     setActionLoading(userId);
+    const trimmed = postingValue.trim() || null;
+    const department = getDepartmentCode(trimmed);
     const { error } = await supabase
       .from('profiles')
-      .update({ posting: postingValue.trim() || null })
+      .update({ posting: trimmed, department })
       .eq('user_id', userId);
 
     if (error) {
