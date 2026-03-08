@@ -51,7 +51,7 @@ export function useUserRole(): UserRoleData {
     };
 
     fetchRole();
-  }, [user]);
+  }, [user, isGuest]);
 
   const getRoleLabel = (role: AppRole | null): string => {
     switch (role) {

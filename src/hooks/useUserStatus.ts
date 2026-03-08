@@ -77,7 +77,7 @@ export function useUserStatus(): UserStatusData {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, isGuest]);
 
   useEffect(() => {
     fetchStatus();
