@@ -20,6 +20,7 @@ import { useCompanyHolidays, useAllLeaveRequests, type LeaveRequest } from '@/ho
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import defaultAvatar from '@/assets/default-avatar.webp';
+import { MemberInsightModal } from '@/components/MemberInsightModal';
 
 // Allowed admin emails
 const ADMIN_EMAILS = [
