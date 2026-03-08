@@ -220,9 +220,10 @@ export function ChatTab() {
       if (profiles) {
         setParticipants(profiles.map(p => ({
           ...p,
-          isOnline: presenceMap[p.user_id]?.is_online ?? false,
-          isTyping: presenceMap[p.user_id]?.is_typing ?? false,
-          role: rolesMap[p.user_id] || 'team',
+          isOnline: presenceMap[p.user_id ?? '']?.is_online ?? false,
+          isTyping: presenceMap[p.user_id ?? '']?.is_typing ?? false,
+          role: rolesMap[p.user_id ?? ''] || 'team',
+          posting: (p as any).posting || null,
         })));
       }
     };
