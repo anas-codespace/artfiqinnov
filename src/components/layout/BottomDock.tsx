@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useState, useRef } from 'react';
 import { useChatInput } from '@/contexts/ChatInputContext';
 import { useUserStatus } from '@/hooks/useUserStatus';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BottomDockProps {
   activeTab: string;
