@@ -13,6 +13,7 @@ import {
 import { springPresets } from '@/components/ui/spring-config';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 import { PunchInCard } from '@/components/PunchInCard';
+import { NoticeBoard } from '@/components/NoticeBoard';
 import { useUserStatus } from '@/hooks/useUserStatus';
 
 
@@ -282,6 +283,9 @@ export function HomeTab() {
           );
         })}
       </motion.section>
+
+      {/* Notice Board */}
+      <NoticeBoard />
 
       {/* Visitor/Pending Banner */}
       {!isMember && (

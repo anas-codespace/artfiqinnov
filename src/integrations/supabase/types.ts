@@ -391,6 +391,36 @@ export type Database = {
           },
         ]
       }
+      notice_board: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          media_type: string | null
+          media_url: string | null
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
