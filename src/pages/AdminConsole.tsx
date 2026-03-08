@@ -126,20 +126,21 @@ export default function AdminConsole() {
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, user_id, display_name, email, avatar_url, access_status, posting')
-      .order('created_at', { ascending: false });
+    const [{ data, error }, { data: roles }] = await Promise.all([
+      supabase.from('profiles').select('id, user_id, display_name, email, avatar_url, access_status, posting').order('created_at', { ascending: false }),
+      supabase.from('user_roles').select('user_id, role'),
+    ]);
 
     if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load users',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to load users', variant: 'destructive' });
     } else {
       setUsers(data || []);
     }
+
+    const rolesMap: Record<string, 'ceo' | 'cto' | 'team'> = {};
+    roles?.forEach(r => { rolesMap[r.user_id] = r.role as 'ceo' | 'cto' | 'team'; });
+    setUserRoles(rolesMap);
+
     setLoadingUsers(false);
   };
 
