@@ -1147,6 +1147,69 @@ export default function AdminConsole() {
               </div>
             )}
           </TabsContent>
+
+          {/* Vault Access Requests Tab */}
+          <TabsContent value="vault-access" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Vault Access Requests</h2>
+              <Badge variant="secondary">{vaultRequests.length} pending</Badge>
+            </div>
+
+            {vaultLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : vaultRequests.length === 0 ? (
+              <div className="glass-card rounded-xl p-8 text-center">
+                <FolderLock className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No pending vault access requests</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {vaultRequests.map((req) => (
+                  <motion.div
+                    key={req.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="glass-card rounded-xl p-4 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">
+                        👤 {vaultRequestProfiles[req.user_id] || 'Unknown'} requested access to:
+                      </p>
+                      <p className="text-xs text-primary mt-0.5 truncate">
+                        📄 {vaultRequestFiles[req.file_id] || 'Unknown File'}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {new Date(req.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={() => handleVaultRequestAction(req.id, 'approved')}
+                        disabled={actionLoading === req.id}
+                        className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-xs"
+                      >
+                        {actionLoading === req.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                        Grant
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleVaultRequestAction(req.id, 'rejected')}
+                        disabled={actionLoading === req.id}
+                        className="gap-1 text-xs"
+                      >
+                        <XCircle className="w-3 h-3" />
+                        Deny
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
 
         {/* Holiday Declaration Modal */}
