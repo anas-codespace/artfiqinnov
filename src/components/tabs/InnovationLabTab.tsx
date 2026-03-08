@@ -78,7 +78,9 @@ export function InnovationLabTab() {
   const [feedbackPitchId, setFeedbackPitchId] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [newPitch, setNewPitch] = useState({ title: '', description: '' });
+  const [deletePitchId, setDeletePitchId] = useState<string | null>(null);
 
+  const isFounderEmail = user?.email === 'sulaiman.artfiqceo@gmail.com' || user?.email === 'anas.md.artfiq@gmail.com';
   useEffect(() => {
     const fetchData = async () => {
       const [pitchRes, profRes, votesRes] = await Promise.all([
