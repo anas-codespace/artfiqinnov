@@ -647,6 +647,42 @@ export function VaultTab() {
       </motion.div>
       )}
 
+      {/* Google Drive Link Paste */}
+      {isMember && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springPresets.snappy, delay: 0.15 }}
+          className="glass-card rounded-2xl p-5 space-y-3"
+        >
+          <div className="flex items-center gap-2">
+            <Link2 className="w-5 h-5 text-primary" />
+            <h3 className="text-sm font-medium">Upload from Google Drive</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Paste a Google Drive share link. The file must be shared as "Anyone with the link".
+          </p>
+          <div className="flex gap-2">
+            <Input
+              placeholder="https://drive.google.com/file/d/..."
+              value={driveLink}
+              onChange={(e) => setDriveLink(e.target.value)}
+              disabled={isDriveUploading}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleDriveUpload}
+              disabled={!driveLink.trim() || isDriveUploading}
+              size="sm"
+              className="shrink-0"
+            >
+              {isDriveUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {isDriveUploading ? 'Uploading...' : 'Upload'}
+            </Button>
+          </div>
+        </motion.div>
+      )}
+
       {/* File List */}
       <motion.div
         initial={{ opacity: 0 }}
