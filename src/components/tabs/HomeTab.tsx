@@ -13,6 +13,7 @@ import {
 import { springPresets } from '@/components/ui/spring-config';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 import { PunchInCard } from '@/components/PunchInCard';
+import { AttendanceCalendar } from '@/components/AttendanceCalendar';
 
 // Founder emails for fetching dynamic avatars
 const FOUNDER_EMAILS = {
