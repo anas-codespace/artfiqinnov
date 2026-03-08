@@ -212,6 +212,9 @@ export function HomeTab() {
       {/* Attendance Calendar */}
       <AttendanceCalendar />
 
+      {/* Leave Requests */}
+      <LeaveRequestCard />
+
       {/* Mission Card with parallax */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
