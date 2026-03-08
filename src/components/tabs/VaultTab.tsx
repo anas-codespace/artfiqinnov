@@ -709,6 +709,7 @@ export function VaultTab() {
           </AnimatePresence>
         )}
       </motion.div>
+      )}
 
 
       {/* File Viewers Modal */}
