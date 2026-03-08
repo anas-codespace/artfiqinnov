@@ -76,10 +76,12 @@ interface TeamMember {
 }
 
 export function HomeTab() {
+  const { isGuest } = useAuth();
   const { isMember, isVisitor, isPending, requestAccess } = useUserStatus();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [founders, setFounders] = useState<Founder[]>([]);
   const [selectedFounder, setSelectedFounder] = useState<Founder | null>(null);
+  const [guestBannerDismissed, setGuestBannerDismissed] = useState(() => sessionStorage.getItem('guestBannerDismissed') === 'true');
   const containerRef = useRef<HTMLDivElement>(null);
   
   const { scrollYProgress } = useScroll({
