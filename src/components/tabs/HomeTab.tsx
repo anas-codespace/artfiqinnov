@@ -208,6 +208,9 @@ export function HomeTab() {
       {/* Punch-In Card */}
       <PunchInCard />
 
+      {/* Attendance Calendar */}
+      <AttendanceCalendar />
+
       {/* Mission Card with parallax */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
