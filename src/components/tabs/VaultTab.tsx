@@ -176,6 +176,73 @@ export function VaultTab() {
     }
   };
 
+  const handleDriveUpload = async () => {
+    if (!driveLink.trim() || !user || !profile) return;
+    
+    setIsDriveUploading(true);
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('download-gdrive', {
+        body: { driveUrl: driveLink.trim() },
+      });
+
+      if (fnError) throw new Error(fnError.message || 'Failed to fetch from Google Drive');
+      if (fnData?.error) throw new Error(fnData.error);
+
+      const { base64, contentType, fileName, size } = fnData;
+      
+      if (size > MAX_FILE_SIZE) {
+        toast({ title: 'File too large', description: 'Max limit 10MB.', variant: 'destructive' });
+        return;
+      }
+
+      // Convert base64 to blob
+      const byteChars = atob(base64);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) {
+        byteNumbers[i] = byteChars.charCodeAt(i);
+      }
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: contentType });
+
+      // Upload to storage
+      const sanitizedName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `${user.id}/${Date.now()}_${sanitizedName}`;
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(storagePath, blob, {
+          contentType,
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Save metadata
+      const { error: dbError } = await supabase.from('files').insert({
+        name: fileName,
+        size,
+        url: '',
+        storage_path: storagePath,
+        uploaded_by: user.id,
+        uploader_name: profile.display_name || user.email?.split('@')[0] || 'Unknown',
+      });
+
+      if (dbError) throw dbError;
+
+      toast({ title: 'File uploaded from Google Drive!', description: `${fileName} added to the vault.` });
+      setDriveLink('');
+      fetchFiles();
+    } catch (error: any) {
+      console.error('Drive upload error:', error);
+      toast({
+        title: 'Google Drive upload failed',
+        description: error?.message || 'Make sure the file is shared publicly.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDriveUploading(false);
+    }
+  };
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
