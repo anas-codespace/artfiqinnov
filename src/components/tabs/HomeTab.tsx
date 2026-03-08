@@ -283,6 +283,45 @@ export function HomeTab() {
         })}
       </motion.section>
 
+      {/* Visitor/Pending Banner */}
+      {!isMember && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative z-10 backdrop-blur-xl bg-card/40 border border-primary/30 rounded-2xl p-6 shadow-2xl overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-destructive/5 pointer-events-none" />
+          <div className="relative z-10 flex flex-col items-center text-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+              <Lock className="w-7 h-7 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base">🔒 Access Restricted</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {isPending
+                  ? 'Your access request is pending approval from the Founders.'
+                  : 'Your account is pending approval from the Founders.'}
+              </p>
+            </div>
+            {isVisitor && (
+              <Button onClick={requestAccess} className="gap-2">
+                <Shield className="w-4 h-4" />
+                Request Access
+              </Button>
+            )}
+            {isPending && (
+              <div className="flex items-center gap-2 text-primary text-xs">
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
+                  <Lock className="w-3.5 h-3.5" />
+                </motion.div>
+                Awaiting founder approval...
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
       {/* Punch-In Card + Collapsible Calendar */}
       <div className="mb-8">
         <PunchInCard />
