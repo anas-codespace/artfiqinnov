@@ -58,7 +58,7 @@ export function useUserRole(): UserRoleData {
       case 'ceo':
         return 'CEO';
       case 'cto':
-        return 'CTO';
+        return 'MD';
       case 'team':
         return 'Team';
       default:
