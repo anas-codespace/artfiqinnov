@@ -8,7 +8,7 @@ import { usePresence } from '@/contexts/PresenceContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { SoftFloat } from '@/components/ui/soft-float';
-import { RoleBadge } from '@/components/ui/role-badge';
+// RoleBadge removed — only PostingBadge used in chat bubbles
 import { PostingBadge } from '@/components/ui/posting-badge';
 import { MessageInfoModal } from '@/components/ui/message-info-modal';
 import { springPresets } from '@/components/ui/spring-config';
