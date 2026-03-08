@@ -140,11 +140,13 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
         )}
       </motion.header>
 
-      {/* Profile Settings Modal */}
-      <ProfileSettings 
-        open={showProfileSettings} 
-        onOpenChange={setShowProfileSettings} 
-      />
+      {/* Profile Settings Modal - Hidden for guests */}
+      {!isGuest && (
+        <ProfileSettings 
+          open={showProfileSettings} 
+          onOpenChange={setShowProfileSettings} 
+        />
+      )}
     </>
   );
 }
