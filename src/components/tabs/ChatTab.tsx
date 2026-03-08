@@ -751,6 +751,7 @@ export function ChatTab() {
                 const reactionCounts = getReactionCounts(message.id);
                 const readStatus = getReadStatus(message);
                 const senderRole = getParticipantRole(message.user_id);
+                const senderPosting = getParticipantPosting(message.user_id);
 
                 return (
                   <motion.div
