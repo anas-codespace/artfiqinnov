@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Lock, KeyRound, Users, UserCheck, UserX, Loader2, AlertTriangle, CheckCircle, ArrowLeft, HelpCircle, Pencil, Save } from 'lucide-react';
+import { Shield, Lock, KeyRound, Users, UserCheck, UserX, Loader2, AlertTriangle, CheckCircle, ArrowLeft, HelpCircle, Pencil, Save, Clock, CalendarPlus, PartyPopper, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,10 +9,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { PostingBadge, isFounderRole } from '@/components/ui/posting-badge';
+import { useCompanyHolidays } from '@/hooks/useAttendance';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import defaultAvatar from '@/assets/default-avatar.webp';
 
 // Allowed admin emails
@@ -75,6 +81,17 @@ export default function AdminConsole() {
   const [editingPosting, setEditingPosting] = useState<string | null>(null);
   const [postingValue, setPostingValue] = useState('');
 
+  // Today's attendance state
+  const [todayAttendance, setTodayAttendance] = useState<Array<{ user_id: string; punch_in_time: string; display_name: string | null; avatar_url: string | null }>>([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
+
+  // Holiday declaration state
+  const [holidayModalOpen, setHolidayModalOpen] = useState(false);
+  const [holidayDate, setHolidayDate] = useState<Date | undefined>();
+  const [holidayTitle, setHolidayTitle] = useState('');
+  const [declaringHoliday, setDeclaringHoliday] = useState(false);
+  const { holidays, refetch: refetchHolidays } = useCompanyHolidays();
+
   // Check access and PIN status on mount
   useEffect(() => {
     const checkAccess = async () => {
@@ -121,6 +138,7 @@ export default function AdminConsole() {
   useEffect(() => {
     if (stage === 'unlocked') {
       fetchUsers();
+      fetchTodayAttendance();
     }
   }, [stage]);
 
@@ -142,6 +160,72 @@ export default function AdminConsole() {
     setUserRoles(rolesMap);
 
     setLoadingUsers(false);
+  };
+
+  const fetchTodayAttendance = async () => {
+    setAttendanceLoading(true);
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: logs } = await supabase
+      .from('attendance_logs')
+      .select('user_id, punch_in_time')
+      .eq('date', today);
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, display_name, avatar_url')
+      .eq('access_status', 'approved_member');
+
+    const logMap = new Map<string, string>();
+    (logs || []).forEach(l => logMap.set(l.user_id, l.punch_in_time));
+
+    const combined = (profiles || []).map(p => ({
+      user_id: p.user_id,
+      display_name: p.display_name,
+      avatar_url: p.avatar_url,
+      punch_in_time: logMap.get(p.user_id) || '',
+    }));
+
+    // Sort: punched in first, then not punched in
+    combined.sort((a, b) => {
+      if (a.punch_in_time && !b.punch_in_time) return -1;
+      if (!a.punch_in_time && b.punch_in_time) return 1;
+      return 0;
+    });
+
+    setTodayAttendance(combined);
+    setAttendanceLoading(false);
+  };
+
+  const handleDeclareHoliday = async () => {
+    if (!holidayDate || !holidayTitle.trim() || !user) return;
+    setDeclaringHoliday(true);
+
+    const dateStr = format(holidayDate, 'yyyy-MM-dd');
+    const { error } = await supabase
+      .from('company_holidays')
+      .insert({ date: dateStr, title: holidayTitle.trim(), declared_by: user.id });
+
+    if (error) {
+      toast({ title: 'Error', description: error.message.includes('duplicate') ? 'A holiday already exists on this date.' : 'Failed to declare holiday', variant: 'destructive' });
+    } else {
+      toast({ title: '🎉 Holiday Declared', description: `${holidayTitle.trim()} on ${format(holidayDate, 'PPP')}` });
+      setHolidayModalOpen(false);
+      setHolidayDate(undefined);
+      setHolidayTitle('');
+      refetchHolidays();
+    }
+    setDeclaringHoliday(false);
+  };
+
+  const handleDeleteHoliday = async (id: string) => {
+    const { error } = await supabase.from('company_holidays').delete().eq('id', id);
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to delete holiday', variant: 'destructive' });
+    } else {
+      toast({ title: 'Deleted', description: 'Holiday removed' });
+      refetchHolidays();
+    }
   };
 
   const handleSetupPin = async () => {
@@ -720,14 +804,22 @@ export default function AdminConsole() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-full overflow-x-hidden">
         <Tabs defaultValue="team" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
-            <TabsTrigger value="team" className="gap-2">
-              <UserCheck className="w-4 h-4" />
-              Team Management ({approvedMembers.length})
+          <TabsList className="grid w-full grid-cols-4 mb-8">
+            <TabsTrigger value="team" className="gap-1 text-xs sm:text-sm">
+              <UserCheck className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Team</span> ({approvedMembers.length})
             </TabsTrigger>
-            <TabsTrigger value="requests" className="gap-2">
-              <Users className="w-4 h-4" />
-              Access Requests ({visitorsAndPending.length})
+            <TabsTrigger value="requests" className="gap-1 text-xs sm:text-sm">
+              <Users className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Requests</span> ({visitorsAndPending.length})
+            </TabsTrigger>
+            <TabsTrigger value="attendance" className="gap-1 text-xs sm:text-sm">
+              <Clock className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Attendance</span>
+            </TabsTrigger>
+            <TabsTrigger value="holidays" className="gap-1 text-xs sm:text-sm">
+              <PartyPopper className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Holidays</span>
             </TabsTrigger>
           </TabsList>
 
@@ -778,7 +870,160 @@ export default function AdminConsole() {
               </div>
             )}
           </TabsContent>
+
+          {/* Today's Attendance Tab */}
+          <TabsContent value="attendance" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Today's Attendance</h2>
+              <Badge variant="secondary">{new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</Badge>
+            </div>
+
+            {attendanceLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : todayAttendance.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No team members found</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {todayAttendance.map((member) => (
+                  <motion.div
+                    key={member.user_id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50"
+                  >
+                    <Avatar className="w-9 h-9 flex-shrink-0">
+                      <AvatarImage src={member.avatar_url || defaultAvatar} />
+                      <AvatarFallback>{(member.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{member.display_name || 'Unknown'}</p>
+                    </div>
+                    {member.punch_in_time ? (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span className="text-[11px] font-semibold text-emerald-400">
+                          {new Date(member.punch_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        <span className="text-[11px] font-semibold text-amber-400">Not Punched In</span>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Holidays Tab */}
+          <TabsContent value="holidays" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Company Holidays</h2>
+              <Button size="sm" onClick={() => setHolidayModalOpen(true)} className="gap-1.5">
+                <CalendarPlus className="w-4 h-4" />
+                Declare Holiday
+              </Button>
+            </div>
+
+            {holidays.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <PartyPopper className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No holidays declared yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {holidays.map((holiday) => (
+                  <motion.div
+                    key={holiday.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 border border-border/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                        <PartyPopper className="w-4 h-4 text-amber-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{holiday.title}</p>
+                        <p className="text-xs text-muted-foreground">{format(new Date(holiday.date + 'T00:00:00'), 'EEEE, MMM d, yyyy')}</p>
+                      </div>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="w-8 h-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDeleteHoliday(holiday.id)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
+
+        {/* Holiday Declaration Modal */}
+        <Dialog open={holidayModalOpen} onOpenChange={setHolidayModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CalendarPlus className="w-5 h-5 text-primary" />
+                Declare Company Holiday
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div>
+                <Label>Holiday Title</Label>
+                <Input
+                  value={holidayTitle}
+                  onChange={(e) => setHolidayTitle(e.target.value)}
+                  placeholder="e.g. Diwali, Company Off..."
+                />
+              </div>
+              <div>
+                <Label>Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("w-full justify-start text-left font-normal", !holidayDate && "text-muted-foreground")}
+                    >
+                      <Clock className="w-4 h-4 mr-2" />
+                      {holidayDate ? format(holidayDate, 'PPP') : 'Pick a date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={holidayDate}
+                      onSelect={setHolidayDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={handleDeclareHoliday}
+                disabled={declaringHoliday || !holidayDate || !holidayTitle.trim()}
+                className="w-full"
+              >
+                {declaringHoliday ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <PartyPopper className="w-4 h-4 mr-2" />}
+                Declare Holiday
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
