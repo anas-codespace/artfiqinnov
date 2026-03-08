@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import artfiqLogo from '@/assets/artfiq-logo.jpeg';
+import artfiqLogo from '@/assets/artfiq-logo.png';
 
 interface LiquidLogoProps {
   size?: number;
