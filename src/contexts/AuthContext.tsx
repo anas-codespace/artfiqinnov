@@ -17,6 +17,7 @@ interface AuthContextType {
   profile: Profile | null;
   isLoading: boolean;
   isPasswordRecovery: boolean;
+  isGuest: boolean;
   authEvent: AuthChangeEvent | null;
   signInWithEmail: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string, name: string) => Promise<{ error: Error | null; session: Session | null }>;
@@ -24,6 +25,7 @@ interface AuthContextType {
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   resendVerificationEmail: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  loginAsGuest: () => void;
   clearPasswordRecovery: () => void;
 }
 
