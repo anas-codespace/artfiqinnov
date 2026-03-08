@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Target, Users, Zap, Globe, Mail, Linkedin, Instagram } from 'lucide-react';
+import { Target, Users, Zap, Globe, Mail, Linkedin, Instagram, Lock, Shield } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { FluidButton } from '@/components/ui/fluid-button';
