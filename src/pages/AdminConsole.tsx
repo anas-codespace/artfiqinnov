@@ -16,7 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { PostingBadge, isFounderRole } from '@/components/ui/posting-badge';
-import { useCompanyHolidays } from '@/hooks/useAttendance';
+import { useCompanyHolidays, useAllLeaveRequests, type LeaveRequest } from '@/hooks/useAttendance';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import defaultAvatar from '@/assets/default-avatar.webp';
