@@ -103,6 +103,10 @@ export default function AdminConsole() {
   const [vaultRequestFiles, setVaultRequestFiles] = useState<Record<string, string>>({});
   const [vaultLoading, setVaultLoading] = useState(true);
 
+  // Member insight modal state
+  const [insightMember, setInsightMember] = useState<{ user_id: string; display_name: string | null; avatar_url: string | null } | null>(null);
+  const [insightOpen, setInsightOpen] = useState(false);
+
   // Check access and PIN status on mount
   useEffect(() => {
     const checkAccess = async () => {
