@@ -238,7 +238,9 @@ export function VaultTab() {
 
       try {
         // Upload to storage with correct content-type
-        const fileName = `${user.id}/${Date.now()}_${file.name}`;
+        // Sanitize filename: replace spaces and special chars to avoid storage URL issues
+        const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const fileName = `${user.id}/${Date.now()}_${sanitizedName}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from(STORAGE_BUCKET)
           .upload(fileName, file, {
