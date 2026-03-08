@@ -4,6 +4,7 @@ import { Smile, Reply, X, CheckCheck, Check, Info, Bell, Trash2, MoreVertical, C
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { usePresence } from '@/contexts/PresenceContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { SoftFloat } from '@/components/ui/soft-float';
