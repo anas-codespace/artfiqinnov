@@ -230,7 +230,33 @@ export default function AdminConsole() {
     }
   };
 
-  const handleSetupPin = async () => {
+  // Fetch profiles for leave requests
+  useEffect(() => {
+    if (allLeaves.length === 0) return;
+    const userIds = [...new Set(allLeaves.map(l => l.user_id))];
+    supabase.from('profiles').select('user_id, display_name, avatar_url').in('user_id', userIds)
+      .then(({ data }) => {
+        const map: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
+        (data || []).forEach(p => { map[p.user_id] = { display_name: p.display_name, avatar_url: p.avatar_url }; });
+        setLeaveProfiles(map);
+      });
+  }, [allLeaves]);
+
+  const handleLeaveAction = async (leaveId: string, action: 'approved' | 'rejected', note?: string) => {
+    const { error } = await supabase
+      .from('leave_requests')
+      .update({ status: action, reviewed_by: user!.id, reviewer_note: note || null, updated_at: new Date().toISOString() })
+      .eq('id', leaveId);
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to update leave request', variant: 'destructive' });
+    } else {
+      toast({ title: action === 'approved' ? '✅ Approved' : '❌ Rejected', description: `Leave request ${action}` });
+      refetchLeaves();
+    }
+  };
+
+
     if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
       toast({ title: 'Error', description: 'PIN must be exactly 4 digits', variant: 'destructive' });
       return;
