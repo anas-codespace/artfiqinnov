@@ -15,11 +15,17 @@ interface Holiday {
   title: string;
 }
 
+interface LeaveRange {
+  start_date: string;
+  end_date: string;
+}
+
 export function AttendanceCalendar() {
   const { user } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [approvedLeaves, setApprovedLeaves] = useState<LeaveRange[]>([]);
   const [joinDate, setJoinDate] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,14 +41,16 @@ export function AttendanceCalendar() {
       const endOfMonth = new Date(year, month + 1, 0);
       const endStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(endOfMonth.getDate()).padStart(2, '0')}`;
 
-      const [{ data: logData }, { data: holidayData }, { data: profile }] = await Promise.all([
+      const [{ data: logData }, { data: holidayData }, { data: profile }, { data: leaveData }] = await Promise.all([
         supabase.from('attendance_logs').select('date, status').eq('user_id', user.id).gte('date', startOfMonth).lte('date', endStr),
         supabase.from('company_holidays').select('date, title').gte('date', startOfMonth).lte('date', endStr),
         supabase.from('profiles').select('created_at').eq('user_id', user.id).single(),
+        supabase.from('leave_requests').select('start_date, end_date').eq('user_id', user.id).eq('status', 'approved'),
       ]);
 
       setLogs(logData || []);
       setHolidays(holidayData || []);
+      setApprovedLeaves((leaveData as LeaveRange[]) || []);
       if (profile) setJoinDate(profile.created_at.split('T')[0]);
       setIsLoading(false);
     };
@@ -62,12 +70,26 @@ export function AttendanceCalendar() {
     return map;
   }, [holidays]);
 
+  // Build approved leave dates set
+  const leaveDates = useMemo(() => {
+    const set = new Set<string>();
+    approvedLeaves.forEach(l => {
+      const current = new Date(l.start_date + 'T00:00:00');
+      const end = new Date(l.end_date + 'T00:00:00');
+      while (current <= end) {
+        set.add(current.toISOString().split('T')[0]);
+        current.setDate(current.getDate() + 1);
+      }
+    });
+    return set;
+  }, [approvedLeaves]);
+
   // Build calendar grid
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const today = new Date().toISOString().split('T')[0];
-    const days: Array<{ date: string; day: number; status: 'present' | 'absent' | 'holiday' | 'weekend' | 'future' | 'before_join' | null }> = [];
+    const days: Array<{ date: string; day: number; status: 'present' | 'absent' | 'holiday' | 'weekend' | 'future' | 'before_join' | 'leave' | null }> = [];
 
     // Empty cells for padding
     for (let i = 0; i < firstDay; i++) {
@@ -81,7 +103,7 @@ export function AttendanceCalendar() {
       const isFuture = dateStr > today;
       const isBeforeJoin = joinDate ? dateStr < joinDate : false;
 
-      let status: 'present' | 'absent' | 'holiday' | 'weekend' | 'future' | 'before_join';
+      let status: 'present' | 'absent' | 'holiday' | 'weekend' | 'future' | 'before_join' | 'leave';
 
       if (isFuture) {
         status = 'future';
@@ -93,6 +115,8 @@ export function AttendanceCalendar() {
         status = 'holiday';
       } else if (logMap.get(dateStr) === 'Present') {
         status = 'present';
+      } else if (leaveDates.has(dateStr)) {
+        status = 'leave';
       } else {
         status = 'absent';
       }
@@ -101,7 +125,7 @@ export function AttendanceCalendar() {
     }
 
     return days;
-  }, [year, month, logMap, holidayMap, joinDate]);
+  }, [year, month, logMap, holidayMap, leaveDates, joinDate]);
 
   const monthLabel = currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
@@ -119,6 +143,7 @@ export function AttendanceCalendar() {
       case 'present': return 'bg-emerald-400';
       case 'absent': return 'bg-rose-500';
       case 'holiday': return 'bg-amber-400';
+      case 'leave': return 'bg-blue-400';
       case 'weekend': return 'bg-muted-foreground/30';
       default: return '';
     }
@@ -185,10 +210,11 @@ export function AttendanceCalendar() {
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground pt-2">
+          <div className="flex items-center justify-center gap-3 flex-wrap text-[10px] text-muted-foreground pt-2">
             <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-400" /> Present</div>
             <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-rose-500" /> Absent</div>
             <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-400" /> Holiday</div>
+            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-400" /> Leave</div>
           </div>
         </>
       )}

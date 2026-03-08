@@ -14,6 +14,7 @@ import { springPresets } from '@/components/ui/spring-config';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 import { PunchInCard } from '@/components/PunchInCard';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
+import { LeaveRequestCard } from '@/components/LeaveRequestCard';
 
 // Founder emails for fetching dynamic avatars
 const FOUNDER_EMAILS = {
@@ -210,6 +211,9 @@ export function HomeTab() {
 
       {/* Attendance Calendar */}
       <AttendanceCalendar />
+
+      {/* Leave Requests */}
+      <LeaveRequestCard />
 
       {/* Mission Card with parallax */}
       <motion.section
