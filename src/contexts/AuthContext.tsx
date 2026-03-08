@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
   const [authEvent, setAuthEvent] = useState<AuthChangeEvent | null>(null);
 
   const fetchProfile = async (userId: string) => {
