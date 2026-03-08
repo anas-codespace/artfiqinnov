@@ -8,7 +8,7 @@ import { usePresence } from '@/contexts/PresenceContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { SoftFloat } from '@/components/ui/soft-float';
-import { RoleBadge } from '@/components/ui/role-badge';
+// RoleBadge removed — only PostingBadge used in chat bubbles
 import { PostingBadge } from '@/components/ui/posting-badge';
 import { MessageInfoModal } from '@/components/ui/message-info-modal';
 import { springPresets } from '@/components/ui/spring-config';
@@ -777,42 +777,41 @@ export function ChatTab() {
                     onMouseLeave={handleMessageLongPressEnd}
                     onTouchStart={() => handleMessageLongPressStart(message)}
                     onTouchEnd={handleMessageLongPressEnd}
-                    className={cn("flex gap-3 group", isOwnMessage && "flex-row-reverse")}
+                    className={cn(
+                      "flex items-end gap-3 group",
+                      isOwnMessage ? "justify-end" : "justify-start"
+                    )}
                   >
-                    {/* Avatar */}
-                    <div className="flex-shrink-0 w-10">
-                      {showAvatar && (
-                        <motion.img
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={springPresets.bouncy}
-                          src={message.user_avatar || defaultAvatarImg}
-                          alt={message.user_name}
-                          className="w-10 h-10 rounded-full border border-border"
-                        />
-                      )}
-                    </div>
+                    {/* Avatar - outside, bottom-aligned */}
+                    {!isOwnMessage && (
+                      <div className="flex-shrink-0 w-9">
+                        {showAvatar ? (
+                          <motion.img
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={springPresets.bouncy}
+                            src={message.user_avatar || defaultAvatarImg}
+                            alt={message.user_name}
+                            className="w-9 h-9 rounded-full border border-border"
+                          />
+                        ) : <div className="w-9" />}
+                      </div>
+                    )}
 
                     {/* Message Content */}
-                    <div className={cn("max-w-[70%] space-y-1", isOwnMessage && "items-end")}>
-                      {showAvatar && (
-                        <div className={cn("flex flex-wrap items-center gap-1.5 text-sm", isOwnMessage && "flex-row-reverse")}>
-                          <span className="font-medium">{message.user_name}</span>
-                          {senderRole && senderRole !== 'team' && (
-                            <RoleBadge role={senderRole} size="sm" showIcon={false} />
-                          )}
+                    <div className={cn("max-w-[75%] flex flex-col", isOwnMessage ? "items-end" : "items-start")}>
+                      {/* Name + Badge above bubble */}
+                      {showAvatar && !isOwnMessage && (
+                        <div className="flex items-center gap-1.5 mb-1 ml-1">
+                          <span className="font-medium text-sm">{message.user_name}</span>
                           <PostingBadge posting={senderPosting} role={senderRole} />
-                          <span className="text-muted-foreground text-xs">
-                            {formatTime(message.created_at)}
-                          </span>
                         </div>
                       )}
 
                       {/* Reply Preview */}
                       {message.reply_message && (
                         <div className={cn(
-                          "text-xs px-3 py-1.5 rounded-lg bg-muted/50 border-l-2 border-primary",
-                          isOwnMessage && "ml-auto"
+                          "text-xs px-3 py-1.5 rounded-lg bg-muted/50 border-l-2 border-primary mb-1",
                         )}>
                           <span className="font-medium text-primary">
                             {message.reply_message.user_name}
@@ -827,56 +826,56 @@ export function ChatTab() {
                         <DropdownMenu>
                           <motion.div 
                             className={cn(
-                              "flex flex-row items-center gap-3 w-fit max-w-[85%] rounded-3xl px-5 py-3",
+                              "flex flex-row items-center gap-2 w-fit rounded-2xl px-4 py-3",
                               isOwnMessage
-                                ? "bg-primary text-primary-foreground"
-                                : "glass-card"
+                                ? "bg-primary text-primary-foreground rounded-br-sm"
+                                : "bg-[hsl(var(--card))] border border-border rounded-bl-sm"
                             )}
                             whileHover={{ scale: 1.01 }}
                             transition={springPresets.button}
                           >
-                            {/* Message text */}
+                            {/* Message text + timestamp */}
                             <div className="flex-1 min-w-0">
                               <p className="text-sm leading-relaxed break-words">{message.text}</p>
                               
-                              {/* Read receipt for own messages */}
-                              {isOwnMessage && readStatus && (
-                                <motion.div 
-                                  className="flex items-center justify-end gap-1 mt-1"
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  transition={springPresets.snappy}
-                                >
-                                  {readStatus.status === 'sent' ? (
-                                    <Check className="w-4 h-4 text-primary-foreground/50" />
-                                  ) : readStatus.status === 'read_all' ? (
-                                    <>
-                                      <CheckCheck className="w-4 h-4 text-cyan-300" />
-                                      <span className="text-[10px] text-cyan-300">Read by all</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <CheckCheck className="w-4 h-4 text-primary-foreground/70" />
-                                      <span className="text-[10px] text-primary-foreground/60">
-                                        Read by {readStatus.count}
-                                      </span>
-                                    </>
-                                  )}
-                                </motion.div>
-                              )}
+                              <div className="flex items-center justify-end gap-1.5 mt-1">
+                                <span className={cn(
+                                  "text-[10px]",
+                                  isOwnMessage ? "text-primary-foreground/50" : "text-muted-foreground"
+                                )}>
+                                  {formatTime(message.created_at)}
+                                </span>
+                                {/* Read receipt for own messages */}
+                                {isOwnMessage && readStatus && (
+                                  <motion.span 
+                                    className="inline-flex items-center gap-0.5"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={springPresets.snappy}
+                                  >
+                                    {readStatus.status === 'sent' ? (
+                                      <Check className="w-3.5 h-3.5 text-primary-foreground/50" />
+                                    ) : readStatus.status === 'read_all' ? (
+                                      <CheckCheck className="w-3.5 h-3.5 text-cyan-300" />
+                                    ) : (
+                                      <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/70" />
+                                    )}
+                                  </motion.span>
+                                )}
+                              </div>
                             </div>
 
-                            {/* Three-dots button — static flex child, always visible but subtle */}
+                            {/* Three-dots menu trigger */}
                             <DropdownMenuTrigger asChild>
                               <button
                                 className={cn(
-                                  "flex-shrink-0 p-2 -mr-2 rounded-full transition-opacity",
+                                  "flex-shrink-0 p-1.5 -mr-1 rounded-full transition-opacity opacity-0 group-hover:opacity-100",
                                   isOwnMessage
                                     ? "text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/15"
                                     : "text-foreground/70 hover:text-foreground hover:bg-foreground/10"
                                 )}
                               >
-                                <MoreVertical className="w-5 h-5" />
+                                <MoreVertical className="w-4 h-4" />
                               </button>
                             </DropdownMenuTrigger>
                           </motion.div>
@@ -946,7 +945,7 @@ export function ChatTab() {
                           </DropdownMenuContent>
                         </DropdownMenu>
 
-                        {/* Full Emoji Picker (shown via "More reactions") */}
+                        {/* Full Emoji Picker */}
                         <AnimatePresence>
                           {showEmojiPicker === message.id && (
                             <motion.div
