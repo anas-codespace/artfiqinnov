@@ -39,11 +39,7 @@ interface TeamMember {
   department: string | null;
 }
 
-interface Presence {
-  user_id: string;
-  is_online: boolean;
-  last_seen: string;
-}
+// Presence interface no longer needed - using global PresenceContext
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
