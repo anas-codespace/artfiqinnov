@@ -125,7 +125,7 @@ export function AttendanceCalendar() {
     }
 
     return days;
-  }, [year, month, logMap, holidayMap, joinDate]);
+  }, [year, month, logMap, holidayMap, leaveDates, joinDate]);
 
   const monthLabel = currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
