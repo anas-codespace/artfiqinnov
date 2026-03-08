@@ -80,6 +80,7 @@ function formatTime(dateStr: string): string {
 export function ChatTab() {
   const { user, profile } = useAuth();
   const { role, isFounder } = useUserRole();
+  const { onlineUserIds, isUserOnline } = usePresence();
   const { isMember, isAdmin, isLoading: statusLoading } = useUserStatus();
   const { showWarning } = useAccessWarning();
   const chatInput = useChatInput();
