@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, ThumbsUp, ThumbsDown, MessageCircle, ArrowRight, Plus, Loader2, Check, X, RotateCcw } from 'lucide-react';
+import { Lightbulb, ThumbsUp, ThumbsDown, MessageCircle, ArrowRight, Plus, Loader2, Check, X, RotateCcw, Trash2 } from 'lucide-react';
 import { springPresets } from '@/components/ui/spring-config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
