@@ -92,12 +92,16 @@ export function LeaveRequestCard({ embedded }: { embedded?: boolean }) {
     }
   };
 
+  const wrapperClass = embedded
+    ? "space-y-4"
+    : "glass-card rounded-2xl p-5 space-y-4";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={springPresets.snappy}
-      className="glass-card rounded-2xl p-5 space-y-4"
+      className={wrapperClass}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
