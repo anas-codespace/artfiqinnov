@@ -94,10 +94,7 @@ export function TimelineTab() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const getPresence = (userId: string) => {
-    const p = presence.find(pr => pr.user_id === userId);
-    return p?.is_online ?? false;
-  };
+  // Use global presence context instead of DB-based presence
 
   const filteredMembers = deptFilter === 'All'
     ? teamMembers
