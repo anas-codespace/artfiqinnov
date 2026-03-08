@@ -281,6 +281,11 @@ export function HomeTab() {
         })}
       </motion.section>
 
+      {/* Punch-In Card + Collapsible Calendar */}
+      <div className="mb-8">
+        <PunchInCard />
+      </div>
+
       {/* Founders Section - Profile Photos with Social Links */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
