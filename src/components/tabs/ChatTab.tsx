@@ -789,11 +789,12 @@ export function ChatTab() {
                     {/* Message Content */}
                     <div className={cn("max-w-[70%] space-y-1", isOwnMessage && "items-end")}>
                       {showAvatar && (
-                        <div className={cn("flex items-center gap-2 text-sm", isOwnMessage && "flex-row-reverse")}>
+                        <div className={cn("flex flex-wrap items-center gap-1.5 text-sm", isOwnMessage && "flex-row-reverse")}>
                           <span className="font-medium">{message.user_name}</span>
                           {senderRole && senderRole !== 'team' && (
                             <RoleBadge role={senderRole} size="sm" showIcon={false} />
                           )}
+                          <PostingBadge posting={senderPosting} role={senderRole} />
                           <span className="text-muted-foreground text-xs">
                             {formatTime(message.created_at)}
                           </span>
