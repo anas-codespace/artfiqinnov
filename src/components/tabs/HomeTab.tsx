@@ -74,6 +74,7 @@ interface TeamMember {
 }
 
 export function HomeTab() {
+  const { isMember, isVisitor, isPending, requestAccess } = useUserStatus();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [founders, setFounders] = useState<Founder[]>([]);
   const [selectedFounder, setSelectedFounder] = useState<Founder | null>(null);
