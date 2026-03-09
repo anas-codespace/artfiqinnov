@@ -610,7 +610,7 @@ export function VaultTab() {
         >
           <input
             type="file"
-            accept=".pdf,.txt,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
+            accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp"
             multiple
             onChange={handleFileInput}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -639,7 +639,7 @@ export function VaultTab() {
               {isUploading ? 'Uploading...' : isDragging ? 'Drop your files here' : 'Drag & drop files'}
             </h3>
             <p className="text-sm text-muted-foreground mb-3">
-              PDF, TXT, DOC, DOCX, JPG, PNG, GIF, WEBP • or click to browse
+              PDF, TXT, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, WEBP • or click to browse
             </p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <AlertCircle className="w-3 h-3" />
