@@ -639,7 +639,7 @@ export function VaultTab() {
               {isUploading ? 'Uploading...' : isDragging ? 'Drop your files here' : 'Drag & drop files'}
             </h3>
             <p className="text-sm text-muted-foreground mb-3">
-              PDF, TXT, DOC, DOCX, JPG, PNG, GIF, WEBP • or click to browse
+              PDF, TXT, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, WEBP • or click to browse
             </p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <AlertCircle className="w-3 h-3" />
