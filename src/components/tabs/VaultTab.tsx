@@ -610,7 +610,7 @@ export function VaultTab() {
         >
           <input
             type="file"
-            accept=".pdf,.txt,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
+            accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp"
             multiple
             onChange={handleFileInput}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
