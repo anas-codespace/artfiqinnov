@@ -44,6 +44,9 @@ const ALLOWED_TYPES: Record<string, { ext: string; icon: string; color: string }
   // Word documents
   'application/msword': { ext: 'doc', icon: 'word', color: 'text-blue-600' },
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { ext: 'docx', icon: 'word', color: 'text-blue-600' },
+  // Excel spreadsheets
+  'application/vnd.ms-excel': { ext: 'xls', icon: 'excel', color: 'text-emerald-600' },
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { ext: 'xlsx', icon: 'excel', color: 'text-emerald-600' },
   // Images
   'image/jpeg': { ext: 'jpg', icon: 'image', color: 'text-green-500' },
   'image/png': { ext: 'png', icon: 'image', color: 'text-green-500' },
@@ -51,7 +54,7 @@ const ALLOWED_TYPES: Record<string, { ext: string; icon: string; color: string }
   'image/webp': { ext: 'webp', icon: 'image', color: 'text-green-500' },
 };
 
-const ALLOWED_EXTENSIONS = ['.pdf', '.txt', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.txt', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B';
@@ -288,7 +291,7 @@ export function VaultTab() {
       if (!isValidFileType(file)) {
         toast({
           title: 'Invalid file type',
-          description: 'Allowed: PDF, TXT, DOC, DOCX, JPG, PNG, GIF, WEBP',
+          description: 'Allowed: PDF, TXT, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, WEBP',
           variant: 'destructive',
         });
         continue;
