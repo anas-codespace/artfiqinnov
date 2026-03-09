@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
+import { useUserStatus } from '@/hooks/useUserStatus';
 import defaultAvatar from '@/assets/default-avatar.webp';
 
 interface Notice {
