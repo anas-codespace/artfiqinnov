@@ -1,10 +1,11 @@
 import { motion, type Transition } from 'framer-motion';
-import { Crown, Code2, Users } from 'lucide-react';
-import type { AppRole } from '@/hooks/useUserRole';
+import { Crown, Code2, Users, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+export type DisplayRole = 'ceo' | 'cto' | 'team' | 'visitor';
+
 interface RoleBadgeProps {
-  role: AppRole | null;
+  role: DisplayRole | null;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   showIcon?: boolean;
@@ -41,11 +42,20 @@ export function RoleBadge({ role, className, size = 'md', showIcon = true }: Rol
         };
       case 'team':
         return {
-          label: 'Team',
+          label: 'Team Member',
           icon: Users,
-          gradient: 'from-primary/20 via-primary/10 to-primary/20',
-          border: 'border-primary/30',
-          text: 'text-primary',
+          gradient: 'from-emerald-500/20 via-green-500/20 to-emerald-400/20',
+          border: 'border-emerald-500/50',
+          text: 'text-emerald-400',
+          glow: '',
+        };
+      case 'visitor':
+        return {
+          label: 'Visitor',
+          icon: Eye,
+          gradient: 'from-muted/40 via-muted/20 to-muted/40',
+          border: 'border-border/50',
+          text: 'text-muted-foreground',
           glow: '',
         };
       default:
