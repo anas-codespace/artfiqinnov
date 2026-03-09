@@ -160,10 +160,11 @@ export function HomeTab() {
       
       const founderUserIds = new Set(founderRoles?.map(r => r.user_id) || []);
       
-      // Use profiles_safe view instead of profiles table to protect email privacy
+      // Only fetch approved members — visitors/pending users are excluded
       const { data } = await supabase
         .from('profiles_safe')
         .select('id, user_id, display_name, avatar_url, email')
+        .eq('access_status', 'approved_member')
         .order('created_at', { ascending: true });
       
       if (data) {
