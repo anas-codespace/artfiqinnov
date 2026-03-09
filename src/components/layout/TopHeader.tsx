@@ -17,7 +17,7 @@ interface TopHeaderProps {
 
 export function TopHeader({ onNavigate }: TopHeaderProps) {
   const { user, profile, signOut, isGuest } = useAuth();
-  const { role, isFounder } = useUserRole();
+  const { displayRole, isFounder } = useUserRole();
   const navigate = useNavigate();
   const [showProfileSettings, setShowProfileSettings] = useState(false);
 
@@ -106,7 +106,7 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
             {/* Role Badge - Hidden for guests */}
             {!isGuest && (
               <div className="hidden xs:block">
-                <RoleBadge role={role} size="sm" />
+                <RoleBadge role={displayRole} size="sm" />
               </div>
             )}
             
