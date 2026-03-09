@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
+import { useUserStatus } from '@/hooks/useUserStatus';
 import defaultAvatar from '@/assets/default-avatar.webp';
 
 interface Notice {
@@ -26,8 +27,9 @@ interface NoticeWithProfile extends Notice {
 }
 
 export function NoticeBoard() {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const { isFounder } = useUserRole();
+  const { isMember } = useUserStatus();
   const { toast } = useToast();
   const [notices, setNotices] = useState<NoticeWithProfile[]>([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -156,6 +158,8 @@ export function NoticeBoard() {
     return d.toLocaleDateString();
   };
 
+  // Hide for guests and visitors — only approved members & founders can see
+  if (isGuest || !isMember) return null;
   if (notices.length === 0 && !isFounder) return null;
 
   return (
