@@ -26,8 +26,9 @@ interface NoticeWithProfile extends Notice {
 }
 
 export function NoticeBoard() {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const { isFounder } = useUserRole();
+  const { isMember } = useUserStatus();
   const { toast } = useToast();
   const [notices, setNotices] = useState<NoticeWithProfile[]>([]);
   const [isCreating, setIsCreating] = useState(false);
