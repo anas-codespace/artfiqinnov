@@ -291,7 +291,7 @@ export function VaultTab() {
       if (!isValidFileType(file)) {
         toast({
           title: 'Invalid file type',
-          description: 'Allowed: PDF, TXT, DOC, DOCX, JPG, PNG, GIF, WEBP',
+          description: 'Allowed: PDF, TXT, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, WEBP',
           variant: 'destructive',
         });
         continue;
