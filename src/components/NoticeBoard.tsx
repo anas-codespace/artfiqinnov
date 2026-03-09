@@ -158,6 +158,8 @@ export function NoticeBoard() {
     return d.toLocaleDateString();
   };
 
+  // Hide for guests and visitors — only approved members & founders can see
+  if (isGuest || !isMember) return null;
   if (notices.length === 0 && !isFounder) return null;
 
   return (
