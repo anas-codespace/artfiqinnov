@@ -10,6 +10,7 @@ interface AttendanceStats {
   todayPunchOutTime: string | null;
   todayWorkMinutes: number | null;
   todayHoliday: string | null;
+  todaySessions: Array<{ punch_in: string; punch_out: string | null; minutes: number | null }>;
   isLoading: boolean;
 }
 
@@ -163,6 +164,7 @@ export function useAttendance(userId: string | undefined, joinDate?: string) {
     todayPunchOutTime: null,
     todayWorkMinutes: null,
     todayHoliday: null,
+    todaySessions: [],
     isLoading: true,
   });
 
@@ -196,31 +198,57 @@ export function useAttendance(userId: string | undefined, joinDate?: string) {
     const now = new Date();
     const totalWorkingDays = countWorkingDays(start, now, holidayDates, approvedLeaveDates);
 
-    const daysPresent = (logs || []).filter(l => l.status === 'Present').length;
+    // Count unique days with at least one 'Present' log
+    const presentDaysSet = new Set(
+      (logs || []).filter(l => l.status === 'Present').map(l => l.date)
+    );
+    const daysPresent = presentDaysSet.size;
     const percentage = totalWorkingDays > 0 ? Math.round((daysPresent / totalWorkingDays) * 100) : 100;
 
-    const todayLog = (logs || []).find(l => l.date === today);
-    
+    // Get all of today's sessions, ordered by punch_in_time
+    const todayLogs = (logs || [])
+      .filter(l => l.date === today && l.status === 'Present')
+      .sort((a, b) => new Date(a.punch_in_time).getTime() - new Date(b.punch_in_time).getTime());
+
+    const todaySessions = todayLogs.map(l => ({
+      punch_in: l.punch_in_time,
+      punch_out: l.punch_out_time,
+      minutes: l.work_duration_minutes,
+    }));
+
+    // Determine today's status based on sessions
     let todayStatus: AttendanceStats['todayStatus'] = 'not_checked';
-    if (todayLog) {
-      if (todayLog.punch_out_time) {
-        todayStatus = 'checked_out';
-      } else if (todayLog.status === 'Present') {
-        todayStatus = 'present';
-      } else {
-        todayStatus = 'leave';
+    const activeSession = todayLogs.find(l => !l.punch_out_time);
+    if (activeSession) {
+      todayStatus = 'present'; // Currently checked in (open session)
+    } else if (todayLogs.length > 0) {
+      todayStatus = 'checked_out'; // All sessions closed, can re-check-in
+    }
+
+    // Cumulative work minutes across all sessions
+    let cumulativeMinutes = 0;
+    for (const session of todayLogs) {
+      if (session.work_duration_minutes) {
+        cumulativeMinutes += session.work_duration_minutes;
+      } else if (!session.punch_out_time) {
+        // Active session — count live minutes
+        cumulativeMinutes += Math.round((Date.now() - new Date(session.punch_in_time).getTime()) / 60000);
       }
     }
+
+    // For display: latest active session's punch-in, or last session's data
+    const latestSession = activeSession || todayLogs[todayLogs.length - 1];
 
     setStats({
       totalWorkingDays,
       daysPresent,
       percentage: Math.min(percentage, 100),
       todayStatus,
-      todayPunchTime: todayLog?.punch_in_time || null,
-      todayPunchOutTime: todayLog?.punch_out_time || null,
-      todayWorkMinutes: todayLog?.work_duration_minutes || null,
+      todayPunchTime: activeSession?.punch_in_time || todayLogs[0]?.punch_in_time || null,
+      todayPunchOutTime: latestSession?.punch_out_time || null,
+      todayWorkMinutes: cumulativeMinutes || null,
       todayHoliday: todayHolidayEntry?.title || null,
+      todaySessions,
       isLoading: false,
     });
   }, [userId, joinDate]);
@@ -239,6 +267,7 @@ export function useAttendance(userId: string | undefined, joinDate?: string) {
     return () => { supabase.removeChannel(channel); };
   }, [userId, fetchAttendance]);
 
+  // Punch In: always insert a new row (new session)
   const punchIn = useCallback(async () => {
     if (!userId) return false;
     const { error } = await supabase
@@ -253,21 +282,25 @@ export function useAttendance(userId: string | undefined, joinDate?: string) {
     return true;
   }, [userId, fetchAttendance]);
 
+  // Punch Out: find the latest open session for today and close it
   const punchOut = useCallback(async () => {
     if (!userId) return false;
     const today = new Date().toISOString().split('T')[0];
     
-    // Get today's log to calculate duration
-    const { data: todayLog } = await supabase
+    // Find today's open session (no punch_out_time)
+    const { data: openSessions } = await supabase
       .from('attendance_logs')
       .select('id, punch_in_time')
       .eq('user_id', userId)
       .eq('date', today)
-      .single();
+      .is('punch_out_time', null)
+      .order('punch_in_time', { ascending: false })
+      .limit(1);
 
-    if (!todayLog) return false;
+    const openSession = openSessions?.[0];
+    if (!openSession) return false;
 
-    const punchInTime = new Date(todayLog.punch_in_time);
+    const punchInTime = new Date(openSession.punch_in_time);
     const now = new Date();
     const durationMinutes = Math.round((now.getTime() - punchInTime.getTime()) / 60000);
 
@@ -277,7 +310,7 @@ export function useAttendance(userId: string | undefined, joinDate?: string) {
         punch_out_time: now.toISOString(),
         work_duration_minutes: durationMinutes
       })
-      .eq('id', todayLog.id);
+      .eq('id', openSession.id);
 
     if (error) {
       console.error('Punch out error:', error);
@@ -320,7 +353,9 @@ export async function fetchTeamAttendance(
   userIds.forEach(uid => {
     const start = joinDates[uid] ? new Date(joinDates[uid]) : now;
     const totalDays = countWorkingDays(start, now, holidayDates, userLeaveDates[uid]);
-    const daysPresent = (logs || []).filter(l => l.user_id === uid).length;
+    // Count unique days present (not rows, since multiple sessions per day now)
+    const uniqueDays = new Set((logs || []).filter(l => l.user_id === uid).map(l => l.date));
+    const daysPresent = uniqueDays.size;
     const percentage = totalDays > 0 ? Math.min(Math.round((daysPresent / totalDays) * 100), 100) : 100;
     result[uid] = { percentage, daysPresent, totalDays };
   });
@@ -330,6 +365,7 @@ export async function fetchTeamAttendance(
 
 /**
  * Fetch work duration logs for a specific user (for performance insights).
+ * Now aggregates multiple sessions per day into cumulative totals.
  */
 export async function fetchUserWorkLogs(userId: string): Promise<Array<{ date: string; work_duration_minutes: number | null; punch_in_time: string; punch_out_time: string | null }>> {
   const { data } = await supabase
@@ -338,7 +374,35 @@ export async function fetchUserWorkLogs(userId: string): Promise<Array<{ date: s
     .eq('user_id', userId)
     .eq('status', 'Present')
     .order('date', { ascending: false })
-    .limit(30);
+    .limit(200);
 
-  return (data as Array<{ date: string; work_duration_minutes: number | null; punch_in_time: string; punch_out_time: string | null }>) || [];
+  if (!data) return [];
+
+  // Aggregate by date: sum work_duration_minutes, use first punch_in and last punch_out
+  const byDate = new Map<string, { totalMinutes: number; firstPunchIn: string; lastPunchOut: string | null }>();
+  for (const row of data) {
+    const existing = byDate.get(row.date);
+    if (existing) {
+      existing.totalMinutes += row.work_duration_minutes || 0;
+      if (row.punch_in_time < existing.firstPunchIn) existing.firstPunchIn = row.punch_in_time;
+      if (row.punch_out_time && (!existing.lastPunchOut || row.punch_out_time > existing.lastPunchOut)) {
+        existing.lastPunchOut = row.punch_out_time;
+      }
+    } else {
+      byDate.set(row.date, {
+        totalMinutes: row.work_duration_minutes || 0,
+        firstPunchIn: row.punch_in_time,
+        lastPunchOut: row.punch_out_time,
+      });
+    }
+  }
+
+  return Array.from(byDate.entries())
+    .map(([date, v]) => ({
+      date,
+      work_duration_minutes: v.totalMinutes || null,
+      punch_in_time: v.firstPunchIn,
+      punch_out_time: v.lastPunchOut,
+    }))
+    .slice(0, 30);
 }
