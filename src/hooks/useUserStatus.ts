@@ -21,7 +21,7 @@ const CTO_EMAIL = 'anas.md.artfiq@gmail.com';
 
 export function useUserStatus(): UserStatusData {
   const { user, profile, isGuest } = useAuth();
-  const { isFounder, isLoading: roleLoading } = useUserRole();
+  const { isFounder, isAdmin: hasAdminRole, isLoading: roleLoading } = useUserRole();
   const [accessStatus, setAccessStatus] = useState<AccessStatus>('visitor');
   const [isLoading, setIsLoading] = useState(true);
 
