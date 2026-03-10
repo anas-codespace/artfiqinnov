@@ -16,7 +16,7 @@ const AUTO_DISMISS_MS = 10000;
 export function AccessWarningProvider({ children }: { children: ReactNode }) {
   const { isVisitor, isPending, isMember, isAdmin, isLoading } = useUserStatus();
   const [isVisible, setIsVisible] = useState(false);
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [timeoutId, setTimeoutId] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   const clearExistingTimeout = useCallback(() => {
     if (timeoutId) {
