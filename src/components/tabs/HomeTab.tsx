@@ -570,6 +570,11 @@ export function HomeTab() {
                   whileHover={{ scale: 1.1, borderColor: 'hsl(var(--primary))' }}
                 />
                 <h3 className="font-medium text-sm">{member.display_name || 'Team Member'}</h3>
+                {member.posting && (
+                  <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary mt-1 inline-block">
+                    {member.posting}
+                  </span>
+                )}
                 {member.email && (
                   <FluidButton
                     variant="ghost"
