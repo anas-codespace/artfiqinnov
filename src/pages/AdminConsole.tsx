@@ -329,16 +329,14 @@ export default function AdminConsole() {
     setSetupLoading(true);
 
     const { error } = await supabase
-      .from('admin_pins')
-      .insert({
-        user_id: user!.id,
-        pin_hash: newPin.toString(), // Ensure PIN is a string
-        security_question: securityQuestion,
-        security_answer_hash: securityAnswer.trim().toLowerCase()
+      .rpc('setup_admin_pin', {
+        _pin: newPin.toString(),
+        _security_question: securityQuestion,
+        _security_answer: securityAnswer.trim()
       });
 
     if (error) {
-      console.error("Supabase PIN Setup Error:", error.message, error.details, error.code);
+      console.error("Supabase PIN Setup Error:", error.message);
       toast({ 
         title: 'Error', 
         description: error.message || 'Failed to setup PIN', 
