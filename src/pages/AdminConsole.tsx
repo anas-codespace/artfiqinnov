@@ -115,7 +115,7 @@ export default function AdminConsole() {
       if (roleLoading) return;
 
       // Server-side role check via useUserRole hook (backed by DB query)
-      if (!isFounder) {
+      if (!isAdmin) {
         setStage('unauthorized');
         setTimeout(() => navigate('/'), 2000);
         return;
