@@ -73,6 +73,7 @@ interface TeamMember {
   display_name: string | null;
   avatar_url: string | null;
   email: string | null;
+  posting: string | null;
 }
 
 export function HomeTab() {
