@@ -140,7 +140,7 @@ export function useUserStatus(): UserStatusData {
     isVisitor: accessStatus === 'visitor',
     isPending: accessStatus === 'pending',
     isMember: accessStatus === 'approved_member',
-    isAdmin: isFounder || role === 'admin',
+    isAdmin: hasAdminRole,
     isLoading: isLoading || roleLoading,
     requestAccess,
     refreshStatus,
