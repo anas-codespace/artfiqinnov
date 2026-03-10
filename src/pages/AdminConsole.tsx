@@ -49,7 +49,7 @@ type Stage = 'loading' | 'unauthorized' | 'setup' | 'locked' | 'forgot-pin' | 'u
 
 export default function AdminConsole() {
   const { user } = useAuth();
-  const { isFounder, isLoading: roleLoading } = useUserRole();
+  const { isFounder, isAdmin, isLoading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
