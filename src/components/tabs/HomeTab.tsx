@@ -73,6 +73,7 @@ interface TeamMember {
   display_name: string | null;
   avatar_url: string | null;
   email: string | null;
+  posting: string | null;
 }
 
 export function HomeTab() {
@@ -163,7 +164,7 @@ export function HomeTab() {
       // Only fetch approved members — visitors/pending users are excluded
       const { data } = await supabase
         .from('profiles_safe')
-        .select('id, user_id, display_name, avatar_url, email')
+        .select('id, user_id, display_name, avatar_url, email, posting')
         .eq('access_status', 'approved_member')
         .order('created_at', { ascending: true });
       
@@ -570,6 +571,11 @@ export function HomeTab() {
                   whileHover={{ scale: 1.1, borderColor: 'hsl(var(--primary))' }}
                 />
                 <h3 className="font-medium text-sm">{member.display_name || 'Team Member'}</h3>
+                {member.posting && (
+                  <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary mt-1 inline-block">
+                    {member.posting}
+                  </span>
+                )}
                 {member.email && (
                   <FluidButton
                     variant="ghost"

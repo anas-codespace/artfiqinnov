@@ -9,6 +9,7 @@ interface Profile {
   avatar_url: string | null;
   email: string | null;
   access_status: 'visitor' | 'pending' | 'approved_member' | null;
+  posting: string | null;
 }
 
 interface AuthContextType {
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatar_url: data.avatar_url,
         email: data.email,
         access_status: (data.access_status as Profile['access_status']) ?? 'visitor',
+        posting: data.posting ?? null,
       });
     }
   };
@@ -193,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       avatar_url: null,
       email: 'guest@artfiq.com',
       access_status: 'visitor',
+      posting: null,
     });
     setIsLoading(false);
   };

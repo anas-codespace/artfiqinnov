@@ -3,13 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { DisplayRole } from '@/components/ui/role-badge';
 
-export type AppRole = 'ceo' | 'cto' | 'team';
+export type AppRole = 'ceo' | 'cto' | 'admin' | 'team';
 
 interface UserRoleData {
   role: AppRole | null;
   /** The effective display role factoring in access_status */
   displayRole: DisplayRole | null;
   isFounder: boolean;
+  /** Whether the user can access admin features (CEO, MD, or Admin) */
+  isAdmin: boolean;
   roleLabel: string;
   isLoading: boolean;
 }
@@ -55,10 +57,11 @@ export function useUserRole(): UserRoleData {
   }, [user, isGuest]);
 
   // Compute the display role: founders always show their role,
-  // non-founders show 'visitor' unless access_status is 'approved_member'
+  // admin shows as admin, non-founders show 'visitor' unless access_status is 'approved_member'
   const getDisplayRole = (): DisplayRole | null => {
     if (!role) return null;
     if (role === 'ceo' || role === 'cto') return role;
+    if (role === 'admin') return 'admin';
     // For 'team' role, check access_status
     const accessStatus = profile?.access_status;
     if (accessStatus === 'approved_member') return 'team';
@@ -66,12 +69,15 @@ export function useUserRole(): UserRoleData {
   };
 
   const displayRole = getDisplayRole();
+  const isFounder = role === 'ceo' || role === 'cto';
+  const isAdmin = role === 'ceo' || role === 'cto' || role === 'admin';
 
   const getRoleLabel = (r: DisplayRole | null): string => {
     switch (r) {
       case 'ceo': return 'CEO';
       case 'cto': return 'MD';
-      case 'team': return 'Team Member';
+      case 'admin': return 'Admin';
+      case 'team': return profile?.posting || 'Team';
       case 'visitor': return 'Visitor';
       default: return '';
     }
@@ -80,7 +86,8 @@ export function useUserRole(): UserRoleData {
   return {
     role,
     displayRole,
-    isFounder: role === 'ceo' || role === 'cto',
+    isFounder,
+    isAdmin,
     roleLabel: getRoleLabel(displayRole),
     isLoading,
   };

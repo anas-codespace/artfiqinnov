@@ -1,11 +1,13 @@
 import { motion, type Transition } from 'framer-motion';
-import { Crown, Code2, Users, Eye } from 'lucide-react';
+import { Crown, Code2, Users, Eye, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type DisplayRole = 'ceo' | 'cto' | 'team' | 'visitor';
+export type DisplayRole = 'ceo' | 'cto' | 'admin' | 'team' | 'visitor';
 
 interface RoleBadgeProps {
   role: DisplayRole | null;
+  /** Short-form posting to display instead of generic "Team Member" */
+  posting?: string | null;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   showIcon?: boolean;
@@ -17,7 +19,7 @@ const springTransition: Transition = {
   damping: 30,
 };
 
-export function RoleBadge({ role, className, size = 'md', showIcon = true }: RoleBadgeProps) {
+export function RoleBadge({ role, posting, className, size = 'md', showIcon = true }: RoleBadgeProps) {
   if (!role) return null;
 
   const getConfig = () => {
@@ -35,18 +37,27 @@ export function RoleBadge({ role, className, size = 'md', showIcon = true }: Rol
         return {
           label: 'MD',
           icon: Code2,
-          gradient: 'from-cyan-500/20 via-blue-500/20 to-cyan-400/20',
-          border: 'border-cyan-500/50',
-          text: 'text-cyan-400',
-          glow: 'shadow-[0_0_20px_rgba(6,182,212,0.3)]',
+          gradient: 'from-amber-500/20 via-yellow-500/20 to-amber-400/20',
+          border: 'border-amber-500/50',
+          text: 'text-amber-400',
+          glow: 'shadow-[0_0_20px_rgba(245,158,11,0.3)]',
+        };
+      case 'admin':
+        return {
+          label: 'Admin',
+          icon: ShieldCheck,
+          gradient: 'from-violet-500/20 via-purple-500/20 to-violet-400/20',
+          border: 'border-violet-500/50',
+          text: 'text-violet-400',
+          glow: 'shadow-[0_0_20px_rgba(139,92,246,0.3)]',
         };
       case 'team':
         return {
-          label: 'Team Member',
+          label: posting?.trim() || 'Team',
           icon: Users,
-          gradient: 'from-emerald-500/20 via-green-500/20 to-emerald-400/20',
-          border: 'border-emerald-500/50',
-          text: 'text-emerald-400',
+          gradient: 'from-primary/20 via-primary/10 to-primary/20',
+          border: 'border-primary/50',
+          text: 'text-primary',
           glow: '',
         };
       case 'visitor':

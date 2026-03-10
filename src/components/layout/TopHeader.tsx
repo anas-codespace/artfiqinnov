@@ -17,7 +17,7 @@ interface TopHeaderProps {
 
 export function TopHeader({ onNavigate }: TopHeaderProps) {
   const { user, profile, signOut, isGuest } = useAuth();
-  const { displayRole, isFounder } = useUserRole();
+  const { displayRole, isAdmin } = useUserRole();
   const navigate = useNavigate();
   const [showProfileSettings, setShowProfileSettings] = useState(false);
 
@@ -91,7 +91,7 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
             )}
             
             {/* Admin Dashboard Button - Only for Founders, hidden for guests */}
-            {!isGuest && isFounder && (
+            {!isGuest && isAdmin && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -106,7 +106,7 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
             {/* Role Badge - Hidden for guests */}
             {!isGuest && (
               <div className="hidden xs:block">
-                <RoleBadge role={displayRole} size="sm" />
+                <RoleBadge role={displayRole} posting={profile?.posting} size="sm" />
               </div>
             )}
             

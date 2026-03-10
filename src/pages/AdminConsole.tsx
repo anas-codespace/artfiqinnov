@@ -49,7 +49,7 @@ type Stage = 'loading' | 'unauthorized' | 'setup' | 'locked' | 'forgot-pin' | 'u
 
 export default function AdminConsole() {
   const { user } = useAuth();
-  const { isFounder, isLoading: roleLoading } = useUserRole();
+  const { isFounder, isAdmin, isLoading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -115,7 +115,7 @@ export default function AdminConsole() {
       if (roleLoading) return;
 
       // Server-side role check via useUserRole hook (backed by DB query)
-      if (!isFounder) {
+      if (!isAdmin) {
         setStage('unauthorized');
         setTimeout(() => navigate('/'), 2000);
         return;
@@ -137,7 +137,7 @@ export default function AdminConsole() {
     };
 
     checkAccess();
-  }, [user, navigate, isFounder, roleLoading]);
+  }, [user, navigate, isAdmin, roleLoading]);
 
   // Fetch users when unlocked
   useEffect(() => {
