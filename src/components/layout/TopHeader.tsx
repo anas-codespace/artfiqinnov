@@ -17,7 +17,7 @@ interface TopHeaderProps {
 
 export function TopHeader({ onNavigate }: TopHeaderProps) {
   const { user, profile, signOut, isGuest } = useAuth();
-  const { displayRole, isFounder } = useUserRole();
+  const { displayRole, isAdmin } = useUserRole();
   const navigate = useNavigate();
   const [showProfileSettings, setShowProfileSettings] = useState(false);
 
