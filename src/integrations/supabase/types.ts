@@ -763,7 +763,7 @@ export type Database = {
           created_at?: string | null
           department?: string | null
           display_name?: string | null
-          email?: string | null
+          email?: never
           id?: string | null
           posting?: string | null
           updated_at?: string | null
@@ -775,7 +775,7 @@ export type Database = {
           created_at?: string | null
           department?: string | null
           display_name?: string | null
-          email?: string | null
+          email?: never
           id?: string | null
           posting?: string | null
           updated_at?: string | null

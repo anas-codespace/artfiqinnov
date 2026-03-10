@@ -14,6 +14,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import { PostingBadge, isFounderRole } from '@/components/ui/posting-badge';
 import { useCompanyHolidays, useAllLeaveRequests, type LeaveRequest } from '@/hooks/useAttendance';
@@ -22,11 +23,6 @@ import { cn } from '@/lib/utils';
 import defaultAvatar from '@/assets/default-avatar.webp';
 import { MemberInsightModal } from '@/components/MemberInsightModal';
 
-// Allowed admin emails
-const ADMIN_EMAILS = [
-  'sulaiman.artfiqceo@gmail.com',
-  'anas.md.artfiq@gmail.com'
-];
 
 import { OFFICIAL_POSTINGS, getDepartmentCode } from '@/lib/department-mapping';
 
@@ -53,6 +49,7 @@ type Stage = 'loading' | 'unauthorized' | 'setup' | 'locked' | 'forgot-pin' | 'u
 
 export default function AdminConsole() {
   const { user } = useAuth();
+  const { isFounder, isLoading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -115,17 +112,10 @@ export default function AdminConsole() {
         return;
       }
 
-      // Get user email from profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('user_id', user.id)
-        .single();
+      if (roleLoading) return;
 
-      const userEmail = profile?.email || user.email;
-
-      // Check if user is allowed
-      if (!userEmail || !ADMIN_EMAILS.includes(userEmail.toLowerCase())) {
+      // Server-side role check via useUserRole hook (backed by DB query)
+      if (!isFounder) {
         setStage('unauthorized');
         setTimeout(() => navigate('/'), 2000);
         return;
@@ -147,7 +137,7 @@ export default function AdminConsole() {
     };
 
     checkAccess();
-  }, [user, navigate]);
+  }, [user, navigate, isFounder, roleLoading]);
 
   // Fetch users when unlocked
   useEffect(() => {
@@ -339,16 +329,14 @@ export default function AdminConsole() {
     setSetupLoading(true);
 
     const { error } = await supabase
-      .from('admin_pins')
-      .insert({
-        user_id: user!.id,
-        pin_hash: newPin.toString(), // Ensure PIN is a string
-        security_question: securityQuestion,
-        security_answer_hash: securityAnswer.trim().toLowerCase()
+      .rpc('setup_admin_pin' as any, {
+        _pin: newPin.toString(),
+        _security_question: securityQuestion,
+        _security_answer: securityAnswer.trim()
       });
 
     if (error) {
-      console.error("Supabase PIN Setup Error:", error.message, error.details, error.code);
+      console.error("Supabase PIN Setup Error:", error.message);
       toast({ 
         title: 'Error', 
         description: error.message || 'Failed to setup PIN', 
