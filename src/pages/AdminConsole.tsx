@@ -112,17 +112,10 @@ export default function AdminConsole() {
         return;
       }
 
-      // Get user email from profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('user_id', user.id)
-        .single();
+      if (roleLoading) return;
 
-      const userEmail = profile?.email || user.email;
-
-      // Check if user is allowed
-      if (!userEmail || !ADMIN_EMAILS.includes(userEmail.toLowerCase())) {
+      // Server-side role check via useUserRole hook (backed by DB query)
+      if (!isFounder) {
         setStage('unauthorized');
         setTimeout(() => navigate('/'), 2000);
         return;
@@ -144,7 +137,7 @@ export default function AdminConsole() {
     };
 
     checkAccess();
-  }, [user, navigate]);
+  }, [user, navigate, isFounder, roleLoading]);
 
   // Fetch users when unlocked
   useEffect(() => {
