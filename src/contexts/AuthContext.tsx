@@ -9,6 +9,7 @@ interface Profile {
   avatar_url: string | null;
   email: string | null;
   access_status: 'visitor' | 'pending' | 'approved_member' | null;
+  posting: string | null;
 }
 
 interface AuthContextType {
