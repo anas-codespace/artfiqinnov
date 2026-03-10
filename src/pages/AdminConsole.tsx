@@ -329,7 +329,7 @@ export default function AdminConsole() {
     setSetupLoading(true);
 
     const { error } = await supabase
-      .rpc('setup_admin_pin', {
+      .rpc('setup_admin_pin' as any, {
         _pin: newPin.toString(),
         _security_question: securityQuestion,
         _security_answer: securityAnswer.trim()
