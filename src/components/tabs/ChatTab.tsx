@@ -95,10 +95,10 @@ export function ChatTab() {
   const [presenceData, setPresenceData] = useState<Record<string, UserPresence>>({});
   const [cleanupCount, setCleanupCount] = useState<number | null>(null);
   const [selectedMessageForInfo, setSelectedMessageForInfo] = useState<Message | null>(null);
-  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [longPressTimer, setLongPressTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   const scrollToBottom = () => {
