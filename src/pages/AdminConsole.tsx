@@ -14,6 +14,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import { PostingBadge, isFounderRole } from '@/components/ui/posting-badge';
 import { useCompanyHolidays, useAllLeaveRequests, type LeaveRequest } from '@/hooks/useAttendance';
