@@ -163,7 +163,7 @@ export function HomeTab() {
       // Only fetch approved members — visitors/pending users are excluded
       const { data } = await supabase
         .from('profiles_safe')
-        .select('id, user_id, display_name, avatar_url, email')
+        .select('id, user_id, display_name, avatar_url, email, posting')
         .eq('access_status', 'approved_member')
         .order('created_at', { ascending: true });
       
