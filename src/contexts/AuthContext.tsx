@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatar_url: data.avatar_url,
         email: data.email,
         access_status: (data.access_status as Profile['access_status']) ?? 'visitor',
+        posting: data.posting ?? null,
       });
     }
   };
