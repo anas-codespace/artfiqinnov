@@ -137,7 +137,7 @@ export default function AdminConsole() {
     };
 
     checkAccess();
-  }, [user, navigate, isFounder, roleLoading]);
+  }, [user, navigate, isAdmin, roleLoading]);
 
   // Fetch users when unlocked
   useEffect(() => {

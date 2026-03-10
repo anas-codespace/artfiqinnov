@@ -106,7 +106,7 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
             {/* Role Badge - Hidden for guests */}
             {!isGuest && (
               <div className="hidden xs:block">
-                <RoleBadge role={displayRole} size="sm" />
+                <RoleBadge role={displayRole} posting={profile?.posting} size="sm" />
               </div>
             )}
             
