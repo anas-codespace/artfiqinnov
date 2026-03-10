@@ -23,11 +23,6 @@ import { cn } from '@/lib/utils';
 import defaultAvatar from '@/assets/default-avatar.webp';
 import { MemberInsightModal } from '@/components/MemberInsightModal';
 
-// Allowed admin emails
-const ADMIN_EMAILS = [
-  'sulaiman.artfiqceo@gmail.com',
-  'anas.md.artfiq@gmail.com'
-];
 
 import { OFFICIAL_POSTINGS, getDepartmentCode } from '@/lib/department-mapping';
 
