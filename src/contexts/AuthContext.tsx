@@ -195,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       avatar_url: null,
       email: 'guest@artfiq.com',
       access_status: 'visitor',
+      posting: null,
     });
     setIsLoading(false);
   };
