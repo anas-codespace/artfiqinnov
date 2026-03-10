@@ -91,7 +91,7 @@ export function TopHeader({ onNavigate }: TopHeaderProps) {
             )}
             
             {/* Admin Dashboard Button - Only for Founders, hidden for guests */}
-            {!isGuest && isFounder && (
+            {!isGuest && isAdmin && (
               <Button
                 variant="ghost"
                 size="icon"
