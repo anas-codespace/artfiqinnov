@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, CheckCircle2, Loader2, PartyPopper, CalendarDays, ChevronDown, LogOut as LogOutIcon } from 'lucide-react';
+import { Clock, CheckCircle2, Loader2, PartyPopper, CalendarDays, ChevronDown, LogOut as LogOutIcon, Play } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useUserStatus } from '@/hooks/useUserStatus';
@@ -32,25 +32,32 @@ export function PunchInCard() {
       .then(({ data }) => { if (data) setJoinDate(data.created_at); });
   }, [user?.id]);
 
-  const { todayStatus, todayPunchTime, todayPunchOutTime, todayWorkMinutes, todayHoliday, percentage, daysPresent, totalWorkingDays, isLoading, punchIn, punchOut } = useAttendance(
+  const { todayStatus, todayPunchTime, todayPunchOutTime, todayWorkMinutes, todayHoliday, todaySessions, percentage, daysPresent, totalWorkingDays, isLoading, punchIn, punchOut } = useAttendance(
     user?.id,
     joinDate
   );
 
-  // Live timer when checked in
+  // Live timer: sum all closed sessions + live active session
   useEffect(() => {
-    if (todayStatus !== 'present' || !todayPunchTime) {
-      setLiveMinutes(null);
+    if (todayStatus !== 'present') {
+      setLiveMinutes(todayWorkMinutes);
       return;
     }
     const update = () => {
-      const mins = Math.round((Date.now() - new Date(todayPunchTime).getTime()) / 60000);
-      setLiveMinutes(mins);
+      let total = 0;
+      for (const s of todaySessions) {
+        if (s.minutes) {
+          total += s.minutes;
+        } else if (!s.punch_out) {
+          total += Math.round((Date.now() - new Date(s.punch_in).getTime()) / 60000);
+        }
+      }
+      setLiveMinutes(total);
     };
     update();
     const interval = setInterval(update, 60000);
     return () => clearInterval(interval);
-  }, [todayStatus, todayPunchTime]);
+  }, [todayStatus, todaySessions, todayWorkMinutes]);
 
   if (!isMember) return null;
 
@@ -58,9 +65,9 @@ export function PunchInCard() {
     setPunching(true);
     const success = await punchIn();
     if (success) {
-      toast({ title: '✅ Checked In!', description: `Attendance marked for today.` });
+      toast({ title: '✅ Checked In!', description: todaySessions.length > 0 ? 'New session started.' : 'Attendance marked for today.' });
     } else {
-      toast({ title: 'Error', description: 'Failed to check in. You may have already checked in today.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to check in.', variant: 'destructive' });
     }
     setPunching(false);
   };
@@ -69,19 +76,17 @@ export function PunchInCard() {
     setPunching(true);
     const success = await punchOut();
     if (success) {
-      toast({ title: '👋 Checked Out!', description: 'Great work today!' });
+      toast({ title: '👋 Checked Out!', description: 'Session ended. You can check in again if needed.' });
     } else {
       toast({ title: 'Error', description: 'Failed to check out.', variant: 'destructive' });
     }
     setPunching(false);
   };
 
-  const punchTime = todayPunchTime
-    ? new Date(todayPunchTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : null;
-
-  const punchOutTime = todayPunchOutTime
-    ? new Date(todayPunchOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  // Find active session's punch-in time for display
+  const activeSession = todaySessions.find(s => !s.punch_out);
+  const activePunchTime = activeSession
+    ? new Date(activeSession.punch_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : null;
 
   const getHealthColor = () => {
@@ -148,21 +153,8 @@ export function PunchInCard() {
           </div>
         </div>
 
-        {todayStatus === 'checked_out' ? (
-          <motion.div
-            initial={{ scale: 0.95 }}
-            animate={{ scale: 1 }}
-            className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50"
-          >
-            <CheckCircle2 className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-muted-foreground">Day Complete</p>
-              <p className="text-xs text-muted-foreground">
-                {punchTime} → {punchOutTime} · <span className="text-primary font-semibold">{todayWorkMinutes ? formatDuration(todayWorkMinutes) : '—'}</span>
-              </p>
-            </div>
-          </motion.div>
-        ) : todayStatus === 'present' ? (
+        {todayStatus === 'present' ? (
+          /* Currently checked in — show active session + check out button */
           <div className="space-y-2">
             <motion.div
               initial={{ scale: 0.95 }}
@@ -173,7 +165,7 @@ export function PunchInCard() {
               <div className="flex-1">
                 <p className="text-sm font-medium text-emerald-400">Checked In</p>
                 <p className="text-xs text-muted-foreground">
-                  at {punchTime} {liveMinutes !== null && <span className="text-primary">· {formatDuration(liveMinutes)} working</span>}
+                  at {activePunchTime} {liveMinutes !== null && <span className="text-primary">· {formatDuration(liveMinutes)} total today</span>}
                 </p>
               </div>
             </motion.div>
@@ -196,7 +188,45 @@ export function PunchInCard() {
               )}
             </motion.button>
           </div>
+        ) : todayStatus === 'checked_out' ? (
+          /* All sessions closed — show summary + allow re-check-in */
+          <div className="space-y-2">
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50"
+            >
+              <CheckCircle2 className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">
+                  {todaySessions.length} session{todaySessions.length !== 1 ? 's' : ''} today
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Total: <span className="text-primary font-semibold">{liveMinutes ? formatDuration(liveMinutes) : '—'}</span>
+                </p>
+              </div>
+            </motion.div>
+            <motion.button
+              onClick={handlePunchIn}
+              disabled={punching}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-2.5 rounded-xl bg-primary/20 border border-primary/40 text-primary font-semibold text-sm
+                hover:bg-primary/30 hover:shadow-[0_0_25px_hsl(var(--primary)/0.3)] transition-all duration-300
+                disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {punching ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  Resume / New Session
+                </>
+              )}
+            </motion.button>
+          </div>
         ) : (
+          /* Not checked in at all today */
           <motion.button
             onClick={handlePunchIn}
             disabled={punching}
@@ -223,6 +253,18 @@ export function PunchInCard() {
             {percentage > 90 ? 'Excellent' : percentage >= 75 ? 'Good' : 'Needs Improvement'}
           </span>
         </div>
+
+        {/* Session breakdown (if multiple sessions today) */}
+        {todaySessions.length > 1 && (
+          <div className="mt-2 space-y-1">
+            {todaySessions.map((s, i) => (
+              <div key={i} className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
+                <span>Session {i + 1}: {new Date(s.punch_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {s.punch_out ? new Date(s.punch_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Active'}</span>
+                <span className="text-primary font-medium">{s.minutes ? formatDuration(s.minutes) : '…'}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Calendar Toggle */}
         <motion.button
