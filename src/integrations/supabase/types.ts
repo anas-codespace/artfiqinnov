@@ -800,6 +800,14 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_approved_member: { Args: { _user_id: string }; Returns: boolean }
+      setup_admin_pin: {
+        Args: {
+          _pin: string
+          _security_answer: string
+          _security_question: string
+        }
+        Returns: undefined
+      }
       verify_admin_pin: {
         Args: { _pin: string; _user_id: string }
         Returns: boolean
