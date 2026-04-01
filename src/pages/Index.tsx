@@ -59,8 +59,9 @@ function WorkspaceContent() {
           <AnimatedBackground />
           <AccessWarningToast />
           <TopHeader onNavigate={setActiveTab} />
+          <AnnouncementsTicker />
           
-          <main className="pt-16 pb-28">
+          <main className="pt-[5.75rem] pb-28">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
