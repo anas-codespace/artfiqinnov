@@ -307,6 +307,16 @@ export function PunchInCard() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Punch Out Summary Modal */}
+      {user?.id && (
+        <PunchOutModal
+          open={showPunchOutModal}
+          onOpenChange={setShowPunchOutModal}
+          userId={user.id}
+          onConfirm={confirmPunchOut}
+        />
+      )}
     </motion.div>
   );
 }
