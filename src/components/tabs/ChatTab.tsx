@@ -480,6 +480,27 @@ export function ChatTab() {
       });
 
       if (error) throw error;
+
+      // Trigger push notifications to other team members (fire-and-forget)
+      const senderName = profile?.display_name || user.email?.split('@')[0] || 'Someone';
+      supabase
+        .from('push_subscriptions')
+        .select('user_id')
+        .neq('user_id', user.id)
+        .then(({ data: subs }) => {
+          if (subs && subs.length > 0) {
+            const uniqueUserIds = [...new Set(subs.map((s: any) => s.user_id))];
+            supabase.functions.invoke('send-push', {
+              body: {
+                user_ids: uniqueUserIds,
+                title: `${senderName}`,
+                body: messageText.length > 100 ? messageText.slice(0, 100) + '…' : messageText,
+                tag: 'chat-message',
+                url: '/',
+              },
+            }).catch(console.error);
+          }
+        });
     } catch (error: any) {
       toast({
         title: 'Failed to send message',
