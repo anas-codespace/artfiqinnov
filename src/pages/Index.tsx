@@ -16,6 +16,7 @@ import { AnalyticsTab } from '@/components/tabs/AnalyticsTab';
 import { InnovationLabTab } from '@/components/tabs/InnovationLabTab';
 import { AnimatedBackground } from '@/components/ui/animated-background';
 import { AccessWarningToast } from '@/components/AccessWarningToast';
+import { AnnouncementsTicker } from '@/components/AnnouncementsTicker';
 import { Loader2 } from 'lucide-react';
 
 function WorkspaceContent() {
