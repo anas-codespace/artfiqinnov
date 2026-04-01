@@ -9,6 +9,7 @@ import { springPresets } from '@/components/ui/spring-config';
 import { supabase } from '@/integrations/supabase/client';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
 import { LeaveRequestCard } from '@/components/LeaveRequestCard';
+import { PunchOutModal } from '@/components/PunchOutModal';
 
 function formatDuration(minutes: number): string {
   const hrs = Math.floor(minutes / 60);
