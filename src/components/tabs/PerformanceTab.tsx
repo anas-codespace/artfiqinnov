@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Clock, Milestone, Loader2, Users, TrendingUp } from 'lucide-react';
+import { BarChart3, Clock, Milestone, Loader2, Users, TrendingUp, FileText, Download } from 'lucide-react';
 import { springPresets } from '@/components/ui/spring-config';
 import { supabase } from '@/integrations/supabase/client';
 import { AttendanceRing } from '@/components/ui/attendance-ring';
 import { fetchTeamAttendance, fetchUserWorkLogs } from '@/hooks/useAttendance';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Button } from '@/components/ui/button';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 
 interface Task {
@@ -47,6 +49,7 @@ function formatDuration(minutes: number): string {
 
 export function PerformanceTab() {
   const { user } = useAuth();
+  const { isAdmin, isFounder } = useUserRole();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,10 +57,13 @@ export function PerformanceTab() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [attendanceMap, setAttendanceMap] = useState<Record<string, AttendanceStat>>({});
   const [attendanceLoading, setAttendanceLoading] = useState(true);
+  const [showReport, setShowReport] = useState(false);
   
   // Personal work stats
   const [myAvgMinutes, setMyAvgMinutes] = useState<number | null>(null);
   const [myRecentLogs, setMyRecentLogs] = useState<Array<{ date: string; work_duration_minutes: number | null }>>([]);
+  // Overall stats since joining
+  const [overallStats, setOverallStats] = useState<{ totalDaysPresent: number; totalDaysWorked: number; joinDate: string | null }>({ totalDaysPresent: 0, totalDaysWorked: 0, joinDate: null });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -83,17 +89,40 @@ export function PerformanceTab() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Fetch personal work logs
+  // Fetch personal work logs + overall stats
   useEffect(() => {
     if (!user?.id) return;
-    fetchUserWorkLogs(user.id).then(logs => {
+    
+    const fetchPersonalStats = async () => {
+      const logs = await fetchUserWorkLogs(user.id);
       setMyRecentLogs(logs);
       const withDuration = logs.filter(l => l.work_duration_minutes && l.work_duration_minutes > 0);
       if (withDuration.length > 0) {
         const total = withDuration.reduce((s, l) => s + (l.work_duration_minutes || 0), 0);
         setMyAvgMinutes(Math.round(total / withDuration.length));
       }
-    });
+
+      // Overall stats since joining
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('created_at')
+        .eq('user_id', user.id)
+        .single();
+      
+      const { count } = await supabase
+        .from('attendance_logs')
+        .select('date', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'Present');
+
+      setOverallStats({
+        totalDaysPresent: count || 0,
+        totalDaysWorked: logs.length,
+        joinDate: profile?.created_at?.split('T')[0] || null,
+      });
+    };
+
+    fetchPersonalStats();
   }, [user?.id]);
 
   // Fetch team members + attendance
@@ -132,7 +161,6 @@ export function PerformanceTab() {
     return tasks.filter(t => t.project_id === filterProject);
   }, [tasks, filterProject]);
 
-  // Calculate bar widths based on time elapsed
   const ganttItems = useMemo(() => {
     if (filteredTasks.length === 0) return [];
     const now = new Date();
@@ -163,6 +191,27 @@ export function PerformanceTab() {
     });
   }, [filteredTasks]);
 
+  const currentMonthName = new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+  // Generate report data
+  const reportData = useMemo(() => {
+    const now = new Date();
+    const logsThisMonth = myRecentLogs.filter(l => {
+      const d = new Date(l.date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const totalHours = logsThisMonth.reduce((s, l) => s + (l.work_duration_minutes || 0), 0);
+    const avgHours = logsThisMonth.length > 0 ? Math.round(totalHours / logsThisMonth.length) : 0;
+
+    return {
+      month: currentMonthName,
+      totalDaysPresent: logsThisMonth.length,
+      totalHoursWorked: formatDuration(totalHours),
+      averagePerDay: formatDuration(avgHours),
+      logs: logsThisMonth,
+    };
+  }, [myRecentLogs, currentMonthName]);
+
   if (isLoading) {
     return (
       <div className="p-8 flex items-center justify-center">
@@ -175,7 +224,7 @@ export function PerformanceTab() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={springPresets.snappy}>
         <h1 className="text-2xl sm:text-3xl font-bold font-['Orbitron']">Performance Timeline</h1>
-        <p className="text-muted-foreground text-sm">Gantt chart view — live task data</p>
+        <p className="text-muted-foreground text-sm">Monthly cycle — {currentMonthName}</p>
       </motion.div>
 
       {/* Personal Work Stats Card */}
@@ -196,7 +245,12 @@ export function PerformanceTab() {
             </p>
             <p className="text-[10px] text-muted-foreground">Avg Work Time / Day</p>
           </div>
-          {/* Mini bar chart of recent days */}
+          <div className="text-center">
+            <p className="text-2xl font-bold text-foreground">
+              {overallStats.totalDaysPresent}
+            </p>
+            <p className="text-[10px] text-muted-foreground">Total Days Since Joining</p>
+          </div>
           {myRecentLogs.filter(l => l.work_duration_minutes).length > 0 && (
             <div className="flex items-end gap-1 h-10">
               {myRecentLogs.filter(l => l.work_duration_minutes).slice(0, 7).reverse().map((log, i) => {
@@ -218,6 +272,72 @@ export function PerformanceTab() {
         </div>
       </motion.div>
 
+      {/* Attendance Report Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...springPresets.snappy, delay: 0.08 }}
+        className="glass-card rounded-2xl p-5 space-y-4"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
+            <FileText className="w-4 h-4" />
+            <span>Attendance Report — {currentMonthName}</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowReport(!showReport)}
+            className="text-xs gap-1"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {showReport ? 'Hide Report' : 'Generate Report'}
+          </Button>
+        </div>
+
+        {showReport && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="bg-secondary/30 rounded-xl p-4 space-y-3 font-mono text-xs"
+          >
+            <div className="flex items-center justify-between border-b border-border/50 pb-2">
+              <span className="font-bold text-sm text-foreground">📊 Monthly Report</span>
+              <span className="text-muted-foreground">{reportData.month}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-muted-foreground">Days Present</p>
+                <p className="text-lg font-bold text-primary">{reportData.totalDaysPresent}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Total Hours</p>
+                <p className="text-lg font-bold text-foreground">{reportData.totalHoursWorked}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Avg / Day</p>
+                <p className="text-lg font-bold text-foreground">{reportData.averagePerDay}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Since Joining</p>
+                <p className="text-lg font-bold text-foreground">{overallStats.totalDaysPresent} days</p>
+              </div>
+            </div>
+            {reportData.logs.length > 0 && (
+              <div className="border-t border-border/50 pt-2 space-y-1">
+                <p className="text-muted-foreground font-bold">Daily Breakdown</p>
+                {reportData.logs.map(l => (
+                  <div key={l.date} className="flex justify-between">
+                    <span>{l.date}</span>
+                    <span className="text-primary">{l.work_duration_minutes ? formatDuration(l.work_duration_minutes) : '—'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </motion.div>
+
       {/* Attendance Health Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -227,7 +347,7 @@ export function PerformanceTab() {
       >
         <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
           <Users className="w-4 h-4" />
-          <span>Attendance Health</span>
+          <span>Team Attendance — {currentMonthName}</span>
         </div>
 
         {attendanceLoading ? (
@@ -258,7 +378,7 @@ export function PerformanceTab() {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium truncate">{member.display_name || 'User'}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {stat ? `${stat.daysPresent}/${stat.totalDays} days` : '—'}
+                      {stat ? `${stat.daysPresent}/${stat.totalDays} this month` : '—'}
                     </p>
                   </div>
                   <AttendanceRing percentage={pct} size={36} strokeWidth={3} />
