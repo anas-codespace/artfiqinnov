@@ -75,6 +75,11 @@ export function PunchInCard() {
   };
 
   const handlePunchOut = async () => {
+    // Show the work summary modal instead of punching out directly
+    setShowPunchOutModal(true);
+  };
+
+  const confirmPunchOut = async () => {
     setPunching(true);
     const success = await punchOut();
     if (success) {
