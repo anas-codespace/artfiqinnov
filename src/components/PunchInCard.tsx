@@ -9,6 +9,7 @@ import { springPresets } from '@/components/ui/spring-config';
 import { supabase } from '@/integrations/supabase/client';
 import { AttendanceCalendar } from '@/components/AttendanceCalendar';
 import { LeaveRequestCard } from '@/components/LeaveRequestCard';
+import { PunchOutModal } from '@/components/PunchOutModal';
 
 function formatDuration(minutes: number): string {
   const hrs = Math.floor(minutes / 60);
@@ -24,6 +25,7 @@ export function PunchInCard() {
   const [joinDate, setJoinDate] = useState<string | undefined>();
   const [punching, setPunching] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showPunchOutModal, setShowPunchOutModal] = useState(false);
   const [liveMinutes, setLiveMinutes] = useState<number | null>(null);
 
   useEffect(() => {
@@ -73,6 +75,11 @@ export function PunchInCard() {
   };
 
   const handlePunchOut = async () => {
+    // Show the work summary modal instead of punching out directly
+    setShowPunchOutModal(true);
+  };
+
+  const confirmPunchOut = async () => {
     setPunching(true);
     const success = await punchOut();
     if (success) {
@@ -248,7 +255,7 @@ export function PunchInCard() {
         )}
 
         <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-          <span>{daysPresent} / {totalWorkingDays} working days</span>
+          <span>{daysPresent} / {totalWorkingDays} working days this month</span>
           <span className={getHealthColor()}>
             {percentage > 90 ? 'Excellent' : percentage >= 75 ? 'Good' : 'Needs Improvement'}
           </span>
@@ -300,6 +307,16 @@ export function PunchInCard() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Punch Out Summary Modal */}
+      {user?.id && (
+        <PunchOutModal
+          open={showPunchOutModal}
+          onOpenChange={setShowPunchOutModal}
+          userId={user.id}
+          onConfirm={confirmPunchOut}
+        />
+      )}
     </motion.div>
   );
 }

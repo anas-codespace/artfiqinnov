@@ -16,6 +16,7 @@ import { AnalyticsTab } from '@/components/tabs/AnalyticsTab';
 import { InnovationLabTab } from '@/components/tabs/InnovationLabTab';
 import { AnimatedBackground } from '@/components/ui/animated-background';
 import { AccessWarningToast } from '@/components/AccessWarningToast';
+import { AnnouncementsTicker } from '@/components/AnnouncementsTicker';
 import { Loader2 } from 'lucide-react';
 
 function WorkspaceContent() {
@@ -58,8 +59,9 @@ function WorkspaceContent() {
           <AnimatedBackground />
           <AccessWarningToast />
           <TopHeader onNavigate={setActiveTab} />
+          <AnnouncementsTicker />
           
-          <main className="pt-16 pb-28">
+          <main className="pt-[5.75rem] pb-28">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
