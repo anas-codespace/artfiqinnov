@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_feed: {
+        Row: {
+          action_type: string
+          actor_id: string
+          actor_name: string
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          action_type: string
+          actor_id: string
+          actor_name: string
+          created_at?: string
+          description: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          action_type?: string
+          actor_id?: string
+          actor_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       admin_pins: {
         Row: {
           created_at: string
@@ -116,6 +146,33 @@ export type Database = {
           declared_by?: string
           id?: string
           title?: string
+        }
+        Relationships: []
+      }
+      daily_work_logs: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          summary: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          summary: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          summary?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -633,6 +690,39 @@ export type Database = {
           p256dh?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      star_of_week: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          nominated_by: string
+          reason: string | null
+          updated_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          nominated_by: string
+          reason?: string | null
+          updated_at?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          nominated_by?: string
+          reason?: string | null
+          updated_at?: string
+          user_id?: string
+          week_start?: string
         }
         Relationships: []
       }
