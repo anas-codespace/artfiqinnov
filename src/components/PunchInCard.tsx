@@ -255,7 +255,7 @@ export function PunchInCard() {
         )}
 
         <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-          <span>{daysPresent} / {totalWorkingDays} working days</span>
+          <span>{daysPresent} / {totalWorkingDays} working days this month</span>
           <span className={getHealthColor()}>
             {percentage > 90 ? 'Excellent' : percentage >= 75 ? 'Good' : 'Needs Improvement'}
           </span>

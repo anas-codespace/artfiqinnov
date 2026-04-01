@@ -172,9 +172,14 @@ export function useAttendance(userId: string | undefined, joinDate?: string) {
     if (!userId) return;
 
     const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    
+    // Monthly boundaries
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStartStr = monthStart.toISOString().split('T')[0];
 
     const [{ data: logs, error }, { data: holidays }, { data: approvedLeaves }] = await Promise.all([
-      supabase.from('attendance_logs').select('*').eq('user_id', userId),
+      supabase.from('attendance_logs').select('*').eq('user_id', userId).gte('date', monthStartStr),
       supabase.from('company_holidays').select('*'),
       supabase.from('leave_requests').select('start_date, end_date').eq('user_id', userId).eq('status', 'approved'),
     ]);
@@ -194,11 +199,11 @@ export function useAttendance(userId: string | undefined, joinDate?: string) {
       expandDateRange(l.start_date, l.end_date).forEach(d => approvedLeaveDates.add(d));
     });
 
-    const start = joinDate ? new Date(joinDate) : new Date();
-    const now = new Date();
+    // Monthly working days: from start of month (or join date if later) to today
+    const start = joinDate && new Date(joinDate) > monthStart ? new Date(joinDate) : monthStart;
     const totalWorkingDays = countWorkingDays(start, now, holidayDates, approvedLeaveDates);
 
-    // Count unique days with at least one 'Present' log
+    // Count unique days with at least one 'Present' log THIS MONTH
     const presentDaysSet = new Set(
       (logs || []).filter(l => l.status === 'Present').map(l => l.date)
     );
