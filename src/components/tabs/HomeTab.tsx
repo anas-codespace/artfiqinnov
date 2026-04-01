@@ -14,6 +14,8 @@ import { springPresets } from '@/components/ui/spring-config';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
 import { PunchInCard } from '@/components/PunchInCard';
 import { NoticeBoard } from '@/components/NoticeBoard';
+import { StarOfTheWeek } from '@/components/StarOfTheWeek';
+import { ActivityFeed } from '@/components/ActivityFeed';
 import { useUserStatus } from '@/hooks/useUserStatus';
 import { useAuth } from '@/contexts/AuthContext';
 
