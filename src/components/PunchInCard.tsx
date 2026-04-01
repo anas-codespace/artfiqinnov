@@ -25,6 +25,7 @@ export function PunchInCard() {
   const [joinDate, setJoinDate] = useState<string | undefined>();
   const [punching, setPunching] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showPunchOutModal, setShowPunchOutModal] = useState(false);
   const [liveMinutes, setLiveMinutes] = useState<number | null>(null);
 
   useEffect(() => {
