@@ -319,6 +319,12 @@ export function HomeTab() {
       {/* Notice Board */}
       <NoticeBoard />
 
+      {/* Star of the Week */}
+      <StarOfTheWeek />
+
+      {/* Activity Feed */}
+      <ActivityFeed />
+
       {/* Visitor/Pending Banner - hidden for guests (they have their own banner) */}
       {!isMember && !isGuest && (
         <motion.div
