@@ -337,8 +337,12 @@ export async function fetchTeamAttendance(
 ): Promise<Record<string, { percentage: number; daysPresent: number; totalDays: number }>> {
   if (userIds.length === 0) return {};
 
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthStartStr = monthStart.toISOString().split('T')[0];
+
   const [{ data: logs }, { data: holidays }, { data: approvedLeaves }] = await Promise.all([
-    supabase.from('attendance_logs').select('user_id, status, date').in('user_id', userIds).eq('status', 'Present'),
+    supabase.from('attendance_logs').select('user_id, status, date').in('user_id', userIds).eq('status', 'Present').gte('date', monthStartStr),
     supabase.from('company_holidays').select('date'),
     supabase.from('leave_requests').select('user_id, start_date, end_date').in('user_id', userIds).eq('status', 'approved'),
   ]);
@@ -352,13 +356,12 @@ export async function fetchTeamAttendance(
     expandDateRange(l.start_date, l.end_date).forEach(d => userLeaveDates[l.user_id].add(d));
   });
 
-  const now = new Date();
   const result: Record<string, { percentage: number; daysPresent: number; totalDays: number }> = {};
 
   userIds.forEach(uid => {
-    const start = joinDates[uid] ? new Date(joinDates[uid]) : now;
+    const joinDate = joinDates[uid] ? new Date(joinDates[uid]) : now;
+    const start = joinDate > monthStart ? joinDate : monthStart;
     const totalDays = countWorkingDays(start, now, holidayDates, userLeaveDates[uid]);
-    // Count unique days present (not rows, since multiple sessions per day now)
     const uniqueDays = new Set((logs || []).filter(l => l.user_id === uid).map(l => l.date));
     const daysPresent = uniqueDays.size;
     const percentage = totalDays > 0 ? Math.min(Math.round((daysPresent / totalDays) * 100), 100) : 100;
