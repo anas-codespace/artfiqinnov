@@ -59,6 +59,7 @@ function WorkspaceContent() {
   return (
     <AccessWarningProvider>
       <ChatInputProvider>
+        {showOnboarding && <ProfileSetupModal />}
         <div className="min-h-screen bg-background relative">
           <AnimatedBackground />
           <AccessWarningToast />
