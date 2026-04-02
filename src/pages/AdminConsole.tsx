@@ -22,6 +22,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import defaultAvatar from '@/assets/default-avatar.webp';
 import { MemberInsightModal } from '@/components/MemberInsightModal';
+import { EmployeeDirectory } from '@/components/EmployeeDirectory';
+import { StarAwardButton } from '@/components/StarAwardButton';
 
 
 import { OFFICIAL_POSTINGS, getDepartmentCode } from '@/lib/department-mapping';
