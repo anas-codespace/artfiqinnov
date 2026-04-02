@@ -121,6 +121,7 @@ export function PerformanceTab() {
         totalDaysPresent: count || 0,
         totalDaysWorked: logs.length,
         joinDate: profile?.created_at?.split('T')[0] || null,
+        starCount,
       });
     };
 
