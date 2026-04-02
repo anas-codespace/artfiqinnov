@@ -198,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: 'guest@artfiq.com',
       access_status: 'visitor',
       posting: null,
+      is_profile_complete: true,
     });
     setIsLoading(false);
   };
