@@ -105,9 +105,11 @@ export function PerformanceTab() {
       // Overall stats since joining
       const { data: profile } = await supabase
         .from('profiles')
-        .select('created_at')
+        .select('created_at, star_of_the_week_count')
         .eq('user_id', user.id)
         .single();
+      
+      const starCount = (profile as any)?.star_of_the_week_count || 0;
       
       const { count } = await supabase
         .from('attendance_logs')
