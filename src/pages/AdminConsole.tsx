@@ -45,6 +45,7 @@ interface UserProfile {
   avatar_url: string | null;
   access_status: string | null;
   posting: string | null;
+  star_of_the_week_count: number;
 }
 
 type Stage = 'loading' | 'unauthorized' | 'setup' | 'locked' | 'forgot-pin' | 'unlocked';
