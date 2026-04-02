@@ -594,37 +594,49 @@ export type Database = {
       profiles: {
         Row: {
           access_status: string | null
+          admin_pin: string | null
           avatar_url: string | null
           created_at: string
           department: string | null
           display_name: string | null
           email: string | null
           id: string
+          is_admin_setup_complete: boolean | null
           posting: string | null
+          security_answer: string | null
+          security_question: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           access_status?: string | null
+          admin_pin?: string | null
           avatar_url?: string | null
           created_at?: string
           department?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
+          is_admin_setup_complete?: boolean | null
           posting?: string | null
+          security_answer?: string | null
+          security_question?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           access_status?: string | null
+          admin_pin?: string | null
           avatar_url?: string | null
           created_at?: string
           department?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
+          is_admin_setup_complete?: boolean | null
           posting?: string | null
+          security_answer?: string | null
+          security_question?: string | null
           updated_at?: string
           user_id?: string
         }
