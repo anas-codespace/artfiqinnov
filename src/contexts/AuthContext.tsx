@@ -10,6 +10,7 @@ interface Profile {
   email: string | null;
   access_status: 'visitor' | 'pending' | 'approved_member' | null;
   posting: string | null;
+  is_profile_complete: boolean | null;
 }
 
 interface AuthContextType {
