@@ -20,7 +20,7 @@ import { AnnouncementsTicker } from '@/components/AnnouncementsTicker';
 import { Loader2 } from 'lucide-react';
 
 function WorkspaceContent() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, profile } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
 
   if (isLoading) {
