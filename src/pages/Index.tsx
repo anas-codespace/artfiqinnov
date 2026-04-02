@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { AccessWarningProvider } from '@/contexts/AccessWarningContext';
 import { ChatInputProvider } from '@/contexts/ChatInputContext';
 import { LoginScreen } from '@/components/LoginScreen';
+import { ProfileSetupModal } from '@/components/ProfileSetupModal';
 import { BottomDock } from '@/components/layout/BottomDock';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { HomeTab } from '@/components/tabs/HomeTab';
