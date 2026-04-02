@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { AccessWarningProvider } from '@/contexts/AccessWarningContext';
 import { ChatInputProvider } from '@/contexts/ChatInputContext';
 import { LoginScreen } from '@/components/LoginScreen';
+import { ProfileSetupModal } from '@/components/ProfileSetupModal';
 import { BottomDock } from '@/components/layout/BottomDock';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { HomeTab } from '@/components/tabs/HomeTab';
@@ -20,7 +21,7 @@ import { AnnouncementsTicker } from '@/components/AnnouncementsTicker';
 import { Loader2 } from 'lucide-react';
 
 function WorkspaceContent() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, profile } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
 
   if (isLoading) {
@@ -37,6 +38,9 @@ function WorkspaceContent() {
   if (!user) {
     return <LoginScreen />;
   }
+
+  // Show onboarding modal if profile is not complete
+  const showOnboarding = profile && !(profile as any).is_profile_complete;
 
   const renderTab = () => {
     switch (activeTab) {
@@ -55,6 +59,7 @@ function WorkspaceContent() {
   return (
     <AccessWarningProvider>
       <ChatInputProvider>
+        {showOnboarding && <ProfileSetupModal />}
         <div className="min-h-screen bg-background relative">
           <AnimatedBackground />
           <AccessWarningToast />

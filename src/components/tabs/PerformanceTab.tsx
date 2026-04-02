@@ -63,7 +63,7 @@ export function PerformanceTab() {
   const [myAvgMinutes, setMyAvgMinutes] = useState<number | null>(null);
   const [myRecentLogs, setMyRecentLogs] = useState<Array<{ date: string; work_duration_minutes: number | null }>>([]);
   // Overall stats since joining
-  const [overallStats, setOverallStats] = useState<{ totalDaysPresent: number; totalDaysWorked: number; joinDate: string | null }>({ totalDaysPresent: 0, totalDaysWorked: 0, joinDate: null });
+  const [overallStats, setOverallStats] = useState<{ totalDaysPresent: number; totalDaysWorked: number; joinDate: string | null; starCount: number }>({ totalDaysPresent: 0, totalDaysWorked: 0, joinDate: null, starCount: 0 });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,9 +105,11 @@ export function PerformanceTab() {
       // Overall stats since joining
       const { data: profile } = await supabase
         .from('profiles')
-        .select('created_at')
+        .select('created_at, star_of_the_week_count')
         .eq('user_id', user.id)
         .single();
+      
+      const starCount = (profile as any)?.star_of_the_week_count || 0;
       
       const { count } = await supabase
         .from('attendance_logs')
@@ -119,6 +121,7 @@ export function PerformanceTab() {
         totalDaysPresent: count || 0,
         totalDaysWorked: logs.length,
         joinDate: profile?.created_at?.split('T')[0] || null,
+        starCount,
       });
     };
 
@@ -251,6 +254,14 @@ export function PerformanceTab() {
             </p>
             <p className="text-[10px] text-muted-foreground">Total Days Since Joining</p>
           </div>
+          {overallStats.starCount > 0 && (
+            <div className="text-center px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+              <p className="text-2xl font-bold text-amber-500">
+                ⭐ {overallStats.starCount}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Star of the Week</p>
+            </div>
+          )}
           {myRecentLogs.filter(l => l.work_duration_minutes).length > 0 && (
             <div className="flex items-end gap-1 h-10">
               {myRecentLogs.filter(l => l.work_duration_minutes).slice(0, 7).reverse().map((log, i) => {

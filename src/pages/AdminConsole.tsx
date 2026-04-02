@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, KeyRound, Users, UserCheck, UserX, Loader2, AlertTriangle, CheckCircle, ArrowLeft, HelpCircle, Pencil, Save, Clock, CalendarPlus, PartyPopper, Trash2, CalendarDays, CheckCircle2, XCircle, FolderLock, Eye } from 'lucide-react';
@@ -22,6 +22,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import defaultAvatar from '@/assets/default-avatar.webp';
 import { MemberInsightModal } from '@/components/MemberInsightModal';
+import { EmployeeDirectory } from '@/components/EmployeeDirectory';
+import { StarAwardButton } from '@/components/StarAwardButton';
 
 
 import { OFFICIAL_POSTINGS, getDepartmentCode } from '@/lib/department-mapping';
@@ -43,6 +45,7 @@ interface UserProfile {
   avatar_url: string | null;
   access_status: string | null;
   posting: string | null;
+  star_of_the_week_count: number;
 }
 
 type Stage = 'loading' | 'unauthorized' | 'setup' | 'locked' | 'forgot-pin' | 'unlocked';
@@ -199,7 +202,7 @@ export default function AdminConsole() {
   const fetchUsers = async () => {
     setLoadingUsers(true);
     const [{ data, error }, { data: roles }] = await Promise.all([
-      supabase.from('profiles').select('id, user_id, display_name, email, avatar_url, access_status, posting').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('id, user_id, display_name, email, avatar_url, access_status, posting, star_of_the_week_count').order('created_at', { ascending: false }),
       supabase.from('user_roles').select('user_id, role'),
     ]);
 
@@ -898,7 +901,7 @@ export default function AdminConsole() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-full overflow-x-hidden">
         <Tabs defaultValue="team" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-8">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 mb-8">
             <TabsTrigger value="team" className="gap-1 text-[10px] sm:text-sm">
               <UserCheck className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Team</span>
@@ -932,6 +935,14 @@ export default function AdminConsole() {
                   {vaultRequests.length}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="directory" className="gap-1 text-[10px] sm:text-sm">
+              <Eye className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Directory</span>
+            </TabsTrigger>
+            <TabsTrigger value="stars" className="gap-1 text-[10px] sm:text-sm">
+              <PartyPopper className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Stars</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1216,6 +1227,51 @@ export default function AdminConsole() {
                         Deny
                       </Button>
                     </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Employee Directory Tab */}
+          <TabsContent value="directory" className="space-y-4">
+            <EmployeeDirectory />
+          </TabsContent>
+
+          {/* Star of the Week Tab */}
+          <TabsContent value="stars" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">⭐ Star of the Week Awards</h2>
+            </div>
+            {loadingUsers ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {approvedMembers.map(u => (
+                  <motion.div
+                    key={u.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 border border-border/50"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={u.avatar_url || defaultAvatar} />
+                        <AvatarFallback>{(u.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{u.display_name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                      </div>
+                    </div>
+                    <StarAwardButton
+                      userId={u.user_id}
+                      displayName={u.display_name}
+                      currentCount={(u as any).star_of_the_week_count || 0}
+                      onAwarded={fetchUsers}
+                    />
                   </motion.div>
                 ))}
               </div>
