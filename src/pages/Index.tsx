@@ -38,6 +38,9 @@ function WorkspaceContent() {
     return <LoginScreen />;
   }
 
+  // Show onboarding modal if profile is not complete
+  const showOnboarding = profile && !(profile as any).is_profile_complete;
+
   const renderTab = () => {
     switch (activeTab) {
       case 'home': return <HomeTab />;
