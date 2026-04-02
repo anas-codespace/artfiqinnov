@@ -202,7 +202,7 @@ export default function AdminConsole() {
   const fetchUsers = async () => {
     setLoadingUsers(true);
     const [{ data, error }, { data: roles }] = await Promise.all([
-      supabase.from('profiles').select('id, user_id, display_name, email, avatar_url, access_status, posting').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('id, user_id, display_name, email, avatar_url, access_status, posting, star_of_the_week_count').order('created_at', { ascending: false }),
       supabase.from('user_roles').select('user_id, role'),
     ]);
 
