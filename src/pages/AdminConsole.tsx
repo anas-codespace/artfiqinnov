@@ -900,7 +900,7 @@ export default function AdminConsole() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-full overflow-x-hidden">
         <Tabs defaultValue="team" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-8">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 mb-8">
             <TabsTrigger value="team" className="gap-1 text-[10px] sm:text-sm">
               <UserCheck className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Team</span>
@@ -934,6 +934,14 @@ export default function AdminConsole() {
                   {vaultRequests.length}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="directory" className="gap-1 text-[10px] sm:text-sm">
+              <Eye className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Directory</span>
+            </TabsTrigger>
+            <TabsTrigger value="stars" className="gap-1 text-[10px] sm:text-sm">
+              <PartyPopper className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Stars</span>
             </TabsTrigger>
           </TabsList>
 
