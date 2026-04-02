@@ -63,7 +63,7 @@ export function PerformanceTab() {
   const [myAvgMinutes, setMyAvgMinutes] = useState<number | null>(null);
   const [myRecentLogs, setMyRecentLogs] = useState<Array<{ date: string; work_duration_minutes: number | null }>>([]);
   // Overall stats since joining
-  const [overallStats, setOverallStats] = useState<{ totalDaysPresent: number; totalDaysWorked: number; joinDate: string | null }>({ totalDaysPresent: 0, totalDaysWorked: 0, joinDate: null });
+  const [overallStats, setOverallStats] = useState<{ totalDaysPresent: number; totalDaysWorked: number; joinDate: string | null; starCount: number }>({ totalDaysPresent: 0, totalDaysWorked: 0, joinDate: null, starCount: 0 });
 
   useEffect(() => {
     const fetchData = async () => {
