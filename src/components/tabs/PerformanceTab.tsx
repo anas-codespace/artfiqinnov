@@ -254,6 +254,14 @@ export function PerformanceTab() {
             </p>
             <p className="text-[10px] text-muted-foreground">Total Days Since Joining</p>
           </div>
+          {overallStats.starCount > 0 && (
+            <div className="text-center px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+              <p className="text-2xl font-bold text-amber-500">
+                ⭐ {overallStats.starCount}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Star of the Week</p>
+            </div>
+          )}
           {myRecentLogs.filter(l => l.work_duration_minutes).length > 0 && (
             <div className="flex items-end gap-1 h-10">
               {myRecentLogs.filter(l => l.work_duration_minutes).slice(0, 7).reverse().map((log, i) => {
