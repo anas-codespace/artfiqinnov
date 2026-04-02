@@ -1231,6 +1231,51 @@ export default function AdminConsole() {
               </div>
             )}
           </TabsContent>
+
+          {/* Employee Directory Tab */}
+          <TabsContent value="directory" className="space-y-4">
+            <EmployeeDirectory />
+          </TabsContent>
+
+          {/* Star of the Week Tab */}
+          <TabsContent value="stars" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">⭐ Star of the Week Awards</h2>
+            </div>
+            {loadingUsers ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {approvedMembers.map(u => (
+                  <motion.div
+                    key={u.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 border border-border/50"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={u.avatar_url || defaultAvatar} />
+                        <AvatarFallback>{(u.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{u.display_name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                      </div>
+                    </div>
+                    <StarAwardButton
+                      userId={u.user_id}
+                      displayName={u.display_name}
+                      currentCount={(u as any).star_of_the_week_count || 0}
+                      onAwarded={fetchUsers}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
 
         {/* Holiday Declaration Modal */}
