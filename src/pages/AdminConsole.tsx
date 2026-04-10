@@ -832,7 +832,7 @@ export default function AdminConsole() {
           ) : (
             <p className={cn(
               "text-[11px] mt-1 truncate font-medium",
-              isFounder ? "text-amber-400" : memberRole === 'admin' ? "text-violet-400" : "text-primary/80"
+              isFounder ? "text-amber-400" : memberRole === 'admin' ? "text-violet-400" : memberRole === 'vp' ? "text-emerald-400" : "text-primary/80"
             )}>
               {roleText}
             </p>
