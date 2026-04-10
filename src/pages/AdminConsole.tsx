@@ -763,6 +763,7 @@ export default function AdminConsole() {
     const roleText = memberRole === 'ceo' ? 'CEO' 
       : memberRole === 'cto' ? 'Managing Director'
       : memberRole === 'admin' ? 'Admin'
+      : memberRole === 'vp' ? 'Vice President'
       : user.posting?.trim() || 'Team Member';
 
     return (
