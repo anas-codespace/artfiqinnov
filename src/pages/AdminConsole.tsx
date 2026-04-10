@@ -213,8 +213,8 @@ export default function AdminConsole() {
       setUsers(data || []);
     }
 
-    const rolesMap: Record<string, 'ceo' | 'cto' | 'team'> = {};
-    roles?.forEach(r => { rolesMap[r.user_id] = r.role as 'ceo' | 'cto' | 'team'; });
+    const rolesMap: Record<string, 'ceo' | 'cto' | 'admin' | 'team'> = {};
+    roles?.forEach(r => { rolesMap[r.user_id] = r.role as 'ceo' | 'cto' | 'admin' | 'team'; });
     setUserRoles(rolesMap);
 
     setLoadingUsers(false);
