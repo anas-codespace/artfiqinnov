@@ -2,7 +2,7 @@ import { motion, type Transition } from 'framer-motion';
 import { Crown, Code2, Users, Eye, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type DisplayRole = 'ceo' | 'cto' | 'admin' | 'team' | 'visitor';
+export type DisplayRole = 'ceo' | 'cto' | 'admin' | 'vp' | 'team' | 'visitor';
 
 interface RoleBadgeProps {
   role: DisplayRole | null;
@@ -50,6 +50,15 @@ export function RoleBadge({ role, posting, className, size = 'md', showIcon = tr
           border: 'border-violet-500/50',
           text: 'text-violet-400',
           glow: 'shadow-[0_0_20px_rgba(139,92,246,0.3)]',
+        };
+      case 'vp':
+        return {
+          label: 'VP',
+          icon: ShieldCheck,
+          gradient: 'from-emerald-500/20 via-teal-500/20 to-emerald-400/20',
+          border: 'border-emerald-500/50',
+          text: 'text-emerald-400',
+          glow: 'shadow-[0_0_20px_rgba(16,185,129,0.3)]',
         };
       case 'team':
         return {

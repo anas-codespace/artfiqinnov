@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { DisplayRole } from '@/components/ui/role-badge';
 
-export type AppRole = 'ceo' | 'cto' | 'admin' | 'team';
+export type AppRole = 'ceo' | 'cto' | 'admin' | 'vp' | 'team';
 
 interface UserRoleData {
   role: AppRole | null;
@@ -61,7 +61,7 @@ export function useUserRole(): UserRoleData {
   const getDisplayRole = (): DisplayRole | null => {
     if (!role) return null;
     if (role === 'ceo' || role === 'cto') return role;
-    if (role === 'admin') return 'admin';
+    if (role === 'admin' || role === 'vp') return role;
     // For 'team' role, check access_status
     const accessStatus = profile?.access_status;
     if (accessStatus === 'approved_member') return 'team';
@@ -70,13 +70,14 @@ export function useUserRole(): UserRoleData {
 
   const displayRole = getDisplayRole();
   const isFounder = role === 'ceo' || role === 'cto';
-  const isAdmin = role === 'ceo' || role === 'cto' || role === 'admin';
+  const isAdmin = role === 'ceo' || role === 'cto' || role === 'admin' || role === 'vp';
 
   const getRoleLabel = (r: DisplayRole | null): string => {
     switch (r) {
       case 'ceo': return 'CEO';
       case 'cto': return 'MD';
       case 'admin': return 'Admin';
+      case 'vp': return 'VP';
       case 'team': return profile?.posting || 'Team';
       case 'visitor': return 'Visitor';
       default: return '';
