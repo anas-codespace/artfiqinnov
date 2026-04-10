@@ -2,23 +2,24 @@ import { cn } from '@/lib/utils';
 
 interface PostingBadgeProps {
   posting?: string | null;
-  role?: 'ceo' | 'cto' | 'admin' | 'team' | null;
+  role?: 'ceo' | 'cto' | 'admin' | 'vp' | 'team' | null;
   className?: string;
 }
 
-function getBadgeText(role?: 'ceo' | 'cto' | 'admin' | 'team' | null, posting?: string | null): string {
+function getBadgeText(role?: 'ceo' | 'cto' | 'admin' | 'vp' | 'team' | null, posting?: string | null): string {
   if (role === 'ceo') return 'CEO';
   if (role === 'cto') return 'Managing Director';
   if (role === 'admin') return 'Admin';
+  if (role === 'vp') return 'VP';
   return posting?.trim() ? posting.toUpperCase() : 'TEAM';
 }
 
-export function isFounderRole(role?: 'ceo' | 'cto' | 'admin' | 'team' | null): boolean {
+export function isFounderRole(role?: 'ceo' | 'cto' | 'admin' | 'vp' | 'team' | null): boolean {
   return role === 'ceo' || role === 'cto';
 }
 
-export function isAdminRole(role?: 'ceo' | 'cto' | 'admin' | 'team' | null): boolean {
-  return role === 'ceo' || role === 'cto' || role === 'admin';
+export function isAdminRole(role?: 'ceo' | 'cto' | 'admin' | 'vp' | 'team' | null): boolean {
+  return role === 'ceo' || role === 'cto' || role === 'admin' || role === 'vp';
 }
 
 export function PostingBadge({ posting, role, className }: PostingBadgeProps) {
