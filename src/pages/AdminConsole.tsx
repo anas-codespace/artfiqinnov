@@ -759,121 +759,134 @@ export default function AdminConsole() {
     const memberRole = userRoles[user.user_id] || 'team';
     const isFounder = isFounderRole(memberRole);
 
+    // Role display text (not the heavy badge)
+    const roleText = memberRole === 'ceo' ? 'CEO' 
+      : memberRole === 'cto' ? 'Managing Director'
+      : memberRole === 'admin' ? 'Admin'
+      : user.posting?.trim() || 'Team Member';
+
     return (
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between gap-2 p-3 sm:p-4 rounded-xl bg-secondary/30 border border-border/50 w-full max-w-full overflow-hidden"
+        className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/30 border border-border/40 w-full"
       >
-        {/* Left side - Avatar & Text (must shrink) */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <Avatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
-            <AvatarImage src={user.avatar_url || defaultAvatar} alt={user.display_name || 'User'} />
-            <AvatarFallback>{(user.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p 
-              className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+        {/* Avatar */}
+        <Avatar 
+          className="w-10 h-10 flex-shrink-0 cursor-pointer"
+          onClick={() => {
+            setInsightMember({ user_id: user.user_id, display_name: user.display_name, avatar_url: user.avatar_url });
+            setInsightOpen(true);
+          }}
+        >
+          <AvatarImage src={user.avatar_url || defaultAvatar} alt={user.display_name || 'User'} />
+          <AvatarFallback>{(user.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
+        </Avatar>
+
+        {/* Name, Email, Role */}
+        <div className="min-w-0 flex-1">
+          <p 
+            className="font-semibold text-sm text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+            onClick={() => {
+              setInsightMember({ user_id: user.user_id, display_name: user.display_name, avatar_url: user.avatar_url });
+              setInsightOpen(true);
+            }}
+          >
+            {user.display_name || 'Unknown'}
+          </p>
+          <p className="text-xs text-muted-foreground break-all whitespace-normal leading-tight mt-0.5">{user.email}</p>
+          
+          {/* Role as highlighted text, not badge */}
+          {isEditingThis && !isFounder ? (
+            <div className="flex items-center gap-1 mt-1.5">
+              <div className="relative">
+                <Input
+                  value={postingValue}
+                  onChange={(e) => setPostingValue(e.target.value)}
+                  placeholder="Search or type a role..."
+                  className="h-6 text-[10px] w-32 sm:w-44 px-2 py-0"
+                  list={`postings-list-${user.user_id}`}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSavePosting(user.user_id);
+                    if (e.key === 'Escape') { setEditingPosting(null); setPostingValue(''); }
+                  }}
+                />
+                <datalist id={`postings-list-${user.user_id}`}>
+                  {OFFICIAL_POSTINGS.map((p) => (
+                    <option key={p} value={p} />
+                  ))}
+                </datalist>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="w-5 h-5"
+                onClick={() => handleSavePosting(user.user_id)}
+                disabled={actionLoading === user.user_id}
+              >
+                <Save className="w-3 h-3 text-primary" />
+              </Button>
+            </div>
+          ) : (
+            <p className={cn(
+              "text-[11px] mt-1 truncate font-medium",
+              isFounder ? "text-amber-400" : memberRole === 'admin' ? "text-violet-400" : "text-primary/80"
+            )}>
+              {roleText}
+            </p>
+          )}
+        </div>
+
+        {/* 3-dots kebab menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="w-11 h-11 flex items-center justify-center rounded-lg hover:bg-secondary/60 transition-colors flex-shrink-0">
+              <MoreVertical className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {!isFounder && (
+              <DropdownMenuItem
+                onClick={() => {
+                  setEditingPosting(user.user_id);
+                  setPostingValue(user.posting || '');
+                }}
+              >
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit Role
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem
               onClick={() => {
                 setInsightMember({ user_id: user.user_id, display_name: user.display_name, avatar_url: user.avatar_url });
                 setInsightOpen(true);
               }}
-            >{user.display_name || 'Unknown'}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground break-all whitespace-normal leading-tight">{user.email}</p>
-            {/* Posting Badge + Edit */}
-            <div className="flex items-center gap-1.5 mt-1">
-              {isEditingThis && !isFounder ? (
-                <div className="flex items-center gap-1">
-                  <div className="relative">
-                    <Input
-                      value={postingValue}
-                      onChange={(e) => setPostingValue(e.target.value)}
-                      placeholder="Search or type a role..."
-                      className="h-6 text-[10px] w-32 sm:w-44 px-2 py-0"
-                      list={`postings-list-${user.user_id}`}
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSavePosting(user.user_id);
-                        if (e.key === 'Escape') { setEditingPosting(null); setPostingValue(''); }
-                      }}
-                    />
-                    <datalist id={`postings-list-${user.user_id}`}>
-                      {OFFICIAL_POSTINGS.map((p) => (
-                        <option key={p} value={p} />
-                      ))}
-                    </datalist>
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="w-5 h-5"
-                    onClick={() => handleSavePosting(user.user_id)}
-                    disabled={actionLoading === user.user_id}
-                  >
-                    <Save className="w-3 h-3 text-primary" />
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <PostingBadge posting={user.posting} role={memberRole} />
-                  {!isFounder && (
-                    <button
-                      onClick={() => {
-                        setEditingPosting(user.user_id);
-                        setPostingValue(user.posting || '');
-                      }}
-                      className="text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <Pencil className="w-3 h-3" />
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        {/* Right side - Badge & Actions (fixed size) */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <Badge 
-            variant={user.access_status === 'approved_member' ? 'default' : user.access_status === 'pending' ? 'secondary' : 'outline'}
-            className="hidden xs:inline-flex text-xs"
-          >
-            {user.access_status === 'approved_member' ? 'Member' : user.access_status === 'pending' ? 'Pending' : 'Visitor'}
-          </Badge>
-          
-          {showApprove && (
-            <Button
-              size="sm"
-              variant="default"
-              disabled={actionLoading === user.user_id}
-              onClick={() => updateUserStatus(user.user_id, 'approved_member')}
-              className="flex-shrink-0"
             >
-              {actionLoading === user.user_id ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <UserCheck className="w-4 h-4" />
-              )}
-            </Button>
-          )}
-          
-          {showRemove && (
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={actionLoading === user.user_id}
-              onClick={() => updateUserStatus(user.user_id, 'visitor')}
-              className="flex-shrink-0"
-            >
-              {actionLoading === user.user_id ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <UserX className="w-4 h-4" />
-              )}
-            </Button>
-          )}
-        </div>
+              <Eye className="w-4 h-4 mr-2" />
+              View Details
+            </DropdownMenuItem>
+            {showApprove && (
+              <DropdownMenuItem
+                onClick={() => updateUserStatus(user.user_id, 'approved_member')}
+                disabled={actionLoading === user.user_id}
+              >
+                <UserCheck className="w-4 h-4 mr-2" />
+                Approve Member
+              </DropdownMenuItem>
+            )}
+            {showRemove && !isFounder && (
+              <DropdownMenuItem
+                onClick={() => updateUserStatus(user.user_id, 'visitor')}
+                disabled={actionLoading === user.user_id}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Remove Member
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </motion.div>
     );
   };
