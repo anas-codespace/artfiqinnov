@@ -902,50 +902,44 @@ export default function AdminConsole() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-full overflow-x-hidden">
         <Tabs defaultValue="team" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 mb-8">
-            <TabsTrigger value="team" className="gap-1 text-[10px] sm:text-sm">
-              <UserCheck className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Team</span>
-            </TabsTrigger>
-            <TabsTrigger value="requests" className="gap-1 text-[10px] sm:text-sm">
-              <Users className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Requests</span>
-            </TabsTrigger>
-            <TabsTrigger value="attendance" className="gap-1 text-[10px] sm:text-sm">
-              <Clock className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Attendance</span>
-            </TabsTrigger>
-            <TabsTrigger value="leaves" className="gap-1 text-[10px] sm:text-sm relative">
-              <CalendarDays className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Leaves</span>
-              {allLeaves.filter(l => l.status === 'pending').length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
-                  {allLeaves.filter(l => l.status === 'pending').length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="holidays" className="gap-1 text-[10px] sm:text-sm">
-              <PartyPopper className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Holidays</span>
-            </TabsTrigger>
-            <TabsTrigger value="vault-access" className="gap-1 text-[10px] sm:text-sm relative">
-              <FolderLock className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Vault</span>
-              {vaultRequests.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
-                  {vaultRequests.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="directory" className="gap-1 text-[10px] sm:text-sm">
-              <Eye className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Directory</span>
-            </TabsTrigger>
-            <TabsTrigger value="stars" className="gap-1 text-[10px] sm:text-sm">
-              <PartyPopper className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Stars</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 mb-8 scrollbar-cyber">
+            <TabsList className="inline-flex w-max gap-1 bg-secondary/50 p-1 rounded-xl">
+              <TabsTrigger value="team" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap">
+                Users
+              </TabsTrigger>
+              <TabsTrigger value="requests" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap">
+                Requests
+              </TabsTrigger>
+              <TabsTrigger value="attendance" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap">
+                Attendance
+              </TabsTrigger>
+              <TabsTrigger value="leaves" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap relative">
+                Leaves
+                {allLeaves.filter(l => l.status === 'pending').length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
+                    {allLeaves.filter(l => l.status === 'pending').length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="holidays" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap">
+                Holidays
+              </TabsTrigger>
+              <TabsTrigger value="vault-access" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap relative">
+                Vault
+                {vaultRequests.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
+                    {vaultRequests.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="directory" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap">
+                Directory
+              </TabsTrigger>
+              <TabsTrigger value="stars" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap">
+                Stars
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="team" className="space-y-4">
             <div className="flex items-center justify-between mb-4">
