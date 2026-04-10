@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Lock, KeyRound, Users, UserCheck, UserX, Loader2, AlertTriangle, CheckCircle, ArrowLeft, HelpCircle, Pencil, Save, Clock, CalendarPlus, PartyPopper, Trash2, CalendarDays, CheckCircle2, XCircle, FolderLock, Eye } from 'lucide-react';
+import { Shield, Lock, KeyRound, Users, UserCheck, UserX, Loader2, AlertTriangle, CheckCircle, ArrowLeft, HelpCircle, Pencil, Save, Clock, CalendarPlus, PartyPopper, Trash2, CalendarDays, CheckCircle2, XCircle, FolderLock, Eye, MoreVertical } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -78,7 +79,7 @@ export default function AdminConsole() {
 
   // Dashboard state
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [userRoles, setUserRoles] = useState<Record<string, 'ceo' | 'cto' | 'team'>>({});
+  const [userRoles, setUserRoles] = useState<Record<string, 'ceo' | 'cto' | 'admin' | 'team'>>({});
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editingPosting, setEditingPosting] = useState<string | null>(null);
@@ -212,8 +213,8 @@ export default function AdminConsole() {
       setUsers(data || []);
     }
 
-    const rolesMap: Record<string, 'ceo' | 'cto' | 'team'> = {};
-    roles?.forEach(r => { rolesMap[r.user_id] = r.role as 'ceo' | 'cto' | 'team'; });
+    const rolesMap: Record<string, 'ceo' | 'cto' | 'admin' | 'team'> = {};
+    roles?.forEach(r => { rolesMap[r.user_id] = r.role as 'ceo' | 'cto' | 'admin' | 'team'; });
     setUserRoles(rolesMap);
 
     setLoadingUsers(false);
@@ -758,121 +759,134 @@ export default function AdminConsole() {
     const memberRole = userRoles[user.user_id] || 'team';
     const isFounder = isFounderRole(memberRole);
 
+    // Role display text (not the heavy badge)
+    const roleText = memberRole === 'ceo' ? 'CEO' 
+      : memberRole === 'cto' ? 'Managing Director'
+      : memberRole === 'admin' ? 'Admin'
+      : user.posting?.trim() || 'Team Member';
+
     return (
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between gap-2 p-3 sm:p-4 rounded-xl bg-secondary/30 border border-border/50 w-full max-w-full overflow-hidden"
+        className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/30 border border-border/40 w-full"
       >
-        {/* Left side - Avatar & Text (must shrink) */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <Avatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
-            <AvatarImage src={user.avatar_url || defaultAvatar} alt={user.display_name || 'User'} />
-            <AvatarFallback>{(user.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p 
-              className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+        {/* Avatar */}
+        <Avatar 
+          className="w-10 h-10 flex-shrink-0 cursor-pointer"
+          onClick={() => {
+            setInsightMember({ user_id: user.user_id, display_name: user.display_name, avatar_url: user.avatar_url });
+            setInsightOpen(true);
+          }}
+        >
+          <AvatarImage src={user.avatar_url || defaultAvatar} alt={user.display_name || 'User'} />
+          <AvatarFallback>{(user.display_name || 'U')[0].toUpperCase()}</AvatarFallback>
+        </Avatar>
+
+        {/* Name, Email, Role */}
+        <div className="min-w-0 flex-1">
+          <p 
+            className="font-semibold text-sm text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+            onClick={() => {
+              setInsightMember({ user_id: user.user_id, display_name: user.display_name, avatar_url: user.avatar_url });
+              setInsightOpen(true);
+            }}
+          >
+            {user.display_name || 'Unknown'}
+          </p>
+          <p className="text-xs text-muted-foreground break-all whitespace-normal leading-tight mt-0.5">{user.email}</p>
+          
+          {/* Role as highlighted text, not badge */}
+          {isEditingThis && !isFounder ? (
+            <div className="flex items-center gap-1 mt-1.5">
+              <div className="relative">
+                <Input
+                  value={postingValue}
+                  onChange={(e) => setPostingValue(e.target.value)}
+                  placeholder="Search or type a role..."
+                  className="h-6 text-[10px] w-32 sm:w-44 px-2 py-0"
+                  list={`postings-list-${user.user_id}`}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSavePosting(user.user_id);
+                    if (e.key === 'Escape') { setEditingPosting(null); setPostingValue(''); }
+                  }}
+                />
+                <datalist id={`postings-list-${user.user_id}`}>
+                  {OFFICIAL_POSTINGS.map((p) => (
+                    <option key={p} value={p} />
+                  ))}
+                </datalist>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="w-5 h-5"
+                onClick={() => handleSavePosting(user.user_id)}
+                disabled={actionLoading === user.user_id}
+              >
+                <Save className="w-3 h-3 text-primary" />
+              </Button>
+            </div>
+          ) : (
+            <p className={cn(
+              "text-[11px] mt-1 truncate font-medium",
+              isFounder ? "text-amber-400" : memberRole === 'admin' ? "text-violet-400" : "text-primary/80"
+            )}>
+              {roleText}
+            </p>
+          )}
+        </div>
+
+        {/* 3-dots kebab menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="w-11 h-11 flex items-center justify-center rounded-lg hover:bg-secondary/60 transition-colors flex-shrink-0">
+              <MoreVertical className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {!isFounder && (
+              <DropdownMenuItem
+                onClick={() => {
+                  setEditingPosting(user.user_id);
+                  setPostingValue(user.posting || '');
+                }}
+              >
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit Role
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem
               onClick={() => {
                 setInsightMember({ user_id: user.user_id, display_name: user.display_name, avatar_url: user.avatar_url });
                 setInsightOpen(true);
               }}
-            >{user.display_name || 'Unknown'}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground break-all whitespace-normal leading-tight">{user.email}</p>
-            {/* Posting Badge + Edit */}
-            <div className="flex items-center gap-1.5 mt-1">
-              {isEditingThis && !isFounder ? (
-                <div className="flex items-center gap-1">
-                  <div className="relative">
-                    <Input
-                      value={postingValue}
-                      onChange={(e) => setPostingValue(e.target.value)}
-                      placeholder="Search or type a role..."
-                      className="h-6 text-[10px] w-32 sm:w-44 px-2 py-0"
-                      list={`postings-list-${user.user_id}`}
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSavePosting(user.user_id);
-                        if (e.key === 'Escape') { setEditingPosting(null); setPostingValue(''); }
-                      }}
-                    />
-                    <datalist id={`postings-list-${user.user_id}`}>
-                      {OFFICIAL_POSTINGS.map((p) => (
-                        <option key={p} value={p} />
-                      ))}
-                    </datalist>
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="w-5 h-5"
-                    onClick={() => handleSavePosting(user.user_id)}
-                    disabled={actionLoading === user.user_id}
-                  >
-                    <Save className="w-3 h-3 text-primary" />
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <PostingBadge posting={user.posting} role={memberRole} />
-                  {!isFounder && (
-                    <button
-                      onClick={() => {
-                        setEditingPosting(user.user_id);
-                        setPostingValue(user.posting || '');
-                      }}
-                      className="text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <Pencil className="w-3 h-3" />
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        {/* Right side - Badge & Actions (fixed size) */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <Badge 
-            variant={user.access_status === 'approved_member' ? 'default' : user.access_status === 'pending' ? 'secondary' : 'outline'}
-            className="hidden xs:inline-flex text-xs"
-          >
-            {user.access_status === 'approved_member' ? 'Member' : user.access_status === 'pending' ? 'Pending' : 'Visitor'}
-          </Badge>
-          
-          {showApprove && (
-            <Button
-              size="sm"
-              variant="default"
-              disabled={actionLoading === user.user_id}
-              onClick={() => updateUserStatus(user.user_id, 'approved_member')}
-              className="flex-shrink-0"
             >
-              {actionLoading === user.user_id ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <UserCheck className="w-4 h-4" />
-              )}
-            </Button>
-          )}
-          
-          {showRemove && (
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={actionLoading === user.user_id}
-              onClick={() => updateUserStatus(user.user_id, 'visitor')}
-              className="flex-shrink-0"
-            >
-              {actionLoading === user.user_id ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <UserX className="w-4 h-4" />
-              )}
-            </Button>
-          )}
-        </div>
+              <Eye className="w-4 h-4 mr-2" />
+              View Details
+            </DropdownMenuItem>
+            {showApprove && (
+              <DropdownMenuItem
+                onClick={() => updateUserStatus(user.user_id, 'approved_member')}
+                disabled={actionLoading === user.user_id}
+              >
+                <UserCheck className="w-4 h-4 mr-2" />
+                Approve Member
+              </DropdownMenuItem>
+            )}
+            {showRemove && !isFounder && (
+              <DropdownMenuItem
+                onClick={() => updateUserStatus(user.user_id, 'visitor')}
+                disabled={actionLoading === user.user_id}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Remove Member
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </motion.div>
     );
   };
@@ -901,50 +915,44 @@ export default function AdminConsole() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-full overflow-x-hidden">
         <Tabs defaultValue="team" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 mb-8">
-            <TabsTrigger value="team" className="gap-1 text-[10px] sm:text-sm">
-              <UserCheck className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Team</span>
-            </TabsTrigger>
-            <TabsTrigger value="requests" className="gap-1 text-[10px] sm:text-sm">
-              <Users className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Requests</span>
-            </TabsTrigger>
-            <TabsTrigger value="attendance" className="gap-1 text-[10px] sm:text-sm">
-              <Clock className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Attendance</span>
-            </TabsTrigger>
-            <TabsTrigger value="leaves" className="gap-1 text-[10px] sm:text-sm relative">
-              <CalendarDays className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Leaves</span>
-              {allLeaves.filter(l => l.status === 'pending').length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
-                  {allLeaves.filter(l => l.status === 'pending').length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="holidays" className="gap-1 text-[10px] sm:text-sm">
-              <PartyPopper className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Holidays</span>
-            </TabsTrigger>
-            <TabsTrigger value="vault-access" className="gap-1 text-[10px] sm:text-sm relative">
-              <FolderLock className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Vault</span>
-              {vaultRequests.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
-                  {vaultRequests.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="directory" className="gap-1 text-[10px] sm:text-sm">
-              <Eye className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Directory</span>
-            </TabsTrigger>
-            <TabsTrigger value="stars" className="gap-1 text-[10px] sm:text-sm">
-              <PartyPopper className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Stars</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 mb-8 scrollbar-cyber">
+            <TabsList className="inline-flex w-max gap-1 bg-secondary/50 p-1 rounded-xl">
+              <TabsTrigger value="team" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap">
+                Users
+              </TabsTrigger>
+              <TabsTrigger value="requests" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap">
+                Requests
+              </TabsTrigger>
+              <TabsTrigger value="attendance" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap">
+                Attendance
+              </TabsTrigger>
+              <TabsTrigger value="leaves" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap relative">
+                Leaves
+                {allLeaves.filter(l => l.status === 'pending').length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
+                    {allLeaves.filter(l => l.status === 'pending').length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="holidays" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap">
+                Holidays
+              </TabsTrigger>
+              <TabsTrigger value="vault-access" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap relative">
+                Vault
+                {vaultRequests.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center font-bold">
+                    {vaultRequests.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="directory" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap">
+                Directory
+              </TabsTrigger>
+              <TabsTrigger value="stars" className="text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap">
+                Stars
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="team" className="space-y-4">
             <div className="flex items-center justify-between mb-4">
