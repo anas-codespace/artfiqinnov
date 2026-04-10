@@ -79,7 +79,7 @@ export default function AdminConsole() {
 
   // Dashboard state
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [userRoles, setUserRoles] = useState<Record<string, 'ceo' | 'cto' | 'admin' | 'team'>>({});
+  const [userRoles, setUserRoles] = useState<Record<string, 'ceo' | 'cto' | 'admin' | 'vp' | 'team'>>({});
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editingPosting, setEditingPosting] = useState<string | null>(null);
@@ -213,8 +213,8 @@ export default function AdminConsole() {
       setUsers(data || []);
     }
 
-    const rolesMap: Record<string, 'ceo' | 'cto' | 'admin' | 'team'> = {};
-    roles?.forEach(r => { rolesMap[r.user_id] = r.role as 'ceo' | 'cto' | 'admin' | 'team'; });
+    const rolesMap: Record<string, 'ceo' | 'cto' | 'admin' | 'vp' | 'team'> = {};
+    roles?.forEach(r => { rolesMap[r.user_id] = r.role as 'ceo' | 'cto' | 'admin' | 'vp' | 'team'; });
     setUserRoles(rolesMap);
 
     setLoadingUsers(false);
