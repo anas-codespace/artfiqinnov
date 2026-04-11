@@ -258,7 +258,7 @@ export function PerformanceTab() {
     toast({ title: '📊 Report Downloaded', description: `${currentMonthName} attendance report saved as Excel.` });
   }, [teamMembers, attendanceMap, currentMonthName, toast]);
 
-
+  if (isLoading) {
     return (
       <div className="p-8 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
