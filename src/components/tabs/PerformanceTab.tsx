@@ -401,6 +401,18 @@ export function PerformanceTab() {
                     <p className="text-[10px] text-muted-foreground">
                       {stat ? `${stat.daysPresent}/${stat.totalDays} this month` : '—'}
                     </p>
+                    {member.email && (
+                      <a
+                        href={`https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(member.email)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-0.5 text-[9px] text-primary/70 hover:text-primary transition-colors mt-0.5 truncate"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Mail className="w-2.5 h-2.5 flex-shrink-0" />
+                        <span className="truncate">{member.email}</span>
+                      </a>
+                    )}
                   </div>
                   <AttendanceRing percentage={pct} size={36} strokeWidth={3} />
                 </motion.div>
