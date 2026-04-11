@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Clock, Milestone, Loader2, Users, TrendingUp, FileText, Download } from 'lucide-react';
+import { BarChart3, Clock, Milestone, Loader2, Users, TrendingUp, FileText, Download, Mail } from 'lucide-react';
 import { springPresets } from '@/components/ui/spring-config';
 import { supabase } from '@/integrations/supabase/client';
 import { AttendanceRing } from '@/components/ui/attendance-ring';
@@ -8,7 +8,9 @@ import { fetchTeamAttendance, fetchUserWorkLogs } from '@/hooks/useAttendance';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
+import * as XLSX from 'xlsx';
 
 interface Task {
   id: string;
@@ -31,6 +33,7 @@ interface TeamMember {
   user_id: string;
   display_name: string | null;
   avatar_url: string | null;
+  email: string | null;
   created_at: string;
 }
 
@@ -57,8 +60,8 @@ export function PerformanceTab() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [attendanceMap, setAttendanceMap] = useState<Record<string, AttendanceStat>>({});
   const [attendanceLoading, setAttendanceLoading] = useState(true);
-  const [showReport, setShowReport] = useState(false);
   
+  const { toast } = useToast();
   // Personal work stats
   const [myAvgMinutes, setMyAvgMinutes] = useState<number | null>(null);
   const [myRecentLogs, setMyRecentLogs] = useState<Array<{ date: string; work_duration_minutes: number | null }>>([]);
@@ -134,7 +137,7 @@ export function PerformanceTab() {
       setAttendanceLoading(true);
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, display_name, avatar_url, created_at')
+        .select('user_id, display_name, avatar_url, email, created_at')
         .eq('access_status', 'approved_member')
         .order('display_name', { ascending: true });
 
@@ -215,6 +218,46 @@ export function PerformanceTab() {
     };
   }, [myRecentLogs, currentMonthName]);
 
+  const downloadExcelReport = useCallback(() => {
+    if (teamMembers.length === 0) {
+      toast({ title: 'No data', description: 'No team members found.', variant: 'destructive' });
+      return;
+    }
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const workingDays: string[] = [];
+    const cursor = new Date(monthStart);
+    while (cursor <= now) {
+      const day = cursor.getDay();
+      if (day !== 0 && day !== 6) {
+        workingDays.push(cursor.toISOString().split('T')[0]);
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const rows = teamMembers.map(member => {
+      const stat = attendanceMap[member.user_id];
+      return {
+        'Employee Name': member.display_name || 'Unknown',
+        'Email': member.email || '—',
+        'Days Present': stat?.daysPresent ?? 0,
+        'Total Working Days': stat?.totalDays ?? workingDays.length,
+        'Attendance %': stat ? `${stat.percentage}%` : '—',
+        'Status': stat ? (stat.percentage >= 90 ? 'Excellent' : stat.percentage >= 75 ? 'Good' : 'Needs Improvement') : '—',
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 22 }, { wch: 30 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 18 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Attendance Report');
+    XLSX.writeFile(wb, `Attendance_Report_${currentMonthName.replace(' ', '_')}.xlsx`);
+    toast({ title: '📊 Report Downloaded', description: `${currentMonthName} attendance report saved as Excel.` });
+  }, [teamMembers, attendanceMap, currentMonthName, toast]);
+
   if (isLoading) {
     return (
       <div className="p-8 flex items-center justify-center">
@@ -292,55 +335,28 @@ export function PerformanceTab() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowReport(!showReport)}
+            onClick={downloadExcelReport}
             className="text-xs gap-1"
           >
             <Download className="w-3.5 h-3.5" />
-            {showReport ? 'Hide Report' : 'Generate Report'}
+            Download Excel
           </Button>
         </div>
 
-        {showReport && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="bg-secondary/30 rounded-xl p-4 space-y-3 font-mono text-xs"
-          >
-            <div className="flex items-center justify-between border-b border-border/50 pb-2">
-              <span className="font-bold text-sm text-foreground">📊 Monthly Report</span>
-              <span className="text-muted-foreground">{reportData.month}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-muted-foreground">Days Present</p>
-                <p className="text-lg font-bold text-primary">{reportData.totalDaysPresent}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Total Hours</p>
-                <p className="text-lg font-bold text-foreground">{reportData.totalHoursWorked}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Avg / Day</p>
-                <p className="text-lg font-bold text-foreground">{reportData.averagePerDay}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Since Joining</p>
-                <p className="text-lg font-bold text-foreground">{overallStats.totalDaysPresent} days</p>
-              </div>
-            </div>
-            {reportData.logs.length > 0 && (
-              <div className="border-t border-border/50 pt-2 space-y-1">
-                <p className="text-muted-foreground font-bold">Daily Breakdown</p>
-                {reportData.logs.map(l => (
-                  <div key={l.date} className="flex justify-between">
-                    <span>{l.date}</span>
-                    <span className="text-primary">{l.work_duration_minutes ? formatDuration(l.work_duration_minutes) : '—'}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-[10px] text-muted-foreground">Days Present</p>
+            <p className="text-lg font-bold text-primary">{reportData.totalDaysPresent}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">Total Hours</p>
+            <p className="text-lg font-bold text-foreground">{reportData.totalHoursWorked}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">Avg / Day</p>
+            <p className="text-lg font-bold text-foreground">{reportData.averagePerDay}</p>
+          </div>
+        </div>
       </motion.div>
 
       {/* Attendance Health Section */}
@@ -385,6 +401,18 @@ export function PerformanceTab() {
                     <p className="text-[10px] text-muted-foreground">
                       {stat ? `${stat.daysPresent}/${stat.totalDays} this month` : '—'}
                     </p>
+                    {member.email && (
+                      <a
+                        href={`https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(member.email)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-0.5 text-[9px] text-primary/70 hover:text-primary transition-colors mt-0.5 truncate"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Mail className="w-2.5 h-2.5 flex-shrink-0" />
+                        <span className="truncate">{member.email}</span>
+                      </a>
+                    )}
                   </div>
                   <AttendanceRing percentage={pct} size={36} strokeWidth={3} />
                 </motion.div>
