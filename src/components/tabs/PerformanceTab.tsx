@@ -137,7 +137,7 @@ export function PerformanceTab() {
       setAttendanceLoading(true);
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, display_name, avatar_url, created_at')
+        .select('user_id, display_name, avatar_url, email, created_at')
         .eq('access_status', 'approved_member')
         .order('display_name', { ascending: true });
 
