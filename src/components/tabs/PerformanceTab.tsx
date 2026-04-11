@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Clock, Milestone, Loader2, Users, TrendingUp, FileText, Download } from 'lucide-react';
+import { BarChart3, Clock, Milestone, Loader2, Users, TrendingUp, FileText, Download, Mail } from 'lucide-react';
 import { springPresets } from '@/components/ui/spring-config';
 import { supabase } from '@/integrations/supabase/client';
 import { AttendanceRing } from '@/components/ui/attendance-ring';
@@ -8,7 +8,9 @@ import { fetchTeamAttendance, fetchUserWorkLogs } from '@/hooks/useAttendance';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import defaultAvatarImg from '@/assets/default-avatar.webp';
+import * as XLSX from 'xlsx';
 
 interface Task {
   id: string;
