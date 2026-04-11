@@ -61,7 +61,7 @@ export function PerformanceTab() {
   const [attendanceMap, setAttendanceMap] = useState<Record<string, AttendanceStat>>({});
   const [attendanceLoading, setAttendanceLoading] = useState(true);
   const [showReport, setShowReport] = useState(false);
-  
+  const { toast } = useToast();
   // Personal work stats
   const [myAvgMinutes, setMyAvgMinutes] = useState<number | null>(null);
   const [myRecentLogs, setMyRecentLogs] = useState<Array<{ date: string; work_duration_minutes: number | null }>>([]);
