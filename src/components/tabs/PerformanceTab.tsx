@@ -218,7 +218,47 @@ export function PerformanceTab() {
     };
   }, [myRecentLogs, currentMonthName]);
 
-  if (isLoading) {
+  const downloadExcelReport = useCallback(() => {
+    if (teamMembers.length === 0) {
+      toast({ title: 'No data', description: 'No team members found.', variant: 'destructive' });
+      return;
+    }
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const workingDays: string[] = [];
+    const cursor = new Date(monthStart);
+    while (cursor <= now) {
+      const day = cursor.getDay();
+      if (day !== 0 && day !== 6) {
+        workingDays.push(cursor.toISOString().split('T')[0]);
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const rows = teamMembers.map(member => {
+      const stat = attendanceMap[member.user_id];
+      return {
+        'Employee Name': member.display_name || 'Unknown',
+        'Email': member.email || '—',
+        'Days Present': stat?.daysPresent ?? 0,
+        'Total Working Days': stat?.totalDays ?? workingDays.length,
+        'Attendance %': stat ? `${stat.percentage}%` : '—',
+        'Status': stat ? (stat.percentage >= 90 ? 'Excellent' : stat.percentage >= 75 ? 'Good' : 'Needs Improvement') : '—',
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 22 }, { wch: 30 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 18 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Attendance Report');
+    XLSX.writeFile(wb, `Attendance_Report_${currentMonthName.replace(' ', '_')}.xlsx`);
+    toast({ title: '📊 Report Downloaded', description: `${currentMonthName} attendance report saved as Excel.` });
+  }, [teamMembers, attendanceMap, currentMonthName, toast]);
+
+
     return (
       <div className="p-8 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
