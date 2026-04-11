@@ -248,12 +248,6 @@ export function PerformanceTab() {
             </p>
             <p className="text-[10px] text-muted-foreground">Avg Work Time / Day</p>
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-foreground">
-              {overallStats.totalDaysPresent}
-            </p>
-            <p className="text-[10px] text-muted-foreground">Total Days Since Joining</p>
-          </div>
           {overallStats.starCount > 0 && (
             <div className="text-center px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
               <p className="text-2xl font-bold text-amber-500">
