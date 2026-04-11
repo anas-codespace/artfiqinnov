@@ -335,55 +335,28 @@ export function PerformanceTab() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowReport(!showReport)}
+            onClick={downloadExcelReport}
             className="text-xs gap-1"
           >
             <Download className="w-3.5 h-3.5" />
-            {showReport ? 'Hide Report' : 'Generate Report'}
+            Download Excel
           </Button>
         </div>
 
-        {showReport && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="bg-secondary/30 rounded-xl p-4 space-y-3 font-mono text-xs"
-          >
-            <div className="flex items-center justify-between border-b border-border/50 pb-2">
-              <span className="font-bold text-sm text-foreground">📊 Monthly Report</span>
-              <span className="text-muted-foreground">{reportData.month}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-muted-foreground">Days Present</p>
-                <p className="text-lg font-bold text-primary">{reportData.totalDaysPresent}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Total Hours</p>
-                <p className="text-lg font-bold text-foreground">{reportData.totalHoursWorked}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Avg / Day</p>
-                <p className="text-lg font-bold text-foreground">{reportData.averagePerDay}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Since Joining</p>
-                <p className="text-lg font-bold text-foreground">{overallStats.totalDaysPresent} days</p>
-              </div>
-            </div>
-            {reportData.logs.length > 0 && (
-              <div className="border-t border-border/50 pt-2 space-y-1">
-                <p className="text-muted-foreground font-bold">Daily Breakdown</p>
-                {reportData.logs.map(l => (
-                  <div key={l.date} className="flex justify-between">
-                    <span>{l.date}</span>
-                    <span className="text-primary">{l.work_duration_minutes ? formatDuration(l.work_duration_minutes) : '—'}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-[10px] text-muted-foreground">Days Present</p>
+            <p className="text-lg font-bold text-primary">{reportData.totalDaysPresent}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">Total Hours</p>
+            <p className="text-lg font-bold text-foreground">{reportData.totalHoursWorked}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">Avg / Day</p>
+            <p className="text-lg font-bold text-foreground">{reportData.averagePerDay}</p>
+          </div>
+        </div>
       </motion.div>
 
       {/* Attendance Health Section */}
