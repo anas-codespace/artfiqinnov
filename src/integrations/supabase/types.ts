@@ -595,7 +595,6 @@ export type Database = {
         Row: {
           access_status: string | null
           address: string | null
-          admin_pin: string | null
           avatar_url: string | null
           blood_group: string | null
           created_at: string
@@ -608,8 +607,6 @@ export type Database = {
           is_profile_complete: boolean | null
           phone_number: string | null
           posting: string | null
-          security_answer: string | null
-          security_question: string | null
           star_of_the_week_count: number | null
           updated_at: string
           user_id: string
@@ -617,7 +614,6 @@ export type Database = {
         Insert: {
           access_status?: string | null
           address?: string | null
-          admin_pin?: string | null
           avatar_url?: string | null
           blood_group?: string | null
           created_at?: string
@@ -630,8 +626,6 @@ export type Database = {
           is_profile_complete?: boolean | null
           phone_number?: string | null
           posting?: string | null
-          security_answer?: string | null
-          security_question?: string | null
           star_of_the_week_count?: number | null
           updated_at?: string
           user_id: string
@@ -639,7 +633,6 @@ export type Database = {
         Update: {
           access_status?: string | null
           address?: string | null
-          admin_pin?: string | null
           avatar_url?: string | null
           blood_group?: string | null
           created_at?: string
@@ -652,8 +645,6 @@ export type Database = {
           is_profile_complete?: boolean | null
           phone_number?: string | null
           posting?: string | null
-          security_answer?: string | null
-          security_question?: string | null
           star_of_the_week_count?: number | null
           updated_at?: string
           user_id?: string
