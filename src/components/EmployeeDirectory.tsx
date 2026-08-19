@@ -27,16 +27,35 @@ export function EmployeeDirectory() {
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from('profiles')
-        .select('user_id, display_name, email, avatar_url, phone_number, blood_group, address, emergency_contact, posting')
-        .eq('access_status', 'approved_member')
-        .order('display_name', { ascending: true });
-      setEmployees((data as unknown as EmployeeRecord[]) || []);
+      const [{ data: profiles }, { data: privateInfo }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('user_id, display_name, email, avatar_url, posting')
+          .eq('access_status', 'approved_member')
+          .order('display_name', { ascending: true }),
+        supabase
+          .from('employee_private_info')
+          .select('user_id, phone_number, blood_group, address, emergency_contact'),
+      ]);
+
+      const privateMap = new Map((privateInfo || []).map(p => [p.user_id, p]));
+      const merged: EmployeeRecord[] = (profiles || []).map(p => ({
+        user_id: p.user_id,
+        display_name: p.display_name,
+        email: p.email,
+        avatar_url: p.avatar_url,
+        posting: p.posting,
+        phone_number: privateMap.get(p.user_id)?.phone_number ?? null,
+        blood_group: privateMap.get(p.user_id)?.blood_group ?? null,
+        address: privateMap.get(p.user_id)?.address ?? null,
+        emergency_contact: privateMap.get(p.user_id)?.emergency_contact ?? null,
+      }));
+      setEmployees(merged);
       setLoading(false);
     };
     fetch();
   }, []);
+
 
   const filtered = employees.filter(e =>
     !search || (e.display_name || '').toLowerCase().includes(search.toLowerCase()) || (e.email || '').toLowerCase().includes(search.toLowerCase())
