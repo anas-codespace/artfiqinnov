@@ -36,17 +36,31 @@ export function ProfileSetupModal() {
     if (!canSubmit || !user) return;
     setSaving(true);
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        display_name: fullName.trim(),
-        phone_number: phone.trim(),
-        blood_group: bloodGroup,
-        address: address.trim(),
-        emergency_contact: emergencyContact.trim(),
-        is_profile_complete: true,
-      } as any)
-      .eq('user_id', user.id);
+    const [{ error: privateError }, { error }] = await Promise.all([
+      supabase
+        .from('employee_private_info')
+        .upsert({
+          user_id: user.id,
+          phone_number: phone.trim(),
+          blood_group: bloodGroup,
+          address: address.trim(),
+          emergency_contact: emergencyContact.trim(),
+        }, { onConflict: 'user_id' }),
+      supabase
+        .from('profiles')
+        .update({
+          display_name: fullName.trim(),
+          is_profile_complete: true,
+        } as any)
+        .eq('user_id', user.id),
+    ]);
+
+    if (privateError) {
+      toast({ title: 'Error', description: 'Failed to save profile. Please try again.', variant: 'destructive' });
+      setSaving(false);
+      return;
+    }
+
 
     if (error) {
       toast({ title: 'Error', description: 'Failed to save profile. Please try again.', variant: 'destructive' });
