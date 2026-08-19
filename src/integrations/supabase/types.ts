@@ -176,6 +176,39 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_private_info: {
+        Row: {
+          address: string | null
+          blood_group: string | null
+          created_at: string
+          emergency_contact: string | null
+          id: string
+          phone_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          blood_group?: string | null
+          created_at?: string
+          emergency_contact?: string | null
+          id?: string
+          phone_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          blood_group?: string | null
+          created_at?: string
+          emergency_contact?: string | null
+          id?: string
+          phone_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string
@@ -594,18 +627,14 @@ export type Database = {
       profiles: {
         Row: {
           access_status: string | null
-          address: string | null
           avatar_url: string | null
-          blood_group: string | null
           created_at: string
           department: string | null
           display_name: string | null
           email: string | null
-          emergency_contact: string | null
           id: string
           is_admin_setup_complete: boolean | null
           is_profile_complete: boolean | null
-          phone_number: string | null
           posting: string | null
           star_of_the_week_count: number | null
           updated_at: string
@@ -613,18 +642,14 @@ export type Database = {
         }
         Insert: {
           access_status?: string | null
-          address?: string | null
           avatar_url?: string | null
-          blood_group?: string | null
           created_at?: string
           department?: string | null
           display_name?: string | null
           email?: string | null
-          emergency_contact?: string | null
           id?: string
           is_admin_setup_complete?: boolean | null
           is_profile_complete?: boolean | null
-          phone_number?: string | null
           posting?: string | null
           star_of_the_week_count?: number | null
           updated_at?: string
@@ -632,18 +657,14 @@ export type Database = {
         }
         Update: {
           access_status?: string | null
-          address?: string | null
           avatar_url?: string | null
-          blood_group?: string | null
           created_at?: string
           department?: string | null
           display_name?: string | null
           email?: string | null
-          emergency_contact?: string | null
           id?: string
           is_admin_setup_complete?: boolean | null
           is_profile_complete?: boolean | null
-          phone_number?: string | null
           posting?: string | null
           star_of_the_week_count?: number | null
           updated_at?: string
