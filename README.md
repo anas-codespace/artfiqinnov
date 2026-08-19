@@ -1,73 +1,81 @@
-# Welcome to your Lovable project
+# ARTFIQ Workspace Hub
 
-## Project info
+🚀 The Ultimate "ARTFIQ Workspace" Prompt
+(Copy this and paste it into v0.dev or Bolt.new for the best result)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Act as a Senior Full-Stack Developer. Build a complete Single Page Application (SPA) called "ARTFIQ Workspace" using React, Tailwind CSS, and Firebase.
 
-## How can I edit this code?
+1. Theme & UI:
 
-There are several ways of editing your application.
+Visual Style: Deep Dark Mode (#0a0a0a), Cyber-Tech aesthetic.
 
-**Use Lovable**
+Accents: Cyan (#00d2ff) for interactive elements, Red (#ff3b30) for alerts.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Layout: A sidebar navigation (on desktop) / bottom tab bar (on mobile) switching between 3 Tabs: Home (About), Vault (Files), and Team Chat.
 
-Changes made via Lovable will be committed automatically to this repo.
+2. Feature: Authentication (Google Login):
 
-**Use your preferred IDE**
+The app must have a "Login Screen" if the user is not authenticated.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Use a "Sign in with Google" button.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Once logged in, show the User's Profile Picture and Name in the top right corner.
 
-Follow these steps:
+Simulate the Firebase Auth logic if a real backend isn't available, but write the code structure as if it's connecting to Firebase.
+
+3. Feature: Document Vault (Storage):
+
+Upload Area: A drag-and-drop zone for PDF files.
+
+Constraint: Implement Strict Validation to reject files larger than 10MB. Show an error toast message: "File too large! Max limit 10MB."
+
+List View: Show uploaded files with Icon, File Name, Size, uploader's name, and a "Download" button.
+
+4. Feature: Real-Time Team Chat:
+
+Interface: A chat interface similar to Slack/WhatsApp Web (Dark Mode).
+
+Messages: Each message should show the User Avatar, Name, Timestamp, and Message Text.
+
+Input: A text box at the bottom with a "Send" button (Cyan color).
+
+5. Feature: About ARTFIQ:
+
+Display the company details:
+
+Mission: "Bridging human needs with digital efficiency."
+
+Founders: Show cards for "Mohammed Sulaiman (CEO)" and "Mohammed Anas (CTO)".
+
+Technical Requirements:
+
+Use lucide-react for icons.
+
+Use framer-motion for smooth page transitions.
+
+Make it fully responsive (Mobile & Desktop friendly).
+
+Ensure the Code is modular.
+
+This project was built with [Lovable](https://lovable.dev).
+
+**Live app**: https://artfiqinnov.lovable.app
+
+## Build with Lovable
+
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/8225e108-c20c-4c58-9636-36aade2d331e).
+
+- **Ship faster**: describe what you want to build and Lovable handles the code.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+
+## Development
+
+Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
+git clone <this-repository-url>
+cd <repository-name>
 npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
